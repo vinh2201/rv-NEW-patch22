@@ -21,11 +21,16 @@ internal val ClassDef.switchToggleColorMethodMatch by ClassDefComposing.composin
     accessFlags(AccessFlags.PRIVATE, AccessFlags.FINAL)
     returnType("V")
     parameterTypes("L", "J")
-    opcodes(
-        Opcode.INVOKE_VIRTUAL,
-        Opcode.MOVE_RESULT_OBJECT,
-        Opcode.CHECK_CAST,
-        Opcode.IGET,
+    instructions(
+        allOf(
+            Opcode.INVOKE_VIRTUAL(),
+            method { returnType.startsWith("L") && parameterTypes.isEmpty() }
+        ),
+        after(Opcode.MOVE_RESULT_OBJECT()),
+        after(Opcode.CHECK_CAST()),
+        after(allOf(Opcode.IGET(), field { type == "I" })),
+        after(Opcode.GOTO()),
+        after(Opcode.INVOKE_VIRTUAL())
     )
 }
 

@@ -3,7 +3,9 @@
 package app.revanced.patches.music.layout.miniplayer
 
 import app.revanced.patcher.accessFlags
+import app.revanced.patcher.extensions.fieldReference
 import app.revanced.patcher.extensions.getInstruction
+import app.revanced.patcher.extensions.methodReference
 import app.revanced.patcher.firstMethodDeclaratively
 import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.bytecodePatch
@@ -55,21 +57,8 @@ val changeMiniplayerColorPatch = bytecodePatch(
         )
 
         miniPlayerConstructorMethodMatch.immutableClassDef.switchToggleColorMethodMatch.let {
-            val relativeIndex = it[-1] + 1
-
-            val invokeVirtualIndex = it.method.indexOfFirstInstructionOrThrow(
-                relativeIndex,
-                Opcode.INVOKE_VIRTUAL,
-            )
-            val colorMathPlayerInvokeVirtualReference = it.method
-                .getInstruction<ReferenceInstruction>(invokeVirtualIndex).reference
-
-            val iGetIndex = it.method.indexOfFirstInstructionOrThrow(
-                relativeIndex,
-                Opcode.IGET,
-            )
-            val colorMathPlayerIGetReference = it.method
-                .getInstruction<ReferenceInstruction>(iGetIndex).reference as FieldReference
+            val colorMathPlayerInvokeVirtualReference = it.method.getInstruction(it[-1]).methodReference!!
+            val colorMathPlayerIGetReference = it.method.getInstruction(it[3]).fieldReference!!
 
             val colorGreyIndex =
                 miniPlayerConstructorMethodMatch.immutableMethod.indexOfFirstInstructionReversedOrThrow {
