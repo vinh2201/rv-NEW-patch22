@@ -1,17 +1,18 @@
 package app.revanced.patches.youtube.misc.settings
 
-import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableClassDef
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod.Companion.toMutable
 import app.revanced.patcher.classDef
 import app.revanced.patcher.extensions.addInstructions
 import app.revanced.patcher.extensions.getInstruction
+import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patcher.patch.resourcePatch
 import app.revanced.patches.all.misc.packagename.setOrGetFallbackPackageName
 import app.revanced.patches.all.misc.resources.addResources
 import app.revanced.patches.all.misc.resources.addResourcesPatch
 import app.revanced.patches.shared.boldIconsFeatureFlagMethodMatch
+import app.revanced.patches.shared.googleApiActivityOnCreateMethod
 import app.revanced.patches.shared.misc.mapping.resourceMappingPatch
 import app.revanced.patches.shared.misc.settings.overrideThemeColors
 import app.revanced.patches.shared.misc.settings.preference.*
@@ -129,31 +130,39 @@ private val settingsResourcePatch = resourcePatch {
             }
         }
 
-        // Modify the manifest to enhance LicenseActivity behavior:
-        // 1. Add a data intent filter with MIME type "text/plain".
-        //    Some devices crash if undeclared data is passed to an intent,
-        //    and this change appears to fix the issue.
-        // 2. Add android:configChanges="orientation|screenSize|keyboardHidden".
-        //    This prevents the activity from being recreated on configuration changes
-        //    (e.g., screen rotation), preserving its current state and fragment.
+        // Modify the manifest to enhance GoogleApiActivity behavior
         document("AndroidManifest.xml").use { document ->
-            val licenseElement = document.childNodes.findElementByAttributeValueOrThrow(
+            val node = document.childNodes.findElementByAttributeValueOrThrow(
                 "android:name",
-                "com.google.android.libraries.social.licenses.LicenseActivity",
+                "com.google.android.gms.common.api.GoogleApiActivity",
             )
 
-            licenseElement.setAttribute(
+            // Prevents the activity from being recreated on configuration changes
+            // (e.g., screen rotation), preserving its current state and fragment.
+            node.setAttribute(
                 "android:configChanges",
                 "orientation|screenSize|keyboardHidden",
+            )
+
+            // Use same theme as other activities. The exiting theme causes the
+            // settings to fade in and not use a transition animation. A custom theme
+            // could be used to not show any transition to match the original YT settings
+            // submenu behavior.
+            node.setAttribute(
+                "android:theme",
+                "@style/Theme.AppCompat.DayNight.NoActionBar"
             )
 
             val mimeType = document.createElement("data")
             mimeType.setAttribute("android:mimeType", "text/plain")
 
+            // Add a data intent filter with MIME type "text/plain".
+            // Some devices crash if undeclared data is passed to an intent,
+            // and this change appears to fix the issue.
             val intentFilter = document.createElement("intent-filter")
             intentFilter.appendChild(mimeType)
 
-            licenseElement.appendChild(intentFilter)
+            node.appendChild(intentFilter)
         }
     }
 }
@@ -258,8 +267,7 @@ val settingsPatch = bytecodePatch(
         }
 
         modifyActivityForSettingsInjection(
-            licenseActivityOnCreateMethod.classDef,
-            licenseActivityOnCreateMethod,
+            googleApiActivityOnCreateMethod,
             YOUTUBE_ACTIVITY_HOOK_CLASS_DESCRIPTOR,
             false,
         )
@@ -273,8 +281,7 @@ val settingsPatch = bytecodePatch(
 /**
  * Modifies the activity to show ReVanced settings instead of its original purpose.
  */
-internal fun modifyActivityForSettingsInjection(
-    activityOnCreateClass: MutableClassDef,
+internal fun BytecodePatchContext.modifyActivityForSettingsInjection(
     activityOnCreateMethod: MutableMethod,
     extensionClassType: String,
     isYouTubeMusic: Boolean,
@@ -285,20 +292,20 @@ internal fun modifyActivityForSettingsInjection(
     activityOnCreateMethod.addInstructions(
         0,
         """
-            invoke-super { p0, p1 }, ${activityOnCreateClass.superclass}->onCreate(Landroid/os/Bundle;)V
+            invoke-super { p0, p1 }, ${activityOnCreateMethod.classDef.superclass}->onCreate(Landroid/os/Bundle;)V
             invoke-static { p0 }, $extensionClassType->initialize(Landroid/app/Activity;)V
             return-void
         """,
     )
 
     // Remove other methods as they will break as the onCreate method is modified above.
-    activityOnCreateClass.apply {
+    activityOnCreateMethod.classDef.apply {
         methods.removeIf { it != activityOnCreateMethod && !MethodUtil.isConstructor(it) }
     }
 
     // Override base context to allow using ReVanced specific settings.
     ImmutableMethod(
-        activityOnCreateClass.type,
+        activityOnCreateMethod.classDef.type,
         "attachBaseContext",
         listOf(ImmutableMethodParameter("Landroid/content/Context;", null, null)),
         "V",
@@ -311,15 +318,15 @@ internal fun modifyActivityForSettingsInjection(
             """
                 invoke-static { p1 }, $BASE_ACTIVITY_HOOK_CLASS_DESCRIPTOR->getAttachBaseContext(Landroid/content/Context;)Landroid/content/Context;
                 move-result-object p1
-                invoke-super { p0, p1 }, ${activityOnCreateClass.superclass}->attachBaseContext(Landroid/content/Context;)V
+                invoke-super { p0, p1 }, ${activityOnCreateMethod.classDef.superclass}->attachBaseContext(Landroid/content/Context;)V
                 return-void
             """,
         )
-    }.let(activityOnCreateClass.methods::add)
+    }.let(activityOnCreateMethod.classDef.methods::add)
 
     // Override finish() to intercept back gesture.
     ImmutableMethod(
-        activityOnCreateClass.type,
+        activityOnCreateMethod.classDef.type,
         if (isYouTubeMusic) "finish" else "onBackPressed",
         emptyList(),
         "V",
@@ -342,7 +349,7 @@ internal fun modifyActivityForSettingsInjection(
                 return-void
             """,
         )
-    }.let(activityOnCreateClass.methods::add)
+    }.let(activityOnCreateMethod.classDef.methods::add)
 }
 
 /**
@@ -350,7 +357,7 @@ internal fun modifyActivityForSettingsInjection(
  */
 fun newIntent(settingsName: String) = IntentPreference.Intent(
     data = settingsName,
-    targetClass = "com.google.android.libraries.social.licenses.LicenseActivity",
+    targetClass = "com.google.android.gms.common.api.GoogleApiActivity",
 ) {
     // The package name change has to be reflected in the intent.
     setOrGetFallbackPackageName("com.google.android.youtube")

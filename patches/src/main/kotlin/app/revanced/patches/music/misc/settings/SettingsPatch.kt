@@ -1,6 +1,5 @@
 package app.revanced.patches.music.misc.settings
 
-import app.revanced.patcher.classDef
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patcher.patch.resourcePatch
 import app.revanced.patches.all.misc.packagename.setOrGetFallbackPackageName
@@ -11,6 +10,7 @@ import app.revanced.patches.music.misc.gms.Constants.MUSIC_PACKAGE_NAME
 import app.revanced.patches.music.playservice.is_8_40_or_greater
 import app.revanced.patches.music.playservice.versionCheckPatch
 import app.revanced.patches.shared.boldIconsFeatureFlagMethodMatch
+import app.revanced.patches.shared.googleApiActivityOnCreateMethod
 import app.revanced.patches.shared.misc.mapping.resourceMappingPatch
 import app.revanced.patches.shared.misc.settings.preference.*
 import app.revanced.patches.shared.misc.settings.settingsPatch
@@ -112,8 +112,7 @@ val settingsPatch = bytecodePatch(
         )
 
         modifyActivityForSettingsInjection(
-            googleApiActivityMethod.classDef,
-            googleApiActivityMethod,
+            googleApiActivityOnCreateMethod,
             MUSIC_ACTIVITY_HOOK_CLASS_DESCRIPTOR,
             true
         )

@@ -16,7 +16,7 @@ import app.revanced.extension.youtube.settings.preference.YouTubePreferenceFragm
 import app.revanced.extension.youtube.settings.search.YouTubeSearchViewController;
 
 /**
- * Hooks LicenseActivity to inject a custom {@link YouTubePreferenceFragment}
+ * Hooks {@link GoogleApiActivity} to inject a custom {@link YouTubePreferenceFragment}
  * with a toolbar and search functionality.
  */
 @SuppressWarnings("deprecation")
