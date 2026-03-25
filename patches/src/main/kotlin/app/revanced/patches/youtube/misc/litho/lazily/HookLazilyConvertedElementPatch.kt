@@ -18,7 +18,7 @@ internal const val EXTENSION_CLASS_DESCRIPTOR =
 
 private lateinit var lazilyConvertedElementLoadedMethod: MutableMethod
 
-internal val lazilyConvertedElementHookPatch = bytecodePatch(
+internal val hookLazilyConvertedElementPatch = bytecodePatch(
     description = "Hooks the LazilyConvertedElement tree node lists to the extension."
 ) {
     dependsOn(

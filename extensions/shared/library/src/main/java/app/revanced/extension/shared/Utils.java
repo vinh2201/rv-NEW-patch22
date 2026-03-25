@@ -58,6 +58,7 @@ import java.util.regex.Pattern;
 import app.revanced.extension.shared.settings.AppLanguage;
 import app.revanced.extension.shared.settings.BaseSettings;
 import app.revanced.extension.shared.settings.BooleanSetting;
+import app.revanced.extension.shared.settings.StringSetting;
 import app.revanced.extension.shared.settings.preference.ReVancedAboutPreference;
 import app.revanced.extension.shared.ui.Dim;
 
@@ -448,6 +449,18 @@ public class Utils {
         Logger.printDebug(() -> "Could not find parent view of depth: " + nthParent
                 + " and instead found at: " + currentDepthLog + " view: " + view);
         return null;
+    }
+
+    public static List<String> getFilterStrings(StringSetting setting) {
+        String[] filterArray = setting.get().split("\\n");
+        List<String> filters = new ArrayList<>(filterArray.length);
+
+        for (String line : filterArray) {
+            String trimmed = line.trim();
+            if (!trimmed.isEmpty()) filters.add(trimmed);
+        }
+
+        return filters;
     }
 
     public static void restartApp(Context context) {

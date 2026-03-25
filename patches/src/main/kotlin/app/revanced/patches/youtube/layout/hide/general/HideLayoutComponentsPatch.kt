@@ -16,11 +16,13 @@ import app.revanced.patches.youtube.layout.hide.shelves.hideHorizontalShelvesPat
 import app.revanced.patches.youtube.misc.engagement.engagementPanelHookPatch
 import app.revanced.patches.youtube.misc.litho.filter.lithoFilterPatch
 import app.revanced.patches.youtube.misc.litho.lazily.hookTreeNodeResult
-import app.revanced.patches.youtube.misc.litho.lazily.lazilyConvertedElementHookPatch
+import app.revanced.patches.youtube.misc.litho.lazily.hookLazilyConvertedElementPatch
 import app.revanced.patches.youtube.misc.navigation.navigationBarHookPatch
 import app.revanced.patches.youtube.misc.playservice.is_20_21_or_greater
 import app.revanced.patches.youtube.misc.playservice.is_21_11_or_greater
 import app.revanced.patches.youtube.misc.playservice.versionCheckPatch
+import app.revanced.patches.youtube.misc.protobuf.hookElement
+import app.revanced.patches.youtube.misc.protobuf.hookProtobufElementParserPatch
 import app.revanced.patches.youtube.misc.settings.PreferenceScreen
 import app.revanced.patches.youtube.misc.settings.settingsPatch
 import app.revanced.util.addInstructionsAtControlFlowLabel
@@ -89,7 +91,8 @@ val hideLayoutComponentsPatch = hideLayoutComponentsPatch(
         engagementPanelHookPatch,
         resourceMappingPatch,
         hideHorizontalShelvesPatch,
-        lazilyConvertedElementHookPatch
+        hookProtobufElementParserPatch,
+        hookLazilyConvertedElementPatch
     ),
     filterClasses = setOf(
         LAYOUT_COMPONENTS_FILTER_CLASS_DESCRIPTOR,
@@ -148,6 +151,18 @@ val hideLayoutComponentsPatch = hideLayoutComponentsPatch(
         PreferenceScreenPreference(
             "revanced_comments_screen",
             preferences = setOf(
+                PreferenceCategory(
+                    titleKey = null,
+                    sorting = Sorting.UNSORTED,
+                    tag = "app.revanced.extension.shared.settings.preference.NoTitlePreferenceCategory",
+                    preferences = setOf(
+                        SwitchPreference("revanced_hide_comments_carousel"),
+                        TextPreference(
+                            "revanced_hide_comments_carousel_filter_strings",
+                            inputType = InputType.TEXT_MULTI_LINE
+                        ),
+                    )
+                ),
                 SwitchPreference("revanced_hide_comments_ai_chat_summary"),
                 SwitchPreference("revanced_hide_comments_channel_guidelines"),
                 SwitchPreference("revanced_hide_comments_by_members_header"),
@@ -451,6 +466,12 @@ val hideLayoutComponentsPatch = hideLayoutComponentsPatch(
             )
         }
     }
+
+    // endregion
+
+    // region Hide comment page
+
+    hookElement("${COMMENTS_FILTER_CLASS_NAME}->onCommentsLoaded([B)[B")
 
     // endregion
 

@@ -3,7 +3,7 @@
 package app.revanced.patches.youtube.misc.litho.observer
 
 import app.revanced.patches.youtube.misc.litho.lazily.hookTreeNodeResult
-import app.revanced.patches.youtube.misc.litho.lazily.lazilyConvertedElementHookPatch
+import app.revanced.patches.youtube.misc.litho.lazily.hookLazilyConvertedElementPatch
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patches.youtube.misc.extension.sharedExtensionPatch
 
@@ -15,7 +15,7 @@ val layoutReloadObserverPatch = bytecodePatch(
 ) {
     dependsOn(
         sharedExtensionPatch,
-        lazilyConvertedElementHookPatch
+        hookLazilyConvertedElementPatch
     )
 
     apply {

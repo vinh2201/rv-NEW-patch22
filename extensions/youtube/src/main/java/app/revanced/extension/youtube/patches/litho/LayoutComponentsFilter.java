@@ -1,5 +1,6 @@
 package app.revanced.extension.youtube.patches.litho;
 
+import static app.revanced.extension.shared.Utils.getFilterStrings;
 import static app.revanced.extension.youtube.patches.VersionCheckPatch.IS_20_21_OR_GREATER;
 import static app.revanced.extension.youtube.shared.NavigationBar.NavigationButton;
 
@@ -44,25 +45,8 @@ public final class LayoutComponentsFilter extends Filter {
             "&list="
     );
 
-    private static final List<String> channelTabFilterStrings;
-    private static final List<String> flyoutMenuFilterStrings;
-
-    static {
-        channelTabFilterStrings = getFilterStrings(Settings.HIDE_CHANNEL_TAB_FILTER_STRINGS);
-        flyoutMenuFilterStrings = getFilterStrings(Settings.HIDE_FEED_FLYOUT_MENU_FILTER_STRINGS);
-    }
-
-    private static List<String> getFilterStrings(StringSetting setting) {
-        String[] filterArray = setting.get().split("\\n");
-        List<String> filters = new ArrayList<>(filterArray.length);
-
-        for (String line : filterArray) {
-            String trimmed = line.trim();
-            if (!trimmed.isEmpty()) filters.add(trimmed);
-        }
-
-        return filters;
-    }
+    private static final List<String> channelTabFilterStrings = getFilterStrings(Settings.HIDE_CHANNEL_TAB_FILTER_STRINGS);
+    private static final List<String> flyoutMenuFilterStrings = getFilterStrings(Settings.HIDE_FEED_FLYOUT_MENU_FILTER_STRINGS);
 
     private final StringTrieSearch exceptions = new StringTrieSearch();
     private final StringFilterGroup communityPosts;
