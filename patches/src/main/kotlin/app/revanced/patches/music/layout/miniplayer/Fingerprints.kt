@@ -28,8 +28,8 @@ internal val ClassDef.switchToggleColorMethodMatch by ClassDefComposing.composin
         ),
         after(Opcode.MOVE_RESULT_OBJECT()),
         after(Opcode.CHECK_CAST()),
-        after(allOf(Opcode.IGET(), field { type == "I" })),
-        after(Opcode.GOTO()),
+        afterAtMost(5, Opcode.GOTO()),
+        allOf(Opcode.IGET(), field { type == "I" }),
         after(Opcode.INVOKE_VIRTUAL())
     )
 }

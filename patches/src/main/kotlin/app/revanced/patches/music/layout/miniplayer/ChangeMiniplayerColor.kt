@@ -58,7 +58,7 @@ val changeMiniplayerColorPatch = bytecodePatch(
 
         miniPlayerConstructorMethodMatch.immutableClassDef.switchToggleColorMethodMatch.let {
             val colorMathPlayerInvokeVirtualReference = it.method.getInstruction(it[-1]).methodReference!!
-            val colorMathPlayerIGetReference = it.method.getInstruction(it[3]).fieldReference!!
+            val colorMathPlayerIGetReference = it.method.getInstruction(it[4]).fieldReference!!
 
             val colorGreyIndex =
                 miniPlayerConstructorMethodMatch.immutableMethod.indexOfFirstInstructionReversedOrThrow {
