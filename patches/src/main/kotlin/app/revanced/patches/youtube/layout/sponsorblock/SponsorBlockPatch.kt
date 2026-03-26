@@ -237,9 +237,8 @@ val sponsorBlockPatch = bytecodePatch(
 
         // Initialize the SponsorBlock view.
         getLayoutConstructorMethodMatch().immutableClassDef.controlsOverlayMethodMatch.let {
-            val checkCastIndex = it[-1]
-
             it.method.apply {
+                val checkCastIndex = it[-1]
                 val frameLayoutRegister =
                     getInstruction<OneRegisterInstruction>(checkCastIndex).registerA
                 addInstruction(

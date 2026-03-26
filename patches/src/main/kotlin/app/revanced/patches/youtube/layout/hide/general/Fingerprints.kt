@@ -4,7 +4,6 @@ import app.revanced.patcher.*
 import app.revanced.patcher.after
 import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patches.shared.misc.mapping.ResourceType
-import app.revanced.util.literal
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -137,73 +136,126 @@ internal val BytecodePatchContext.yoodlesImageViewMethod by gettingFirstMethodDe
     parameterTypes("L", "L")
     instructions(ResourceType.ID("youtube_logo"))
 }
+internal val BytecodePatchContext.albumCardsMethodMatch by composingFirstMethod {
+    accessFlags(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
+    instructions(
+        ResourceType.LAYOUT("album_card"),
+        afterAtMost(
+            5,
+            allOf(
+                Opcode.INVOKE_VIRTUAL(),
+                method { name == "inflate" && returnType == "Landroid/view/View;" }
+            )
+        ),
+        after(Opcode.MOVE_RESULT_OBJECT()),
+    )
+}
 
 internal val BytecodePatchContext.crowdfundingBoxMethodMatch by composingFirstMethod {
     accessFlags(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
-    opcodes(
-        Opcode.INVOKE_VIRTUAL,
-        Opcode.MOVE_RESULT_OBJECT,
-        Opcode.IPUT_OBJECT,
+    instructions(
+        ResourceType.LAYOUT("donation_companion"),
+        allOf(
+            Opcode.INVOKE_VIRTUAL(),
+            method { name == "inflate" && returnType == "Landroid/view/View;" }
+        ),
+        after(Opcode.MOVE_RESULT_OBJECT()),
     )
-    literal { crowdfundingBoxId }
 }
-
-internal val BytecodePatchContext.albumCardsMethodMatch by composingFirstMethod {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
-    opcodes(
-        Opcode.MOVE_RESULT_OBJECT,
-        Opcode.CONST,
-        Opcode.CONST_4,
-        Opcode.INVOKE_VIRTUAL,
-        Opcode.MOVE_RESULT_OBJECT,
-        Opcode.CHECK_CAST,
-    )
-    literal { albumCardId }
-}
-
 internal val BytecodePatchContext.filterBarHeightMethodMatch by composingFirstMethod {
     accessFlags(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
-    opcodes(
-        Opcode.CONST,
-        Opcode.INVOKE_VIRTUAL,
-        Opcode.MOVE_RESULT,
-        Opcode.IPUT,
+    instructions(
+        ResourceType.DIMEN("filter_bar_height"),
+        allOf(
+            Opcode.INVOKE_VIRTUAL(),
+            method { name == "getDimensionPixelSize" && returnType == "I" }
+        ),
+        after(Opcode.MOVE_RESULT()),
     )
-    literal { filterBarHeightId }
 }
 
-internal val BytecodePatchContext.relatedChipCloudMethodMatch by composingFirstMethod {
+/**
+ * 20.10+
+ */
+internal fun BytecodePatchContext.getRelatedChipCloudMethodMatch() = firstMethodComposite {
     accessFlags(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
-    opcodes(
-        Opcode.CONST,
-        Opcode.INVOKE_VIRTUAL,
-        Opcode.MOVE_RESULT_OBJECT,
+    instructions(
+        ResourceType.ID("related_chip_cloud"),
+        allOf(Opcode.INVOKE_VIRTUAL(), method { name == "findViewById" }),
+        45682279L(),
+        allOf(
+            Opcode.INVOKE_VIRTUAL(),
+            method { name == "getDimensionPixelSize" && returnType == "I" }
+        ),
+        after(Opcode.MOVE_RESULT()),
     )
-    literal { relatedChipCloudMarginId }
 }
+
+/**
+ * ~ 20.09
+ */
+internal val BytecodePatchContext.relatedChipCloudLegacyMethodMatch by composingFirstMethod {
+    accessFlags(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
+    instructions(
+        ResourceType.ID("related_chip_cloud"),
+        allOf(Opcode.INVOKE_VIRTUAL(), method { name == "findViewById" }),
+    )
+}
+
 
 internal val BytecodePatchContext.searchResultsChipBarMethodMatch by composingFirstMethod {
     accessFlags(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
-    opcodes(
-        Opcode.CONST,
-        Opcode.INVOKE_VIRTUAL,
-        Opcode.MOVE_RESULT,
-        Opcode.INVOKE_VIRTUAL,
-        Opcode.MOVE_RESULT_OBJECT,
+    instructions(
+        ResourceType.DIMEN("bar_container_height"),
+        allOf(
+            Opcode.INVOKE_VIRTUAL(),
+            method { name == "getDimensionPixelSize" && returnType == "I" }),
+        after(Opcode.MOVE_RESULT()),
     )
-    literal { barContainerHeightId }
 }
 
-internal val BytecodePatchContext.showFloatingMicrophoneButtonMethodMatch by composingFirstMethod {
+/**
+ * 21.11+
+ *
+ * Matches using the method found in [showFloatingMicrophoneButtonParentMethod].
+ */
+internal val ClassDef.showFloatingMicrophoneButtonMethodMatch by ClassDefComposing.composingFirstMethod {
+    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+    returnType("V")
+    parameterTypes(
+        "Landroid/view/View;",
+        "Lcom/google/android/libraries/quantum/fab/FloatingActionButton;",
+        "Landroid/view/ViewStub;"
+    )
+    instructions(Opcode.IGET_BOOLEAN())
+}
+
+/**
+ * 21.11+
+ */
+internal val BytecodePatchContext.showFloatingMicrophoneButtonParentMethod by gettingFirstImmutableMethodDeclaratively(
+    "Current FAB View Wrapper does not support this operation. Text: ",
+) {
+    accessFlags(AccessFlags.PRIVATE, AccessFlags.FINAL)
+    returnType("V")
+    parameterTypes("Z")
+    custom { $$"Landroid/view/View$OnClickListener;" !in immutableClassDef.interfaces }
+}
+
+/**
+ * ~ 21.10
+ */
+internal val BytecodePatchContext.showFloatingMicrophoneButtonLegacyMethod by composingFirstMethod {
     accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
     returnType("V")
     parameterTypes()
     instructions(
         ResourceType.ID("fab"),
-        afterAtMost(10, allOf(Opcode.CHECK_CAST(), type { endsWith("/FloatingActionButton;") })),
-        afterAtMost(10, Opcode.IGET_BOOLEAN()),
+        afterAtMost(10, allOf(Opcode.CHECK_CAST(), type("/FloatingActionButton;"))),
+        afterAtMost(15, Opcode.IGET_BOOLEAN()),
     )
 }
+
 
 internal val BytecodePatchContext.hideViewCountMethodMatch by composingFirstMethod(
     "Has attachmentRuns but drawableRequester is missing.",

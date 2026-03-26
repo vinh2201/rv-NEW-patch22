@@ -3,6 +3,8 @@ package app.revanced.patches.youtube.misc.playercontrols
 import app.revanced.patcher.*
 import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patches.shared.misc.mapping.ResourceType
+import app.revanced.patches.youtube.layout.player.overlay.createPlayerOverviewMethodMatch
+import app.revanced.patches.youtube.layout.sponsorblock.controlsOverlayMethodMatch
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -71,6 +73,22 @@ internal val BytecodePatchContext.playerBottomControlsInflateMethodMatch by comp
     )
 }
 
+/**
+ * Matches same method as [controlsOverlayMethodMatch] and [createPlayerOverviewMethodMatch].
+ */
+internal val BytecodePatchContext.playerBottomGradientScrimMethodMatch by composingFirstMethod {
+    returnType("V")
+    parameterTypes()
+    instructions(
+        ResourceType.ID("bottom_gradient_scrim_overlay"),
+        afterAtMost(10, allOf(Opcode.CHECK_CAST(), type("Landroid/widget/ImageView;"))),
+        Opcode.NEW_INSTANCE(),
+        Opcode.IPUT_OBJECT(),
+        after(Opcode.IPUT_OBJECT()),
+        after(Opcode.IPUT_OBJECT()),
+    )
+}
+
 internal val BytecodePatchContext.overlayViewInflateMethodMatch by composingFirstMethod {
     accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
     returnType("V")
@@ -125,11 +143,4 @@ internal val BytecodePatchContext.playerControlsButtonStrokeFeatureFlagMethod by
     returnType("Z")
     parameterTypes()
     instructions(45713296L())
-}
-
-internal val BytecodePatchContext.playerOverlayOpacityGradientFeatureFlagMethod by gettingFirstMethodDeclaratively {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    returnType("Z")
-    parameterTypes()
-    instructions(45729621L())
 }

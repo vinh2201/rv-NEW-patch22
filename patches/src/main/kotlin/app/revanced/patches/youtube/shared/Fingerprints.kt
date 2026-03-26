@@ -153,6 +153,20 @@ internal val BytecodePatchContext.subtitleButtonControllerMethod by gettingFirst
     )
 }
 
+internal val BytecodePatchContext.playbackSpeedOnItemClickParentMethodMatch by composingFirstMethod {
+    accessFlags(AccessFlags.PUBLIC, AccessFlags.STATIC)
+    returnType("L")
+    parameterTypes("L", "Ljava/lang/String;")
+    instructions(
+         method { name == "getSupportFragmentManager" },
+        after(Opcode.MOVE_RESULT_OBJECT()),
+        after(method { returnType == "L" && parameterTypes == listOf("Ljava/lang/String;") }),
+        after(Opcode.MOVE_RESULT_OBJECT()),
+        after(Opcode.IF_EQZ()),
+        after(Opcode.CHECK_CAST()),
+    )
+    custom { immutableClassDef.methods.count() == 8 }
+}
 internal val BytecodePatchContext.videoQualityChangedMethodMatch by composingFirstMethod {
     accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
     returnType("L")

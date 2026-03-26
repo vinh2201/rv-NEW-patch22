@@ -14,6 +14,7 @@ import app.revanced.patches.youtube.misc.playservice.*
 import app.revanced.util.*
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import org.w3c.dom.Node
 
 /**
@@ -56,10 +57,11 @@ internal val playerControlsResourcePatch = resourcePatch {
         ).item(0)
 
         val bottomTargetDocumentChildNodes = bottomTargetDocument.childNodes
-        var bottomInsertBeforeNode: Node = bottomTargetDocumentChildNodes.findElementByAttributeValueOrThrow(
-            "android:inflatedId",
-            bottomLastLeftOf,
-        )
+        var bottomInsertBeforeNode: Node =
+            bottomTargetDocumentChildNodes.findElementByAttributeValueOrThrow(
+                "android:inflatedId",
+                bottomLastLeftOf,
+            )
 
         // Modify the fullscreen button stub attributes for correct positioning.
         // The fullscreen button is lower than the ReVanced buttons (unpatched app bug).
@@ -95,7 +97,8 @@ internal val playerControlsResourcePatch = resourcePatch {
                 // If other top buttons are added by other patches, this code must be changed.
                 // voting button id from the voting button view from the youtube_controls_layout.xml host file
                 val votingButtonId = "@+id/revanced_sb_voting_button"
-                element.attributes.getNamedItem("android:layout_toStartOf").nodeValue = votingButtonId
+                element.attributes.getNamedItem("android:layout_toStartOf").nodeValue =
+                    votingButtonId
             }
         }
 
@@ -117,7 +120,8 @@ internal val playerControlsResourcePatch = resourcePatch {
                 // If the element has no attributes there's no point adding it to the destination.
                 if (!element.hasAttributes()) continue
 
-                element.attributes.getNamedItem("yt:layout_constraintRight_toLeftOf").nodeValue = bottomLastLeftOf
+                element.attributes.getNamedItem("yt:layout_constraintRight_toLeftOf").nodeValue =
+                    bottomLastLeftOf
                 bottomLastLeftOf = element.attributes.getNamedItem("android:id").nodeValue
 
                 bottomTargetDocument.adoptNode(element)
@@ -237,7 +241,8 @@ val playerControlsPatch = bytecodePatch(
             inflateBottomControlMethod = this
 
             val inflateReturnObjectIndex = playerBottomControlsInflateMethodMatch[-1]
-            inflateBottomControlRegister = getInstruction<OneRegisterInstruction>(inflateReturnObjectIndex).registerA
+            inflateBottomControlRegister =
+                getInstruction<OneRegisterInstruction>(inflateReturnObjectIndex).registerA
             inflateBottomControlInsertIndex = inflateReturnObjectIndex + 1
         }
 
@@ -245,7 +250,8 @@ val playerControlsPatch = bytecodePatch(
             inflateTopControlMethod = this
 
             val inflateReturnObjectIndex = playerTopControlsInflateMethodMatch[-1]
-            inflateTopControlRegister = getInstruction<OneRegisterInstruction>(inflateReturnObjectIndex).registerA
+            inflateTopControlRegister =
+                getInstruction<OneRegisterInstruction>(inflateReturnObjectIndex).registerA
             inflateTopControlInsertIndex = inflateReturnObjectIndex + 1
         }
 
@@ -261,7 +267,7 @@ val playerControlsPatch = bytecodePatch(
             addInstruction(
                 index + 1,
                 "invoke-static { v$register }, " +
-                    "$EXTENSION_CLASS_DESCRIPTOR->setFullscreenCloseButton(Landroid/view/View;)V",
+                        "$EXTENSION_CLASS_DESCRIPTOR->setFullscreenCloseButton(Landroid/view/View;)V",
             )
         }
 
@@ -305,13 +311,37 @@ val playerControlsPatch = bytecodePatch(
 
             if (is_20_30_or_greater) {
                 playerControlsButtonStrokeFeatureFlagMethod.returnLate(false)
-            }
-        }
 
-        if (is_21_03_or_greater) {
-            // If enabled it can show a black gradient on lower part of screen in fullscreen mode.
-            // This override may not be needed if the new bold player overlay icons are in use.
-            playerOverlayOpacityGradientFeatureFlagMethod.returnLate(false)
+
+                if (is_20_40_or_greater) {
+                    // Clear bottom gradient.
+                    // This may not be needed if the new bold player overlay icons are in use.
+                    playerBottomGradientScrimMethodMatch.let {
+                        it.method.apply {
+                            val gradientFieldIndex = it[-1]
+                            val gradientFieldRegister =
+                                getInstruction<TwoRegisterInstruction>(gradientFieldIndex).registerA
+
+                            val gradientViewIndex = it[1]
+                            val gradientViewRegister =
+                                getInstruction<OneRegisterInstruction>(gradientViewIndex).registerA
+
+                            // This field is nullable, and if null, the bottom gradient is not set.
+                            addInstruction(
+                                gradientFieldIndex,
+                                "const/4 v$gradientFieldRegister, 0x0"
+                            )
+
+                            // Make the bottom gradient transparent and hide it.
+                            addInstruction(
+                                gradientViewIndex + 1,
+                                "invoke-static { v$gradientViewRegister }, " +
+                                        "${EXTENSION_CLASS_DESCRIPTOR}->hideBottomGradientScrim(Landroid/widget/ImageView;)V"
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }

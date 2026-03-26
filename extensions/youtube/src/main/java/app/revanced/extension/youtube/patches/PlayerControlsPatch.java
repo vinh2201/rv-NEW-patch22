@@ -2,10 +2,12 @@ package app.revanced.extension.youtube.patches;
 
 import android.view.View;
 import android.view.ViewTreeObserver;
+import android.widget.ImageView;
 
 import java.lang.ref.WeakReference;
 
 import app.revanced.extension.shared.Logger;
+import app.revanced.extension.shared.Utils;
 
 @SuppressWarnings("unused")
 public class PlayerControlsPatch {
@@ -14,6 +16,18 @@ public class PlayerControlsPatch {
 
     private static boolean fullscreenButtonVisibilityCallbacksExist() {
         return false; // Modified during patching if needed.
+    }
+
+    /**
+     * Injection point.
+     */
+    public static void hideBottomGradientScrim(ImageView bottomGradientScrim) {
+        if (bottomGradientScrim != null) {
+            Utils.runOnMainThread(() -> {
+                bottomGradientScrim.setImageAlpha(0);
+                bottomGradientScrim.setVisibility(View.GONE);
+            });
+        }
     }
 
     /**

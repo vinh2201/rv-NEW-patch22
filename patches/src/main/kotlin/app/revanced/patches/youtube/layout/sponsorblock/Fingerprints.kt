@@ -3,6 +3,8 @@ package app.revanced.patches.youtube.layout.sponsorblock
 import app.revanced.patcher.*
 import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patches.shared.misc.mapping.ResourceType
+import app.revanced.patches.youtube.layout.player.overlay.createPlayerOverviewMethodMatch
+import app.revanced.patches.youtube.misc.playercontrols.playerBottomGradientScrimMethodMatch
 import app.revanced.patches.youtube.shared.seekbarMethod
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -11,7 +13,11 @@ import com.android.tools.smali.dexlib2.iface.ClassDef
 internal val BytecodePatchContext.appendTimeMethodMatch by composingFirstMethod {
     accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
     returnType("V")
-    parameterTypes("Ljava/lang/CharSequence;", "Ljava/lang/CharSequence;", "Ljava/lang/CharSequence;")
+    parameterTypes(
+        "Ljava/lang/CharSequence;",
+        "Ljava/lang/CharSequence;",
+        "Ljava/lang/CharSequence;"
+    )
     instructions(
         ResourceType.STRING("total_time"),
         method { toString() == "Landroid/content/res/Resources;->getString(I[Ljava/lang/Object;)Ljava/lang/String;" },
@@ -19,6 +25,9 @@ internal val BytecodePatchContext.appendTimeMethodMatch by composingFirstMethod 
     )
 }
 
+/**
+ * Matches same method as [createPlayerOverviewMethodMatch] and [playerBottomGradientScrimMethodMatch].
+ */
 internal val ClassDef.controlsOverlayMethodMatch by ClassDefComposing.composingFirstMethod {
     returnType("V")
     parameterTypes()
@@ -44,7 +53,7 @@ internal val BytecodePatchContext.adProgressTextViewVisibilityMethodMatch by com
     instructions(
         method {
             name == "setVisibility" && definingClass ==
-                "Lcom/google/android/libraries/youtube/ads/player/ui/AdProgressTextView;"
+                    "Lcom/google/android/libraries/youtube/ads/player/ui/AdProgressTextView;"
         },
     )
 }

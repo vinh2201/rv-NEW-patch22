@@ -1,14 +1,11 @@
 package app.revanced.patches.youtube.layout.hide.general
 
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod.Companion.toMutable
-import app.revanced.patcher.CompositeMatch
 import app.revanced.patcher.classDef
 import app.revanced.patcher.extensions.*
 import app.revanced.patcher.immutableClassDef
-import app.revanced.patcher.patch.resourcePatch
 import app.revanced.patches.all.misc.resources.addResources
 import app.revanced.patches.shared.layout.hide.general.hideLayoutComponentsPatch
-import app.revanced.patches.shared.misc.mapping.ResourceType
 import app.revanced.patches.shared.misc.mapping.resourceMappingPatch
 import app.revanced.patches.shared.misc.settings.preference.*
 import app.revanced.patches.shared.misc.settings.preference.PreferenceScreenPreference.Sorting
@@ -18,6 +15,7 @@ import app.revanced.patches.youtube.misc.litho.filter.lithoFilterPatch
 import app.revanced.patches.youtube.misc.litho.lazily.hookTreeNodeResult
 import app.revanced.patches.youtube.misc.litho.lazily.hookLazilyConvertedElementPatch
 import app.revanced.patches.youtube.misc.navigation.navigationBarHookPatch
+import app.revanced.patches.youtube.misc.playservice.is_20_10_or_greater
 import app.revanced.patches.youtube.misc.playservice.is_20_21_or_greater
 import app.revanced.patches.youtube.misc.playservice.is_21_11_or_greater
 import app.revanced.patches.youtube.misc.playservice.versionCheckPatch
@@ -30,10 +28,11 @@ import app.revanced.util.findFreeRegister
 import app.revanced.util.findInstructionIndicesReversedOrThrow
 import app.revanced.util.getReference
 import app.revanced.util.indexOfFirstInstructionReversedOrThrow
+import app.revanced.util.injectHideViewCall
+import app.revanced.util.insertLiteralOverride
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
-import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
@@ -41,33 +40,6 @@ import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
-
-internal var albumCardId = -1L
-    private set
-internal var crowdfundingBoxId = -1L
-    private set
-internal var filterBarHeightId = -1L
-    private set
-internal var relatedChipCloudMarginId = -1L
-    private set
-internal var barContainerHeightId = -1L
-    private set
-
-private val hideLayoutComponentsResourcePatch = resourcePatch {
-    dependsOn(resourceMappingPatch)
-
-    apply {
-        albumCardId = ResourceType.LAYOUT["album_card"]
-
-        crowdfundingBoxId = ResourceType.LAYOUT["donation_companion"]
-
-        relatedChipCloudMarginId = ResourceType.LAYOUT["related_chip_cloud_reduced_margins"]
-
-        filterBarHeightId = ResourceType.DIMEN["filter_bar_height"]
-
-        barContainerHeightId = ResourceType.DIMEN["bar_container_height"]
-    }
-}
 
 private const val LAYOUT_COMPONENTS_FILTER_CLASS_DESCRIPTOR =
     "Lapp/revanced/extension/youtube/patches/litho/LayoutComponentsFilter;"
@@ -85,7 +57,6 @@ val hideLayoutComponentsPatch = hideLayoutComponentsPatch(
     settingsPatch = settingsPatch,
     generalSettingsScreen = PreferenceScreen.GENERAL,
     additionalDependencies = setOf(
-        hideLayoutComponentsResourcePatch,
         navigationBarHookPatch,
         versionCheckPatch,
         engagementPanelHookPatch,
@@ -264,6 +235,7 @@ val hideLayoutComponentsPatch = hideLayoutComponentsPatch(
                 ),
             )
         ),
+        SwitchPreference("revanced_hide_floating_microphone_button"),
         SwitchPreference(
             key = "revanced_hide_horizontal_shelves",
             tag = "app.revanced.extension.shared.settings.preference.BulletPointSwitchPreference",
@@ -288,12 +260,6 @@ val hideLayoutComponentsPatch = hideLayoutComponentsPatch(
     if (is_20_21_or_greater) {
         PreferenceScreen.FEED.addPreferences(
             SwitchPreference("revanced_hide_you_may_like_section")
-        )
-    }
-
-    if (!is_21_11_or_greater) {
-        PreferenceScreen.FEED.addPreferences(
-            SwitchPreference("revanced_hide_floating_microphone_button")
         )
     }
 
@@ -399,25 +365,18 @@ val hideLayoutComponentsPatch = hideLayoutComponentsPatch(
     // region Hide Subscribed channels bar
 
     // Tablet
-    val methodMatch = if (is_20_21_or_greater)
+    val constructorMatch = if (is_20_21_or_greater)
         hideSubscribedChannelsBarConstructorMethodMatch
     else hideSubscribedChannelsBarConstructorLegacyMethodMatch
 
-    methodMatch.let {
-        it.method.apply {
-            val index = it[1]
-            val register = getInstruction<OneRegisterInstruction>(index).registerA
-
-            addInstruction(
-                index + 1,
-                "invoke-static { v$register }, $LAYOUT_COMPONENTS_FILTER_CLASS_DESCRIPTOR" +
-                        "->hideSubscribedChannelsBar(Landroid/view/View;)V",
-            )
-        }
-    }
+    constructorMatch.method.injectHideViewCall(
+        constructorMatch[1],
+        LAYOUT_COMPONENTS_FILTER_CLASS_DESCRIPTOR,
+        "hideSubscribedChannelsBar"
+    )
 
     // Phone (landscape mode)
-    methodMatch.immutableClassDef.hideSubscribedChannelsBarLandscapeMethodMatch.let {
+    constructorMatch.immutableClassDef.hideSubscribedChannelsBarLandscapeMethodMatch.let {
         it.method.apply {
             val index = it[-1]
             val register = getInstruction<OneRegisterInstruction>(index).registerA
@@ -434,38 +393,13 @@ val hideLayoutComponentsPatch = hideLayoutComponentsPatch(
 
     // endregion
 
-    // region Hide Crowdfunding box
-
-    crowdfundingBoxMethodMatch.let {
-        it.method.apply {
-            val insertIndex = it[-1]
-            val objectRegister = getInstruction<TwoRegisterInstruction>(insertIndex).registerA
-
-            addInstruction(
-                insertIndex,
-                "invoke-static {v$objectRegister}, $LAYOUT_COMPONENTS_FILTER_CLASS_DESCRIPTOR" +
-                        "->hideCrowdfundingBox(Landroid/view/View;)V",
-            )
-        }
-    }
-
-    // endregion
-
     // region Hide Album cards
 
-    albumCardsMethodMatch.let {
-        it.method.apply {
-            val checkCastAnchorIndex = it[-1]
-            val insertIndex = checkCastAnchorIndex + 1
-            val register = getInstruction<OneRegisterInstruction>(checkCastAnchorIndex).registerA
-
-            addInstruction(
-                insertIndex,
-                "invoke-static { v$register }, $LAYOUT_COMPONENTS_FILTER_CLASS_DESCRIPTOR" +
-                        "->hideAlbumCard(Landroid/view/View;)V",
-            )
-        }
-    }
+    albumCardsMethodMatch.method.injectHideViewCall(
+        albumCardsMethodMatch[-1],
+        LAYOUT_COMPONENTS_FILTER_CLASS_DESCRIPTOR,
+        "hideAlbumCard"
+    )
 
     // endregion
 
@@ -475,24 +409,34 @@ val hideLayoutComponentsPatch = hideLayoutComponentsPatch(
 
     // endregion
 
+    // region Hide crowdfunding box
+
+    crowdfundingBoxMethodMatch.method.injectHideViewCall(
+        crowdfundingBoxMethodMatch[-1],
+        LAYOUT_COMPONENTS_FILTER_CLASS_DESCRIPTOR,
+        "hideCrowdfundingBox"
+    )
+
+    // endregion
+
     // region Hide Floating microphone
 
-    if (!is_21_11_or_greater) {
-        // Code has moved in 21.11+, but it's not clear when/ where this
-        // floating microphone can show or if this patch is still relevant.
-        showFloatingMicrophoneButtonMethodMatch.let {
-            it.method.apply {
-                val index = it[-1]
-                val register = getInstruction<TwoRegisterInstruction>(index).registerA
+    val floatingMicrophoneButtonMethodMatch = if (is_21_11_or_greater)
+        showFloatingMicrophoneButtonParentMethod.immutableClassDef.showFloatingMicrophoneButtonMethodMatch
+    else showFloatingMicrophoneButtonLegacyMethod
 
-                addInstructions(
-                    index + 1,
-                    """
-                        invoke-static { v$register }, $LAYOUT_COMPONENTS_FILTER_CLASS_DESCRIPTOR->hideFloatingMicrophoneButton(Z)Z
-                        move-result v$register
-                    """,
-                )
-            }
+    floatingMicrophoneButtonMethodMatch.let {
+        it.method.apply {
+            val index = it[-1]
+            val register = getInstruction<TwoRegisterInstruction>(index).registerA
+
+            addInstructions(
+                index + 1,
+                """
+                    invoke-static { v$register }, $LAYOUT_COMPONENTS_FILTER_CLASS_DESCRIPTOR->hideFloatingMicrophoneButton(Z)Z
+                    move-result v$register
+                """,
+            )
         }
     }
 
@@ -504,16 +448,11 @@ val hideLayoutComponentsPatch = hideLayoutComponentsPatch(
         latestVideosContentPillMethodMatch,
         latestVideosBarMethodMatch,
     ).forEach { match ->
-        match.method.apply {
-            val moveIndex = match[-1]
-            val viewRegister = getInstruction<OneRegisterInstruction>(moveIndex).registerA
-
-            addInstruction(
-                moveIndex + 1,
-                "invoke-static { v$viewRegister }, $LAYOUT_COMPONENTS_FILTER_CLASS_DESCRIPTOR" +
-                        "->hideLatestVideosButton(Landroid/view/View;)V"
-            )
-        }
+        match.method.injectHideViewCall(
+            match[-1],
+            LAYOUT_COMPONENTS_FILTER_CLASS_DESCRIPTOR,
+            "hideLatestVideosButton"
+        )
     }
 
     // endregion
@@ -571,43 +510,55 @@ val hideLayoutComponentsPatch = hideLayoutComponentsPatch(
 
     // region Hide filter bar
 
-    /**
-     * Patch a [Method] with a given [instructions].
-     *
-     * @param RegisterInstruction The type of instruction to get the register from.
-     * @param insertIndexOffset The offset to add to the end index of the [CompositeMatch.indices].
-     * @param hookRegisterOffset The offset to add to the register of the hook.
-     * @param instructions The instructions to add with the register as a parameter.
-     */
-    fun <RegisterInstruction : OneRegisterInstruction> CompositeMatch.patch(
-        insertIndexOffset: Int = 0,
-        hookRegisterOffset: Int = 0,
-        instructions: (Int) -> String,
-    ) = method.apply {
-        val endIndex = get(-1)
-        val insertIndex = endIndex + insertIndexOffset
-        val register = getInstruction<RegisterInstruction>(endIndex + hookRegisterOffset).registerA
+    val filterBarMatches = mutableMapOf(
+        filterBarHeightMethodMatch to "hideInFeed",
+        searchResultsChipBarMethodMatch to "hideInSearch",
+    )
+    if (is_20_10_or_greater)
+        filterBarMatches += getRelatedChipCloudMethodMatch() to "hideInRelatedVideos"
 
-        addInstructions(insertIndex, instructions(register))
+    filterBarMatches.forEach { (match, methodName) ->
+        match.method.apply {
+            val moveIndex = match[-1]
+            val sizeRegister = getInstruction<OneRegisterInstruction>(moveIndex).registerA
+
+            addInstructions(
+                moveIndex + 1,
+                """
+                    invoke-static { v$sizeRegister }, $LAYOUT_COMPONENTS_FILTER_CLASS_DESCRIPTOR->$methodName(I)I
+                    move-result v$sizeRegister
+                """
+            )
+        }
     }
 
-    filterBarHeightMethodMatch.patch<TwoRegisterInstruction> { register ->
-        """
-            invoke-static { v$register }, $LAYOUT_COMPONENTS_FILTER_CLASS_DESCRIPTOR->hideInFeed(I)I
-            move-result v$register
-        """
+    if (is_20_10_or_greater) {
+        getRelatedChipCloudMethodMatch().let {
+            it.method.apply {
+                insertLiteralOverride(
+                    it[2],
+                    "$LAYOUT_COMPONENTS_FILTER_CLASS_DESCRIPTOR->hideInRelatedVideos(Z)Z"
+                )
+            }
+        }
     }
 
-    searchResultsChipBarMethodMatch.patch<OneRegisterInstruction>(-1, -2) { register ->
-        """
-            invoke-static { v$register }, $LAYOUT_COMPONENTS_FILTER_CLASS_DESCRIPTOR->hideInSearch(I)I
-            move-result v$register
-        """
-    }
+    val relatedChipCloudMethodMatch = if (is_20_10_or_greater)
+        getRelatedChipCloudMethodMatch()
+    else relatedChipCloudLegacyMethodMatch
 
-    relatedChipCloudMethodMatch.patch<OneRegisterInstruction>(1) { register ->
-        "invoke-static { v$register }, " +
-                "$LAYOUT_COMPONENTS_FILTER_CLASS_DESCRIPTOR->hideInRelatedVideos(Landroid/view/View;)V"
+    relatedChipCloudMethodMatch.let {
+        it.method.apply {
+            val viewIndex = it[1]
+            val viewRegister = getInstruction<FiveRegisterInstruction>(viewIndex).registerC
+
+            injectHideViewCall(
+                viewIndex,
+                viewRegister,
+                LAYOUT_COMPONENTS_FILTER_CLASS_DESCRIPTOR,
+                "hideInRelatedVideos"
+            )
+        }
     }
 
     // endregion

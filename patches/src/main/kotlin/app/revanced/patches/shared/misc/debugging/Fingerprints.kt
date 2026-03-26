@@ -16,7 +16,7 @@ internal val BytecodePatchContext.experimentalFeatureFlagUtilMethod by gettingFi
 ) {
     returnType("L")
     custom {
-        // 'public static' or 'public static final'
+        // 'public static' or 'public static final'.
         AccessFlags.STATIC.isSet(accessFlags)
                 && AccessFlags.PUBLIC.isSet(accessFlags)
                 // "L", "J", "[B" or "L", "J"
@@ -28,7 +28,7 @@ internal val ClassDef.experimentalBooleanFeatureFlagMethodMatch by ClassDefCompo
     returnType("Z")
     parameterTypes("L", "J", "Z")
     custom {
-        // 'public static' or 'public static final'
+        // 'public static' or 'public static final'.
         AccessFlags.STATIC.isSet(accessFlags) && AccessFlags.PUBLIC.isSet(accessFlags)
     }
 }

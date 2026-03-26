@@ -3,6 +3,7 @@ package app.revanced.patches.youtube.video.information
 import app.revanced.patcher.*
 import app.revanced.patcher.extensions.instructions
 import app.revanced.patcher.patch.BytecodePatchContext
+import app.revanced.patches.youtube.shared.playbackSpeedOnItemClickParentMethodMatch
 import app.revanced.patches.youtube.shared.videoQualityChangedMethodMatch
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -13,28 +14,12 @@ internal val BytecodePatchContext.createVideoPlayerSeekbarMethod by gettingFirst
     instructions("timed_markers_width"())
 }
 
-
-internal val BytecodePatchContext.onPlaybackSpeedItemClickParentMethod by gettingFirstImmutableMethodDeclaratively {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.STATIC)
-    returnType("L")
-    parameterTypes("L", "Ljava/lang/String;")
-    instructions(
-        method("getSupportFragmentManager"),
-        after(Opcode.MOVE_RESULT_OBJECT()),
-        after(method { returnType.startsWith("L") && parameterTypes.size == 1 && parameterTypes.first() == "Ljava/lang/String;" }),
-        after(Opcode.MOVE_RESULT_OBJECT()),
-        after(Opcode.IF_EQZ()),
-        after(Opcode.CHECK_CAST())
-    )
-    custom { immutableClassDef.methods.count() == 8 }
-}
-
 /**
- * Resolves using the method found in [onPlaybackSpeedItemClickParentMethod].
+ * Resolves using the method found in [playbackSpeedOnItemClickParentMethodMatch].
  */
 
 context(_: BytecodePatchContext)
-internal fun ClassDef.getOnPlaybackSpeedItemClickMethod() = firstMethodDeclaratively {
+internal fun ClassDef.getPlaybackSpeedOnItemClickMethod() = firstMethodDeclaratively {
     name("onItemClick")
     accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
     returnType("V")

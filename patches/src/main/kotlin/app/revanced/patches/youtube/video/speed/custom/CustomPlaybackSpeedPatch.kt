@@ -1,12 +1,15 @@
 package app.revanced.patches.youtube.video.speed.custom
 
+import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableField
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableField.Companion.toMutable
+import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod.Companion.toMutable
 import app.revanced.patcher.classDef
 import app.revanced.patcher.extensions.addInstruction
 import app.revanced.patcher.extensions.addInstructions
 import app.revanced.patcher.extensions.addInstructionsWithLabels
 import app.revanced.patcher.extensions.getInstruction
 import app.revanced.patcher.extensions.instructions
+import app.revanced.patcher.extensions.methodReference
 import app.revanced.patcher.extensions.replaceInstruction
 import app.revanced.patcher.immutableClassDef
 import app.revanced.patcher.patch.bytecodePatch
@@ -22,17 +25,24 @@ import app.revanced.patches.youtube.misc.litho.filter.lithoFilterPatch
 import app.revanced.patches.youtube.misc.playservice.is_19_47_or_greater
 import app.revanced.patches.youtube.misc.playservice.is_20_34_or_greater
 import app.revanced.patches.youtube.misc.playservice.is_21_02_or_greater
+import app.revanced.patches.youtube.misc.playservice.is_21_12_or_greater
 import app.revanced.patches.youtube.misc.playservice.versionCheckPatch
 import app.revanced.patches.youtube.misc.recyclerviewtree.hook.addRecyclerViewTreeHook
 import app.revanced.patches.youtube.misc.recyclerviewtree.hook.recyclerViewTreeHookPatch
 import app.revanced.patches.youtube.misc.settings.settingsPatch
+import app.revanced.patches.youtube.shared.playbackSpeedOnItemClickParentMethodMatch
 import app.revanced.patches.youtube.video.speed.settingsMenuVideoSpeedGroup
+import app.revanced.util.addInstructionsAtControlFlowLabel
 import app.revanced.util.indexOfFirstLiteralInstructionOrThrow
 import app.revanced.util.insertLiteralOverride
 import app.revanced.util.returnEarly
 import com.android.tools.smali.dexlib2.AccessFlags
+import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableField
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 
 private const val FILTER_CLASS_DESCRIPTOR =
     "Lapp/revanced/extension/youtube/patches/litho/PlaybackSpeedMenuFilter;"
@@ -144,8 +154,8 @@ internal val customPlaybackSpeedPatch = bytecodePatch(
 
         // Get the "showOldPlaybackSpeedMenu" method.
         // This is later called on the field INSTANCE.
-        val showOldPlaybackSpeedMenuMethod =
-            getOldPlaybackSpeedsMethod.immutableClassDef.getShowOldPlaybackSpeedMenuMethod()
+        val showOldPlaybackSpeedMenuMethodMatch =
+            getOldPlaybackSpeedsMethod.immutableClassDef.showOldPlaybackSpeedMenuMethodMatch
 
         // Insert the call to the "showOldPlaybackSpeedMenu" method on the field INSTANCE.
         showOldPlaybackSpeedMenuExtensionMethod.apply {
@@ -156,14 +166,127 @@ internal val customPlaybackSpeedPatch = bytecodePatch(
                     if-nez v0, :not_null
                     return-void
                     :not_null
-                    invoke-virtual { v0 }, $showOldPlaybackSpeedMenuMethod
+                    invoke-virtual { v0 }, ${showOldPlaybackSpeedMenuMethodMatch.method}
                 """,
             )
         }
 
         // endregion
 
-        if (is_21_02_or_greater) {
+        // Fix restoring old playback speed menu.
+        if (is_21_12_or_greater) {
+            val onItemClickClass: String
+            val fragmentIdField: MutableField
+            val fragmentManagerMethod: MethodReference
+            playbackSpeedOnItemClickParentMethodMatch.let {
+                it.method.apply {
+                    onItemClickClass = definingClass
+                    fragmentManagerMethod = getInstruction(it[0]).methodReference!!
+
+                    // Add a fragment id instance field to the class.
+                    fragmentIdField = ImmutableField(
+                        definingClass,
+                        "INSTANCE",
+                        "Ljava/lang/String;",
+                        AccessFlags.PUBLIC.value,
+                        null,
+                        null,
+                        null,
+                    ).toMutable().also(it.classDef.instanceFields::add)
+
+                    addInstruction(
+                        instructions.lastIndex,
+                        "iput-object p1, p0, $fragmentIdField"
+                    )
+
+                }
+            }
+
+            val bottomSheetAvailabilityPrimaryMethodCall: String
+            val bottomSheetAvailabilitySecondaryMethodCall: String
+            val bottomSheetBuilderMethodCall: String
+
+            audioTrackOldBottomSheetMethodMatch.let {
+                fun getMethodCall(matchIndex: Int): String {
+                    val methodReference =
+                        it.method.getInstruction(it[matchIndex]).methodReference!!
+
+                    return methodReference.toString()
+                        .replace(methodReference.definingClass, onItemClickClass)
+                }
+
+                bottomSheetAvailabilityPrimaryMethodCall = getMethodCall(0)
+                bottomSheetAvailabilitySecondaryMethodCall = getMethodCall(1)
+                bottomSheetBuilderMethodCall = getMethodCall(3)
+            }
+
+            showOldPlaybackSpeedMenuMethodMatch.let {
+                val onItemClickField = it.classDef.fields.single { field ->
+                    field.type == onItemClickClass
+                }
+                val fragmentManagerField = it.classDef.fields.single { field ->
+                    field.type == fragmentManagerMethod.definingClass
+                }
+
+                val helperMethod = ImmutableMethod(
+                    it.classDef.type,
+                    "patch_showOldPlaybackSpeedMenu",
+                    listOf(),
+                    "V",
+                    AccessFlags.PRIVATE.value or AccessFlags.FINAL.value,
+                    null,
+                    null,
+                    MutableMethodImplementation(4),
+                ).toMutable().apply {
+                    addInstructions(
+                        0,
+                        """
+                            # Check if the bottom sheet is available.
+                            iget-object v0, p0, $onItemClickField
+                            invoke-virtual { v0 }, $bottomSheetAvailabilityPrimaryMethodCall
+                            move-result v1
+                            if-nez v1, :ignore
+
+                            # Check if the bottom sheet is available.
+                            invoke-virtual { v0 }, $bottomSheetAvailabilitySecondaryMethodCall
+                            move-result v1
+                            if-nez v1, :ignore
+
+                            # Check if the fragment ID is not null.
+                            iget-object v2, v0, $fragmentIdField
+                            if-eqz v2, :ignore
+
+                            # Shows the bottom sheet dialog.
+                            iget-object v1, p0, $fragmentManagerField
+                            invoke-virtual { v1 }, $fragmentManagerMethod
+                            move-result-object v1
+                            invoke-virtual { v0, v1, v2 }, $bottomSheetBuilderMethodCall
+
+                            :ignore
+                            return-void
+                        """
+                    )
+                }.also(it.classDef.methods::add)
+
+                it.method.apply {
+                    val index = it[-1]
+                    val register = getInstruction<TwoRegisterInstruction>(index).registerA
+
+                    addInstructionsAtControlFlowLabel(
+                        index,
+                        """
+                            invoke-static { }, ${EXTENSION_CLASS_DESCRIPTOR}->restoreOldPlaybackSpeedMenu()Z
+                            move-result v$register
+                            if-eqz v$register, :ignore
+                            invoke-direct { p0 }, $helperMethod
+                            return-void
+                            :ignore
+                            nop
+                        """
+                    )
+                }
+            }
+        } else if (is_21_02_or_greater) {
             flyoutMenuNonLegacyFeatureFlagMethodMatch.let {
                 it.method.insertLiteralOverride(
                     it[0],
@@ -198,7 +321,7 @@ internal val customPlaybackSpeedPatch = bytecodePatch(
                         """
                     )
 
-                    val enabledIndex = it[3].index
+                    val enabledIndex = it[3]
                     val enabledRegister =
                         getInstruction<OneRegisterInstruction>(enabledIndex).registerA
 

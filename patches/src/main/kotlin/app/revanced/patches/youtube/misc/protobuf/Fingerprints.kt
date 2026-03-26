@@ -3,6 +3,7 @@ package app.revanced.patches.youtube.misc.protobuf
 import app.revanced.patcher.ClassDefComposing
 import app.revanced.patcher.accessFlags
 import app.revanced.patcher.allOf
+import app.revanced.patcher.custom
 import app.revanced.patcher.gettingFirstImmutableMethodDeclaratively
 import app.revanced.patcher.instructions
 import app.revanced.patcher.invoke
@@ -19,9 +20,12 @@ import com.android.tools.smali.dexlib2.iface.ClassDef
  * Matches using the method found in [protobufReflectionMethod].
  */
 internal val ClassDef.newElementProtobufParserMethodMatch by ClassDefComposing.composingFirstMethod {
-    accessFlags(AccessFlags.STATIC)
     parameterTypes("L")
     returnType("[B")
+    custom {
+        // 'static' or 'public static'.
+        AccessFlags.STATIC.isSet(accessFlags)
+    }
     instructions(
         allOf(Opcode.CHECK_CAST(), type("[B")),
     )

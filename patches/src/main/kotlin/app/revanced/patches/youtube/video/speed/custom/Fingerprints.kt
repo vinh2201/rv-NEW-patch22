@@ -7,16 +7,42 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 
+internal val BytecodePatchContext.audioTrackOldBottomSheetMethodMatch by composingFirstMethod {
+    returnType("V")
+    instructions(
+        allOf(
+            Opcode.INVOKE_VIRTUAL(),
+            method { returnType == "Z" && parameterTypes.isEmpty() }
+        ),
+        allOf(
+            Opcode.INVOKE_VIRTUAL(),
+            method { returnType == "Z" && parameterTypes.isEmpty() }
+        ),
+        "AUDIO_TRACKS_MENU_BOTTOM_SHEET_FRAGMENT"(),
+        allOf(
+            Opcode.INVOKE_VIRTUAL(),
+            method { returnType == "V" && parameterTypes.size == 2 && parameterTypes[0].startsWith("L") && parameterTypes[1] == "Ljava/lang/String;" }
+        ),
+    )
+}
+
 internal val BytecodePatchContext.getOldPlaybackSpeedsMethod by gettingFirstMethodDeclaratively(
     "menu_item_playback_speed",
 ) {
     parameterTypes("[L", "I")
 }
 
-context(_: BytecodePatchContext)
-internal fun ClassDef.getShowOldPlaybackSpeedMenuMethod() = firstMethodDeclaratively {
+internal val ClassDef.showOldPlaybackSpeedMenuMethodMatch by ClassDefComposing.composingFirstMethod {
+    var methodDefiningClass = ""
+    custom {
+        methodDefiningClass = definingClass
+        true
+    }
+
     instructions(
         ResourceType.STRING("varispeed_unavailable_message"),
+        Opcode.RETURN_VOID(),
+        allOf(Opcode.IGET_OBJECT(), field { definingClass == methodDefiningClass }),
     )
 }
 
