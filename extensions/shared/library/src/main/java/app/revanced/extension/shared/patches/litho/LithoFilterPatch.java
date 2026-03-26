@@ -20,13 +20,15 @@ public final class LithoFilterPatch {
      * Simple wrapper to pass the litho parameters through the prefix search.
      */
     private static final class LithoFilterParameters {
+        final ContextInterface contextInterface;
         final String identifier;
         final String path;
         final String accessibility;
         final byte[] buffer;
 
-        LithoFilterParameters(String lithoIdentifier, String lithoPath,
-                              String accessibility, byte[] buffer) {
+        LithoFilterParameters(ContextInterface contextInterface, String lithoIdentifier,
+                              String lithoPath, String accessibility, byte[] buffer) {
+            this.contextInterface = contextInterface;
             this.identifier = lithoIdentifier;
             this.path = lithoPath;
             this.accessibility = accessibility;
@@ -128,7 +130,7 @@ public final class LithoFilterPatch {
      * 2 threads -> Device has over 6 cores and less than 6GB of memory
      * 3 threads -> Device has over 6 cores and more than 6GB of memory
      * </pre>
-     *
+     * <p>
      * Using more than 1 thread causes layout issues such as the You tab watch/playlist shelf
      * that is sometimes incorrectly hidden (ReVanced is not hiding it), and seems to
      * fix a race issue if using the active navigation tab status with litho filtering.
@@ -164,6 +166,7 @@ public final class LithoFilterPatch {
      */
     private static final ThreadLocal<byte[]> bufferThreadLocal = new ThreadLocal<>();
 
+    private static final StringTrieSearch contextSearchTree = new StringTrieSearch();
     private static final StringTrieSearch pathSearchTree = new StringTrieSearch();
     private static final StringTrieSearch identifierSearchTree = new StringTrieSearch();
 
@@ -174,6 +177,8 @@ public final class LithoFilterPatch {
                     filter.identifierCallbacks, Filter.FilterContentType.IDENTIFIER);
             filterUsingCallbacks(pathSearchTree, filter,
                     filter.pathCallbacks, Filter.FilterContentType.PATH);
+            filterUsingCallbacks(contextSearchTree, filter,
+                    filter.contextCallbacks, Filter.FilterContentType.CONTEXT);
         }
 
         Logger.printDebug(() -> "Using: "
@@ -199,7 +204,7 @@ public final class LithoFilterPatch {
                             if (!group.isEnabled()) return false;
 
                             LithoFilterParameters parameters = (LithoFilterParameters) callbackParameter;
-                            final boolean isFiltered = filter.isFiltered(parameters.identifier,
+                            final boolean isFiltered = filter.isFiltered(parameters.contextInterface, parameters.identifier,
                                     parameters.accessibility, parameters.path, parameters.buffer,
                                     group, type, matchedStartIndex);
 
@@ -265,7 +270,9 @@ public final class LithoFilterPatch {
             if (accessibilityText != null && !accessibilityText.isBlank()) {
                 accessibility = accessibilityId + '|' + accessibilityText;
             }
-            LithoFilterParameters parameter = new LithoFilterParameters(identifier, path, accessibility, buffer);
+            LithoFilterParameters parameter = new LithoFilterParameters(
+                    contextInterface, identifier, path, accessibility, buffer
+            );
             Logger.printDebug(() -> "Searching " + parameter);
 
             return identifierSearchTree.matches(identifier, parameter)

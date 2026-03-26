@@ -1,5 +1,7 @@
 package app.revanced.extension.youtube.patches.litho;
 
+import static app.revanced.extension.youtube.patches.LayoutReloadObserverPatch.isActionBarVisible;
+
 import app.revanced.extension.shared.ConversionContext.ContextInterface;
 import app.revanced.extension.shared.patches.litho.Filter;
 import app.revanced.extension.youtube.settings.Settings;
@@ -7,6 +9,7 @@ import app.revanced.extension.shared.patches.litho.FilterGroup.*;
 import app.revanced.extension.shared.patches.litho.FilterGroupList.ByteArrayFilterGroupList;
 import app.revanced.extension.youtube.shared.EngagementPanel;
 import app.revanced.extension.youtube.shared.PlayerType;
+import app.revanced.extension.youtube.shared.ShortsPlayerState;
 
 @SuppressWarnings("unused")
 public final class DescriptionComponentsFilter extends Filter {
