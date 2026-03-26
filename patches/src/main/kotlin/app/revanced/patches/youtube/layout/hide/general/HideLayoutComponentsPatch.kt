@@ -403,11 +403,28 @@ val hideLayoutComponentsPatch = hideLayoutComponentsPatch(
 
     // endregion
 
-    // region Hide comment page
+    // region Hide comment carousel
 
     hookElement("${COMMENTS_FILTER_CLASS_NAME}->onCommentsLoaded([B)[B")
 
     // endregion
+
+
+    // region hide comments info button
+
+    engagementPanelInformationButtonMethodMatch.let {
+        it.method.apply {
+            val checkCastIndex = it[1]
+            val viewRegister = getInstruction<OneRegisterInstruction>(checkCastIndex).registerA
+
+            addInstruction(
+                checkCastIndex + 1,
+                "invoke-static { v$viewRegister }, ${COMMENTS_FILTER_CLASS_NAME}->hideCommentsInfoButton(Landroid/view/View;)V"
+            )
+        }
+    }
+
+    //endregion
 
     // region Hide crowdfunding box
 
