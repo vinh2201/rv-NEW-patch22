@@ -79,7 +79,7 @@ val navigationBarHookPatch = bytecodePatch(description = "Hooks the active navig
             }
         }
 
-        pivotBarConstructorMethod.immutableClassDef.getInitializeButtonsMethod().apply {
+        initializeButtonsMethod.apply {
             // Hook the current navigation bar enum value. Note, the 'You' tab does not have an enum value.
             val navigationEnumClassName = navigationEnumMethod.classDef.type
             addHook(NavigationHook.SET_LAST_APP_NAVIGATION_ENUM) {

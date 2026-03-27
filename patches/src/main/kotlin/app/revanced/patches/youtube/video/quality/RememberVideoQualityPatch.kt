@@ -90,11 +90,10 @@ val rememberVideoQualityPatch = bytecodePatch {
         }
 
         // Inject a call to remember the selected quality for Shorts.
-        videoQualityItemOnClickParentMethod.immutableClassDef.getVideoQualityItemOnClickMethod()
-            .addInstruction(
-                0,
-                "invoke-static { p3 }, $EXTENSION_CLASS_DESCRIPTOR->userChangedShortsQuality(I)V",
-            )
+        videoQualityItemOnClickMethod.addInstruction(
+            0,
+            "invoke-static { p3 }, $EXTENSION_CLASS_DESCRIPTOR->userChangedShortsQuality(I)V",
+        )
 
         // Inject a call to remember the user selected quality for regular videos.
         videoQualityChangedMethodMatch.let { match ->

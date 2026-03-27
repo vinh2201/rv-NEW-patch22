@@ -11,24 +11,24 @@ import app.revanced.patcher.name
 import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patcher.returnType
+import app.revanced.util.getting
+import app.revanced.util.using
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 
-internal val BytecodePatchContext.autoNavConstructorMethod by gettingFirstImmutableMethodDeclaratively(
-    "main_app_autonav"
-) {
-    returnType("V")
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
-}
-
-context(_: BytecodePatchContext)
-internal fun ClassDef.getAutoNavStatusMethod() = firstMethodDeclaratively {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    returnType("Z")
-    parameterTypes()
+internal val BytecodePatchContext.autoNavStatusMethod by getting {
+    firstMethodDeclaratively {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("Z")
+        parameterTypes()
+    }
+} using {
+    firstImmutableMethodDeclaratively("main_app_autonav") {
+        returnType("V")
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
+    }
 }
 
 internal val BytecodePatchContext.removeOnLayoutChangeListenerMethodMatch by composingFirstMethod {

@@ -14,7 +14,7 @@ val skipEnergyRechargeAdsPatch = bytecodePatch(
     compatibleWith("com.duolingo")
 
     apply {
-        energyConfigToStringMethod.immutableClassDef.initializeEnergyConfigMethodMatch.let {
+        initializeEnergyConfigMethodMatch.let {
             it.method.apply {
                 val energyField = energyConfigToStringMethod.findFieldFromToString("energy=")
                 val insertIndex = it[0]

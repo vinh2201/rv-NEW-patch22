@@ -4,9 +4,11 @@ import app.revanced.patcher.*
 import app.revanced.patcher.after
 import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patches.shared.misc.mapping.ResourceType
+import app.revanced.patches.youtube.layout.buttons.navigation.wideSearchbarLayoutMethod
+import app.revanced.util.getting
+import app.revanced.util.using
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.ClassDef
 
 
 internal val BytecodePatchContext.hideShowMoreButtonSetViewMethodMatch by composingFirstMethod {
@@ -29,28 +31,28 @@ internal val BytecodePatchContext.hideShowMoreButtonSetViewMethodMatch by compos
     )
 }
 
-context(_: BytecodePatchContext)
-internal fun ClassDef.getHideShowMoreButtonGetParentViewMethod() =
+internal val BytecodePatchContext.hideShowMoreButtonGetParentViewMethod by getting {
     firstImmutableMethodDeclaratively {
         accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
         returnType("Landroid/view/View;")
         parameterTypes()
     }
+} using { hideShowMoreButtonSetViewMethodMatch.method }
 
-context(_: BytecodePatchContext)
-internal fun ClassDef.getHideShowMoreButtonMethod() = firstMethodDeclaratively {
-    returnType("V")
-    parameterTypes("L", "Ljava/lang/Object;")
-    instructions(
-        allOf(
-            Opcode.INVOKE_VIRTUAL(),
-            method {
-                toString() == "Landroid/view/View;->setContentDescription(Ljava/lang/CharSequence;)V"
-            }
+internal val BytecodePatchContext.hideShowMoreButtonMethod by getting {
+    firstMethodDeclaratively {
+        returnType("V")
+        parameterTypes("L", "Ljava/lang/Object;")
+        instructions(
+            allOf(
+                Opcode.INVOKE_VIRTUAL(),
+                method {
+                    toString() == "Landroid/view/View;->setContentDescription(Ljava/lang/CharSequence;)V"
+                }
+            )
         )
-    )
-}
-
+    }
+} using { hideShowMoreButtonSetViewMethodMatch.method }
 
 /**
  * 20.21+
@@ -83,15 +85,29 @@ internal val BytecodePatchContext.hideSubscribedChannelsBarConstructorLegacyMeth
     )
 }
 
-internal val ClassDef.hideSubscribedChannelsBarLandscapeMethodMatch by ClassDefComposing.composingFirstMethod {
-    returnType("V")
-    parameterTypes()
-    instructions(
-        ResourceType.DIMEN("parent_view_width_in_wide_mode"),
-        allOf(Opcode.INVOKE_VIRTUAL(), method("getDimensionPixelSize")),
-        after(Opcode.MOVE_RESULT())
-    )
-}
+internal val BytecodePatchContext.hideSubscribedChannelsBarLandscapeMethodMatch by getting {
+    firstMethodComposite {
+        returnType("V")
+        parameterTypes()
+        instructions(
+            ResourceType.DIMEN("parent_view_width_in_wide_mode"),
+            allOf(Opcode.INVOKE_VIRTUAL(), method("getDimensionPixelSize")),
+            after(Opcode.MOVE_RESULT())
+        )
+    }
+} using { hideSubscribedChannelsBarConstructorMethodMatch.immutableMethod }
+
+internal val BytecodePatchContext.hideSubscribedChannelsBarLandscapeLegacyMethodMatch by getting {
+    firstMethodComposite {
+        returnType("V")
+        parameterTypes()
+        instructions(
+            ResourceType.DIMEN("parent_view_width_in_wide_mode"),
+            allOf(Opcode.INVOKE_VIRTUAL(), method("getDimensionPixelSize")),
+            after(Opcode.MOVE_RESULT())
+        )
+    }
+} using { hideSubscribedChannelsBarConstructorLegacyMethodMatch.immutableMethod }
 
 internal val BytecodePatchContext.parseElementFromBufferMethodMatch by composingFirstMethod {
     parameterTypes("L", "L", "[B", "L", "L")
@@ -112,19 +128,20 @@ internal val BytecodePatchContext.parseElementFromBufferMethodMatch by composing
     )
 }
 
-internal val BytecodePatchContext.playerOverlayMethod by gettingFirstImmutableMethodDeclaratively {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    returnType("L")
-    instructions(
-        "player_overlay_in_video_programming"(),
-    )
-}
-
-context(_: BytecodePatchContext)
-internal fun ClassDef.getShowWatermarkMethod() = firstMethodDeclaratively {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    returnType("V")
-    parameterTypes("L", "L")
+internal val BytecodePatchContext.showWatermarkMethod by getting {
+    firstMethodDeclaratively {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("V")
+        parameterTypes("L", "L")
+    }
+} using {
+    firstImmutableMethodDeclaratively {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("L")
+        instructions(
+            "player_overlay_in_video_programming"(),
+        )
+    }
 }
 
 /**
@@ -136,6 +153,7 @@ internal val BytecodePatchContext.yoodlesImageViewMethod by gettingFirstMethodDe
     parameterTypes("L", "L")
     instructions(ResourceType.ID("youtube_logo"))
 }
+
 internal val BytecodePatchContext.albumCardsMethodMatch by composingFirstMethod {
     accessFlags(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
     instructions(
@@ -216,30 +234,27 @@ internal val BytecodePatchContext.searchResultsChipBarMethodMatch by composingFi
 
 /**
  * 21.11+
- *
- * Matches using the method found in [showFloatingMicrophoneButtonParentMethod].
  */
-internal val ClassDef.showFloatingMicrophoneButtonMethodMatch by ClassDefComposing.composingFirstMethod {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    returnType("V")
-    parameterTypes(
-        "Landroid/view/View;",
-        "Lcom/google/android/libraries/quantum/fab/FloatingActionButton;",
-        "Landroid/view/ViewStub;"
-    )
-    instructions(Opcode.IGET_BOOLEAN())
-}
-
-/**
- * 21.11+
- */
-internal val BytecodePatchContext.showFloatingMicrophoneButtonParentMethod by gettingFirstImmutableMethodDeclaratively(
-    "Current FAB View Wrapper does not support this operation. Text: ",
-) {
-    accessFlags(AccessFlags.PRIVATE, AccessFlags.FINAL)
-    returnType("V")
-    parameterTypes("Z")
-    custom { $$"Landroid/view/View$OnClickListener;" !in immutableClassDef.interfaces }
+internal val BytecodePatchContext.showFloatingMicrophoneButtonMethodMatch by getting {
+    firstMethodComposite {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("V")
+        parameterTypes(
+            "Landroid/view/View;",
+            "Lcom/google/android/libraries/quantum/fab/FloatingActionButton;",
+            "Landroid/view/ViewStub;"
+        )
+        instructions(Opcode.IGET_BOOLEAN())
+    }
+} using {
+    firstImmutableMethodDeclaratively(
+        "Current FAB View Wrapper does not support this operation. Text: ",
+    ) {
+        accessFlags(AccessFlags.PRIVATE, AccessFlags.FINAL)
+        returnType("V")
+        parameterTypes("Z")
+        custom { $$"Landroid/view/View$OnClickListener;" !in immutableClassDef.interfaces }
+    }
 }
 
 /**
@@ -284,32 +299,32 @@ internal val BytecodePatchContext.searchBoxTypingStringMethodMatch by composingF
     )
 }
 
-internal val BytecodePatchContext.searchSuggestionEndpointConstructorMethod by gettingFirstImmutableMethodDeclaratively(
-    "\u2026 "
-) {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
-    returnType("V")
-}
+internal val BytecodePatchContext.searchSuggestionEndpointMethodMatch by getting {
+    firstMethodComposite {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("Z")
+        parameterTypes()
 
-internal val ClassDef.searchSuggestionEndpointMethodMatch by ClassDefComposing.composingFirstMethod {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    returnType("Z")
-    parameterTypes()
+        var methodDefiningClass = ""
+        custom {
+            methodDefiningClass = definingClass
+            true
+        }
 
-    var methodDefiningClass = ""
-    custom {
-        methodDefiningClass = definingClass
-        true
+        instructions(
+            allOf(
+                Opcode.IGET_OBJECT(),
+                field { definingClass == methodDefiningClass && type == "Ljava/lang/String;" }),
+            allOf(
+                Opcode.INVOKE_STATIC(),
+                method { toString() == "Landroid/text/TextUtils;->isEmpty(Ljava/lang/CharSequence;)Z" }),
+        )
     }
-
-    instructions(
-        allOf(
-            Opcode.IGET_OBJECT(),
-            field { definingClass == methodDefiningClass && type == "Ljava/lang/String;" }),
-        allOf(
-            Opcode.INVOKE_STATIC(),
-            method { toString() == "Landroid/text/TextUtils;->isEmpty(Ljava/lang/CharSequence;)Z" }),
-    )
+} using {
+    firstImmutableMethodDeclaratively("\u2026 ") {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
+        returnType("V")
+    }
 }
 
 internal val BytecodePatchContext.latestVideosContentPillMethodMatch by composingFirstMethod {

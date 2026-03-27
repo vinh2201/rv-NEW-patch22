@@ -152,11 +152,6 @@ internal val customPlaybackSpeedPatch = bytecodePatch(
         // In order to prevent a conflict with another patch, add the instruction at index 1.
         getOldPlaybackSpeedsMethod.addInstruction(1, "sput-object p0, $instanceField")
 
-        // Get the "showOldPlaybackSpeedMenu" method.
-        // This is later called on the field INSTANCE.
-        val showOldPlaybackSpeedMenuMethodMatch =
-            getOldPlaybackSpeedsMethod.immutableClassDef.showOldPlaybackSpeedMenuMethodMatch
-
         // Insert the call to the "showOldPlaybackSpeedMenu" method on the field INSTANCE.
         showOldPlaybackSpeedMenuExtensionMethod.apply {
             addInstructionsWithLabels(

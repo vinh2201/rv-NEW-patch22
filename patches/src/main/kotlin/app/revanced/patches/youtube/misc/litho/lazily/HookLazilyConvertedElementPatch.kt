@@ -27,7 +27,7 @@ internal val hookLazilyConvertedElementPatch = bytecodePatch(
     )
 
     apply {
-        componentContextParserMethod.immutableClassDef.getTreeNodeResultListMethod().apply {
+        treeNodeResultListMethod.apply {
             val insertIndex = instructions.lastIndex
             val listRegister = getInstruction<OneRegisterInstruction>(insertIndex).registerA
 

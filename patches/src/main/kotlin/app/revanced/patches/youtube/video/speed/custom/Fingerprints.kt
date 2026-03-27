@@ -3,6 +3,8 @@ package app.revanced.patches.youtube.video.speed.custom
 import app.revanced.patcher.*
 import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patches.shared.misc.mapping.ResourceType
+import app.revanced.util.getting
+import app.revanced.util.using
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -32,19 +34,21 @@ internal val BytecodePatchContext.getOldPlaybackSpeedsMethod by gettingFirstMeth
     parameterTypes("[L", "I")
 }
 
-internal val ClassDef.showOldPlaybackSpeedMenuMethodMatch by ClassDefComposing.composingFirstMethod {
-    var methodDefiningClass = ""
-    custom {
-        methodDefiningClass = definingClass
-        true
-    }
+internal val BytecodePatchContext.showOldPlaybackSpeedMenuMethodMatch by getting {
+    firstMethodComposite {
+        var methodDefiningClass = ""
+        custom {
+            methodDefiningClass = definingClass
+            true
+        }
 
-    instructions(
-        ResourceType.STRING("varispeed_unavailable_message"),
-        Opcode.RETURN_VOID(),
-        allOf(Opcode.IGET_OBJECT(), field { definingClass == methodDefiningClass }),
-    )
-}
+        instructions(
+            ResourceType.STRING("varispeed_unavailable_message"),
+            Opcode.RETURN_VOID(),
+            allOf(Opcode.IGET_OBJECT(), field { definingClass == methodDefiningClass }),
+        )
+    }
+} using { getOldPlaybackSpeedsMethod }
 
 internal val BytecodePatchContext.showOldPlaybackSpeedMenuExtensionMethod by gettingFirstMethodDeclaratively {
     name("showOldPlaybackSpeedMenu")

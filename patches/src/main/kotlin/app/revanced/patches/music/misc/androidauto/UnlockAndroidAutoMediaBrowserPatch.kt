@@ -27,17 +27,16 @@ val unlockAndroidAutoMediaBrowserPatch = bytecodePatch(
     apply {
         checkCertificateMethod.returnEarly(true)
 
-        searchMediaItemsConstructorMethod.immutableClassDef.getSearchMediaItemsExecuteMethod()
-            .apply {
-                val targetIndex = instructions.indexOfFirst {
-                    it.opcode == Opcode.IGET_OBJECT && it.fieldReference?.type == "Ljava/lang/String;"
-                }
-
-                val register = instructions[targetIndex].registersUsed.first()
-                replaceInstruction(
-                    targetIndex,
-                    "const-string v$register, \"com.google.android.apps.youtube.music\""
-                )
+        searchMediaItemsExecuteMethod.apply {
+            val targetIndex = instructions.indexOfFirst {
+                it.opcode == Opcode.IGET_OBJECT && it.fieldReference?.type == "Ljava/lang/String;"
             }
+
+            val register = instructions[targetIndex].registersUsed.first()
+            replaceInstruction(
+                targetIndex,
+                "const-string v$register, \"com.google.android.apps.youtube.music\""
+            )
+        }
     }
 }

@@ -94,7 +94,7 @@ val hookClientContextPatch = bytecodePatch(
                 getInstruction<ReferenceInstruction>(messageLiteBuilderIndex).methodReference!!
         }
 
-        buildClientContextBodyConstructorMethod.immutableClassDef.buildClientContextBodyMethodMatch.let {
+        buildClientContextBodyMethodMatch.let {
             it.method.apply {
                 val osNameIndex = it[1]
 

@@ -97,9 +97,6 @@ val shortsAutoplayPatch = bytecodePatch(
             )
         }
 
-        val reelPlaybackRepeatMethod =
-            reelPlaybackRepeatParentMethod.immutableClassDef.getReelPlaybackRepeatMethod()
-
         reelPlaybackRepeatMethod.apply {
             // The behavior enums are looked up from an ordinal value to an enum type.
 

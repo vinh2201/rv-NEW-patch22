@@ -44,8 +44,7 @@ val hideNavigationButtonsPatch = bytecodePatch(
                 nop
             """
 
-        tabIdClassMethod.immutableClassDef.getShouldShowTabIdMethod()
-            .addInstructionsWithLabels(0, injectionInstructions)
+        shouldShowTabIdMethod.addInstructionsWithLabels(0, injectionInstructions)
     }
 }
 

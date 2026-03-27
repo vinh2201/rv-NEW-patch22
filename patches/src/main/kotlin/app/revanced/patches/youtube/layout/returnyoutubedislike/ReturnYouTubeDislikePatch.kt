@@ -138,9 +138,7 @@ val returnYouTubeDislikePatch = bytecodePatch(
         // Old pre 20.40 and lower hook.
         // 21.05 clobbers p0 (this) register.
         // Add additional registers so all parameters including p0 are free to use anywhere in the method.
-        textComponentConstructorMethod.immutableClassDef
-            .getTextComponentLookupMethod()
-            .cloneMutableAndPreserveParameters().apply {
+        textComponentLookupMethod.cloneMutableAndPreserveParameters().apply {
                 // Find the instruction for creating the text data object.
                 val textDataClassType = textComponentDataMethod.immutableClassDef.type
 
@@ -288,7 +286,7 @@ val returnYouTubeDislikePatch = bytecodePatch(
 
         // Additional text measurement method. Used if YouTube decides not to animate the likes count
         // and sometimes used for initial video load.
-        rollingNumberMeasureStaticLabelParentMethod.immutableClassDef.rollingNumberMeasureStaticLabelMethodMatch.let {
+        rollingNumberMeasureStaticLabelMethodMatch.let {
             val measureTextIndex = it[0] + 1
             it.method.apply {
                 val freeRegister = getInstruction<TwoRegisterInstruction>(0).registerA

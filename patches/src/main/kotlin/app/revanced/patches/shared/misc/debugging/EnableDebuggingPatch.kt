@@ -106,9 +106,6 @@ internal fun enableDebuggingPatch(
             )
         )
 
-        val experimentalBooleanFeatureFlagMethodMatch =
-            experimentalFeatureFlagUtilMethod.immutableClassDef.experimentalBooleanFeatureFlagMethodMatch
-
         experimentalBooleanFeatureFlagMethodMatch.let {
             it.method.apply {
                 // Not enough registers in the method. Clone the method and use the
@@ -140,16 +137,15 @@ internal fun enableDebuggingPatch(
         }
 
         if (hookDoubleFeatureFlag())
-        // 21.06+ doesn't have enough registers and needs to also clone.
-            experimentalFeatureFlagUtilMethod.immutableClassDef.getExperimentalDoubleFeatureFlagMethod()
-                .cloneMutableAndPreserveParameters().apply {
-                    val helperMethod = cloneMutable(name = "patch_getDoubleFeatureFlag")
+            // 21.06+ doesn't have enough registers and needs to also clone.
+            experimentalDoubleFeatureFlagMethod.cloneMutableAndPreserveParameters().apply {
+                val helperMethod = cloneMutable(name = "patch_getDoubleFeatureFlag")
 
-                    classDef.methods.add(helperMethod)
+                classDef.methods.add(helperMethod)
 
-                    addInstructions(
-                        0,
-                        """
+                addInstructions(
+                    0,
+                    """
                         # Invoke the copied method (helper method).
                         invoke-static/range { p0 .. p4 }, $helperMethod
                         move-result-wide v0
@@ -164,19 +160,18 @@ internal fun enableDebuggingPatch(
                         # Since the copied method (helper method) has already been invoked, it just returns.
                         return-wide v0
                     """
-                    )
-                }
+                )
+            }
 
         if (hookLongFeatureFlag())
-            experimentalFeatureFlagUtilMethod.immutableClassDef.getExperimentalLongFeatureFlagMethod()
-                .cloneMutableAndPreserveParameters().apply {
-                    val helperMethod = cloneMutable(name = "patch_getLongFeatureFlag")
+            experimentalLongFeatureFlagMethod.cloneMutableAndPreserveParameters().apply {
+                val helperMethod = cloneMutable(name = "patch_getLongFeatureFlag")
 
-                    classDef.methods.add(helperMethod)
+                classDef.methods.add(helperMethod)
 
-                    addInstructions(
-                        0,
-                        """
+                addInstructions(
+                    0,
+                    """
                         # Invoke the copied method (helper method).
                         invoke-static/range { p0 .. p4 }, $helperMethod
                         move-result-wide v0
@@ -191,19 +186,18 @@ internal fun enableDebuggingPatch(
                         # Since the copied method (helper method) has already been invoked, it just returns.
                         return-wide v0
                     """
-                    )
-                }
+                )
+            }
 
         if (hookStringFeatureFlag())
-            experimentalFeatureFlagUtilMethod.immutableClassDef.getExperimentalStringFeatureFlagMethod()
-                .apply {
-                    val helperMethod = cloneMutable(name = "patch_getStringFeatureFlag")
+            experimentalStringFeatureFlagMethod.apply {
+                val helperMethod = cloneMutable(name = "patch_getStringFeatureFlag")
 
-                    classDef.methods.add(helperMethod)
+                classDef.methods.add(helperMethod)
 
-                    addInstructions(
-                        0,
-                        """
+                addInstructions(
+                    0,
+                    """
                         invoke-static { p0, p1, p2, p3 }, $helperMethod
                         move-result-object p0
                         
@@ -212,8 +206,8 @@ internal fun enableDebuggingPatch(
                         
                         return-object p0
                     """
-                    )
-                }
+                )
+            }
 
         // There exists other experimental accessor methods for byte[]
         // and wrappers for obfuscated classes, but currently none of those are hooked.

@@ -32,7 +32,7 @@ val spoofClientPatch = spoofClientPatch(
     apply {
         // region Patch client id.
 
-        getAuthorizationStringMethodMatch.immutableClassDef.getBearerTokenMethodMatch.method.apply {
+        bearerTokenMethodMatch.method.apply {
             val auth = Base64.getEncoder().encodeToString("$clientId:".toByteArray(Charsets.UTF_8))
             returnEarly("Basic $auth")
 

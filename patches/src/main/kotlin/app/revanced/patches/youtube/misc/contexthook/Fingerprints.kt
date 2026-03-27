@@ -1,6 +1,5 @@
 package app.revanced.patches.youtube.misc.contexthook
 
-import app.revanced.patcher.ClassDefComposing
 import app.revanced.patcher.CompositeMatch
 import app.revanced.patcher.accessFlags
 import app.revanced.patcher.after
@@ -22,6 +21,8 @@ import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patcher.returnType
 import app.revanced.util.indexOfFirstInstruction
+import app.revanced.util.getting
+import app.revanced.util.using
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -45,30 +46,32 @@ internal fun indexOfMessageLiteBuilderReference(method: Method, type: String = "
                 reference?.parameterTypes?.isEmpty() == true && reference.returnType.startsWith(type)
     }
 
-internal val BytecodePatchContext.buildClientContextBodyConstructorMethod by gettingFirstMethodDeclaratively {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
-    returnType("V")
-    instructions(
-        "Android Wear"(),
-        Opcode.IF_EQZ(),
-        after("Android Automotive"()),
-        "Android"(),
-        after(allOf(Opcode.IPUT_OBJECT(), field()))
-    )
-}
-
-internal val ClassDef.buildClientContextBodyMethodMatch by ClassDefComposing.composingFirstMethod {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    returnType("L")
-    parameterTypes()
-    instructions(
-        allOf(Opcode.SGET(), field("SDK_INT")),
-        allOf(
-            Opcode.IPUT_OBJECT(),
-            field { definingClass == CLIENT_INFO_CLASS_DESCRIPTOR && type == "Ljava/lang/String;" }
-        ),
-        Opcode.OR_INT_LIT16()
-    )
+internal val BytecodePatchContext.buildClientContextBodyMethodMatch by getting {
+    firstMethodComposite {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("L")
+        parameterTypes()
+        instructions(
+            allOf(Opcode.SGET(), field("SDK_INT")),
+            allOf(
+                Opcode.IPUT_OBJECT(),
+                field { definingClass == CLIENT_INFO_CLASS_DESCRIPTOR && type == "Ljava/lang/String;" }
+            ),
+            Opcode.OR_INT_LIT16()
+        )
+    }
+} using {
+    firstImmutableMethodDeclaratively {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
+        returnType("V")
+        instructions(
+            "Android Wear"(),
+            Opcode.IF_EQZ(),
+            after("Android Automotive"()),
+            "Android"(),
+            after(allOf(Opcode.IPUT_OBJECT(), field()))
+        )
+    }
 }
 
 internal val BytecodePatchContext.buildDummyClientContextBodyMethodMatch by composingFirstMethod {

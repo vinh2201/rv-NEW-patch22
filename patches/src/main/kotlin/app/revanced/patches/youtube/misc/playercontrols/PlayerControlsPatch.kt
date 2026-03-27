@@ -255,8 +255,7 @@ val playerControlsPatch = bytecodePatch(
             inflateTopControlInsertIndex = inflateReturnObjectIndex + 1
         }
 
-        visibilityMethod =
-            playerTopControlsInflateMethodMatch.immutableClassDef.getControlsOverlayVisibilityMethod()
+        visibilityMethod = controlsOverlayVisibilityMethod
 
         // Hook the fullscreen close button. Used to fix visibility
         // when seeking and other situations.
@@ -274,10 +273,8 @@ val playerControlsPatch = bytecodePatch(
         visibilityImmediateCallbacksExistMethod = playerControlsExtensionHookListenersExistMethod
         visibilityImmediateMethod = playerControlsExtensionHookMethod
 
-        youtubeControlsOverlayMethod.immutableClassDef.motionEventMethodMatch.let {
-            visibilityNegatedImmediateMethod = it.method
-            visibilityNegatedImmediateInsertIndex = it[0] + 1
-        }
+        visibilityNegatedImmediateMethod = motionEventMethodMatch.method
+        visibilityNegatedImmediateInsertIndex = motionEventMethodMatch[0] + 1
 
         // A/B test for a slightly different bottom overlay controls,
         // that uses layout file youtube_video_exploder_controls_bottom_ui_container.xml

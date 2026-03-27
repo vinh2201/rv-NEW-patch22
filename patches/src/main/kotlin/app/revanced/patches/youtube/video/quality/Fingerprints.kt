@@ -8,6 +8,7 @@ import app.revanced.patcher.composingFirstMethod
 import app.revanced.patcher.custom
 import app.revanced.patcher.definingClass
 import app.revanced.patcher.field
+import app.revanced.patcher.firstImmutableMethodDeclaratively
 import app.revanced.patcher.firstMethodComposite
 import app.revanced.patcher.firstMethodDeclaratively
 import app.revanced.patcher.gettingFirstImmutableMethodDeclaratively
@@ -20,11 +21,12 @@ import app.revanced.patcher.opcodes
 import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patcher.returnType
+import app.revanced.util.getting
+import app.revanced.util.using
 import app.revanced.util.findFieldFromToString
 import app.revanced.util.literal
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.ClassDef
 
 internal val BytecodePatchContext.newAdvancedQualityMenuStyleFlyoutMethodMatch by composingFirstMethod {
     accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
@@ -93,22 +95,21 @@ internal fun BytecodePatchContext.getPlaybackStartParametersConstructorMethod():
     }
 }
 
-internal val BytecodePatchContext.videoQualityItemOnClickParentMethod by gettingFirstImmutableMethodDeclaratively(
-    "VIDEO_QUALITIES_MENU_BOTTOM_SHEET_FRAGMENT",
-) {
-    returnType("V")
-}
-
-context(_: BytecodePatchContext)
-internal fun ClassDef.getVideoQualityItemOnClickMethod() = firstMethodDeclaratively {
-    name("onItemClick")
-    returnType("V")
-    parameterTypes(
-        "Landroid/widget/AdapterView;",
-        "Landroid/view/View;",
-        "I",
-        "J",
-    )
+internal val BytecodePatchContext.videoQualityItemOnClickMethod by getting {
+    firstMethodDeclaratively {
+        name("onItemClick")
+        returnType("V")
+        parameterTypes(
+            "Landroid/widget/AdapterView;",
+            "Landroid/view/View;",
+            "I",
+            "J",
+        )
+    }
+} using {
+    firstImmutableMethodDeclaratively("VIDEO_QUALITIES_MENU_BOTTOM_SHEET_FRAGMENT") {
+        returnType("V")
+    }
 }
 
 internal val BytecodePatchContext.videoQualityMenuOptionsMethodMatch by composingFirstMethod {

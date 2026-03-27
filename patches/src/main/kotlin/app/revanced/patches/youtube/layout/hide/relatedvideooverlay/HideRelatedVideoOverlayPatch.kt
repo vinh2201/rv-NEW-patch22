@@ -48,9 +48,6 @@ val hideRelatedVideoOverlayPatch = bytecodePatch(
             SwitchPreference("revanced_hide_player_related_videos_overlay"),
         )
 
-        val relatedEndScreenResultsMethod =
-            relatedEndScreenResultsParentMethod.immutableClassDef.getRelatedEndScreenResultsMethod()
-
         relatedEndScreenResultsMethod.addInstructionsWithLabels(
             0,
             """

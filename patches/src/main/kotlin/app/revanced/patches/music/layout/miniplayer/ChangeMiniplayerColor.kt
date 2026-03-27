@@ -56,7 +56,7 @@ val changeMiniplayerColorPatch = bytecodePatch(
             SwitchPreference("revanced_music_change_miniplayer_color"),
         )
 
-        miniPlayerConstructorMethodMatch.immutableClassDef.switchToggleColorMethodMatch.let {
+        switchToggleColorMethodMatch.let {
             val colorMathPlayerInvokeVirtualReference = it.method.getInstruction(it[-1]).methodReference!!
             val colorMathPlayerIGetReference = it.method.getInstruction(it[4]).fieldReference!!
 

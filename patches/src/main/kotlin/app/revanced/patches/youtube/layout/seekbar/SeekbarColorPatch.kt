@@ -29,7 +29,8 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
 
-private const val EXTENSION_CLASS_DESCRIPTOR = "Lapp/revanced/extension/youtube/patches/theme/SeekbarColorPatch;"
+private const val EXTENSION_CLASS_DESCRIPTOR =
+    "Lapp/revanced/extension/youtube/patches/theme/SeekbarColorPatch;"
 
 val seekbarColorPatch = bytecodePatch(
     description = "Hide or set a custom seekbar color",
@@ -160,14 +161,14 @@ val seekbarColorPatch = bytecodePatch(
             findInstructionIndicesReversedOrThrow {
                 val reference = getReference<MethodReference>()
                 reference?.definingClass == LOTTIE_ANIMATION_VIEW_CLASS_TYPE &&
-                    reference.name == setAnimationIntMethodName
+                        reference.name == setAnimationIntMethodName
             }.forEach { index ->
                 val instruction = getInstruction<FiveRegisterInstruction>(index)
 
                 replaceInstruction(
                     index,
                     "invoke-static { v${instruction.registerC}, v${instruction.registerD} }, " +
-                        "$EXTENSION_CLASS_DESCRIPTOR->setSplashAnimationLottie(Lcom/airbnb/lottie/LottieAnimationView;I)V",
+                            "$EXTENSION_CLASS_DESCRIPTOR->setSplashAnimationLottie(Lcom/airbnb/lottie/LottieAnimationView;I)V",
                 )
             }
         }
@@ -202,12 +203,11 @@ val seekbarColorPatch = bytecodePatch(
             val factoryStreamName: CharSequence
             val factoryStreamReturnType: CharSequence
 
-            lottieCompositionFactoryZipMethod.immutableClassDef.getLottieCompositionFactoryFromJsonInputStreamMethod()
-                .let {
-                    factoryStreamClass = it.definingClass
-                    factoryStreamName = it.name
-                    factoryStreamReturnType = it.returnType
-                }
+            lottieCompositionFactoryFromJsonInputStreamMethod.let {
+                factoryStreamClass = it.definingClass
+                factoryStreamName = it.name
+                factoryStreamReturnType = it.returnType
+            }
 
             val lottieAnimationViewSetAnimationStreamMethod = firstImmutableMethodDeclaratively {
                 definingClass(lottieAnimationViewSetAnimationIntMethod.immutableClassDef.type)
@@ -233,7 +233,8 @@ val seekbarColorPatch = bytecodePatch(
                 ).toMutable().apply {
                     // 21.02+ method is private. Cannot easily change the access flags to public
                     // because that breaks unrelated opcode that uses invoke-direct and not invoke-virtual.
-                    val methodOpcode = if (is_21_02_or_greater) "invoke-direct" else "invoke-virtual"
+                    val methodOpcode =
+                        if (is_21_02_or_greater) "invoke-direct" else "invoke-virtual"
 
                     addInstructions(
                         """

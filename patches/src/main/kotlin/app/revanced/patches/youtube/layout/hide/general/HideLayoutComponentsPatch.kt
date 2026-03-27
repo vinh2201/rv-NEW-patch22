@@ -299,16 +299,16 @@ val hideLayoutComponentsPatch = hideLayoutComponentsPatch(
 
     // region Hide watermark (legacy code for old versions of YouTube)
 
-    playerOverlayMethod.immutableClassDef.getShowWatermarkMethod().apply {
-        val index = implementation!!.instructions.size - 5
+    showWatermarkMethod.apply {
+        val index = instructions.size - 5
 
         removeInstruction(index)
         addInstructions(
             index,
             """
-                    invoke-static {}, $LAYOUT_COMPONENTS_FILTER_CLASS_DESCRIPTOR->showWatermark()Z
-                    move-result p2
-                """,
+                invoke-static {}, $LAYOUT_COMPONENTS_FILTER_CLASS_DESCRIPTOR->showWatermark()Z
+                move-result p2
+            """,
         )
     }
 
@@ -326,10 +326,7 @@ val hideLayoutComponentsPatch = hideLayoutComponentsPatch(
         )
     }
 
-    val parentViewMethod = hideShowMoreButtonSetViewMethodMatch.immutableClassDef
-        .getHideShowMoreButtonGetParentViewMethod()
-
-    hideShowMoreButtonSetViewMethodMatch.immutableClassDef.getHideShowMoreButtonMethod().apply {
+    hideShowMoreButtonMethod.apply {
         val helperMethod = ImmutableMethod(
             definingClass,
             "patch_hideShowMoreButton",
@@ -344,7 +341,7 @@ val hideLayoutComponentsPatch = hideLayoutComponentsPatch(
                 0,
                 """
                     move-object/from16 v0, p0
-                    invoke-virtual { v0 }, $parentViewMethod
+                    invoke-virtual { v0 }, $hideShowMoreButtonGetParentViewMethod
                     move-result-object v1
                     iget-object v2, v0, $buttonContainerField
                     iget-object v3, v0, $textViewField
@@ -376,7 +373,11 @@ val hideLayoutComponentsPatch = hideLayoutComponentsPatch(
     )
 
     // Phone (landscape mode)
-    constructorMatch.immutableClassDef.hideSubscribedChannelsBarLandscapeMethodMatch.let {
+    if (is_20_21_or_greater) {
+        hideSubscribedChannelsBarLandscapeMethodMatch
+    } else {
+        hideSubscribedChannelsBarLandscapeLegacyMethodMatch
+    }.let {
         it.method.apply {
             val index = it[-1]
             val register = getInstruction<OneRegisterInstruction>(index).registerA
@@ -439,8 +440,9 @@ val hideLayoutComponentsPatch = hideLayoutComponentsPatch(
     // region Hide Floating microphone
 
     val floatingMicrophoneButtonMethodMatch = if (is_21_11_or_greater)
-        showFloatingMicrophoneButtonParentMethod.immutableClassDef.showFloatingMicrophoneButtonMethodMatch
-    else showFloatingMicrophoneButtonLegacyMethod
+        showFloatingMicrophoneButtonMethodMatch
+    else
+        showFloatingMicrophoneButtonLegacyMethod
 
     floatingMicrophoneButtonMethodMatch.let {
         it.method.apply {
@@ -583,11 +585,10 @@ val hideLayoutComponentsPatch = hideLayoutComponentsPatch(
     // region Hide You may like section
 
     if (is_20_21_or_greater) {
-        val searchSuggestionEndpointField =
-            searchSuggestionEndpointConstructorMethod.immutableClassDef
-                .searchSuggestionEndpointMethodMatch.let {
-                    it.method.getInstruction(it[0]).fieldReference!!
-                }
+        val searchSuggestionEndpointField = searchSuggestionEndpointMethodMatch.let {
+            it.method.getInstruction(it[0]).fieldReference!!
+        }
+
         val searchSuggestionEndpointClass = searchSuggestionEndpointField.definingClass
 
         searchBoxTypingStringMethodMatch.let {

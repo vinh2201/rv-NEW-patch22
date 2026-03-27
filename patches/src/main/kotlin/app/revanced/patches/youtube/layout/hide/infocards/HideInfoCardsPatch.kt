@@ -66,7 +66,7 @@ val hideInfoCardsPatch = bytecodePatch(
         )
 
         // Edit: This old non-litho code may be obsolete and no longer used by any supported versions.
-        infocardsIncognitoParentMethod.immutableClassDef.getInfocardsIncognitoMethod().apply {
+        infocardsIncognitoMethod.apply {
             val invokeInstructionIndex = implementation!!.instructions.indexOfFirst {
                 it.opcode.ordinal == Opcode.INVOKE_VIRTUAL.ordinal &&
                         ((it as ReferenceInstruction).reference.toString() == "Landroid/view/View;->setVisibility(I)V")

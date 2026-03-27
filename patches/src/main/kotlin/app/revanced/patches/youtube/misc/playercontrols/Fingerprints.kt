@@ -5,9 +5,10 @@ import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patches.shared.misc.mapping.ResourceType
 import app.revanced.patches.youtube.layout.player.overlay.createPlayerOverviewMethodMatch
 import app.revanced.patches.youtube.layout.sponsorblock.controlsOverlayMethodMatch
+import app.revanced.util.getting
+import app.revanced.util.using
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.ClassDef
 
 internal val BytecodePatchContext.playerControlsVisibilityEntityModelMethodMatch by composingFirstMethod {
     name("getPlayerControlsVisibility")
@@ -20,20 +21,22 @@ internal val BytecodePatchContext.playerControlsVisibilityEntityModelMethodMatch
     )
 }
 
-internal val BytecodePatchContext.youtubeControlsOverlayMethod by gettingFirstImmutableMethodDeclaratively {
-    returnType("V")
-    parameterTypes()
-    instructions(
-        method("setFocusableInTouchMode"),
-        ResourceType.ID("inset_overlay_view_layout"),
-        ResourceType.ID("scrim_overlay"),
-    )
-}
-
-internal val ClassDef.motionEventMethodMatch by ClassDefComposing.composingFirstMethod {
-    returnType("V")
-    parameterTypes("Landroid/view/MotionEvent;")
-    instructions(method("setTranslationY"))
+internal val BytecodePatchContext.motionEventMethodMatch by getting {
+    firstMethodComposite {
+        returnType("V")
+        parameterTypes("Landroid/view/MotionEvent;")
+        instructions(method("setTranslationY"))
+    }
+} using {
+    firstImmutableMethodDeclaratively {
+        returnType("V")
+        parameterTypes()
+        instructions(
+            method("setFocusableInTouchMode"),
+            ResourceType.ID("inset_overlay_view_layout"),
+            ResourceType.ID("scrim_overlay"),
+        )
+    }
 }
 
 internal val BytecodePatchContext.playerControlsExtensionHookListenersExistMethod by gettingFirstMethodDeclaratively {
@@ -100,15 +103,13 @@ internal val BytecodePatchContext.overlayViewInflateMethodMatch by composingFirs
     )
 }
 
-/**
- * Resolves to the class found in [playerTopControlsInflateMethodMatch].
- */
-context(_: BytecodePatchContext)
-internal fun ClassDef.getControlsOverlayVisibilityMethod() = firstMethodDeclaratively {
-    accessFlags(AccessFlags.PRIVATE, AccessFlags.FINAL)
-    returnType("V")
-    parameterTypes("Z", "Z")
-}
+internal val BytecodePatchContext.controlsOverlayVisibilityMethod by getting {
+    firstMethodDeclaratively {
+        accessFlags(AccessFlags.PRIVATE, AccessFlags.FINAL)
+        returnType("V")
+        parameterTypes("Z", "Z")
+    }
+} using { playerTopControlsInflateMethodMatch.immutableMethod }
 
 internal val BytecodePatchContext.playerBottomControlsExploderFeatureFlagMethod by gettingFirstMethodDeclaratively {
     accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)

@@ -3,39 +3,38 @@ package app.revanced.patches.youtube.interaction.seekbar
 import app.revanced.patcher.*
 import app.revanced.patcher.extensions.instructions
 import app.revanced.patcher.patch.BytecodePatchContext
+import app.revanced.util.getting
+import app.revanced.util.using
 import app.revanced.util.literal
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.ClassDef
 
-internal val BytecodePatchContext.swipingUpGestureParentMethod by gettingFirstImmutableMethodDeclaratively {
+private val BytecodePatchContext.swipingUpGestureParentMethod by gettingFirstImmutableMethodDeclaratively {
     returnType("Z")
     parameterTypes()
     instructions(
-        45379021L(), // Swipe up fullscreen feature flag
+        45379021L(), // Swipe up fullscreen feature flag.
     )
 }
 
-/**
- * Resolves using the class found in [swipingUpGestureParentMethod].
- */
-context(_: BytecodePatchContext)
-internal fun ClassDef.getShowSwipingUpGuideMethod() = firstMethodDeclaratively {
-    accessFlags(AccessFlags.FINAL)
-    returnType("Z")
-    parameterTypes()
-    instructions(1L())
-}
 
-/**
- * Resolves using the class found in [swipingUpGestureParentMethod].
- */
-context(_: BytecodePatchContext)
-internal fun ClassDef.getAllowSwipingUpGestureMethod() = firstMethodDeclaratively {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    returnType("V")
-    parameterTypes("L")
-}
+internal val BytecodePatchContext.showSwipingUpGuideMethod by getting {
+    firstMethodDeclaratively {
+        accessFlags(AccessFlags.FINAL)
+        returnType("Z")
+        parameterTypes()
+        instructions(1L())
+    }
+} using { swipingUpGestureParentMethod }
+
+
+internal val BytecodePatchContext.allowSwipingUpGestureMethod by getting {
+    firstMethodDeclaratively {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("V")
+        parameterTypes("L")
+    }
+} using { swipingUpGestureParentMethod }
 
 internal val BytecodePatchContext.disableFastForwardLegacyMethodMatch by composingFirstMethod {
     returnType("Z")

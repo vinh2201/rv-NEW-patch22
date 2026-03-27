@@ -237,7 +237,7 @@ val miniplayerPatch = bytecodePatch(
         // Parts of the YT code is removed in 20.37+ and the legacy player no longer works.
 
         if (!is_20_37_or_greater) {
-            miniplayerDimensionsCalculatorParentMethod.immutableClassDef.getMiniplayerOverrideNoContextMethod()
+            miniplayerOverrideNoContextMethod
                 .apply {
                     findReturnIndicesReversed().forEach { index ->
                         insertLegacyTabletMiniplayerOverride(index)
@@ -370,7 +370,7 @@ val miniplayerPatch = bytecodePatch(
         // YT fixed this mistake in 19.17.
         // Fix this, by swapping the drawable resource values with each other.
         if (!is_19_17_or_greater) {
-            miniplayerModernViewParentMethod.immutableClassDef.getMiniplayerModernExpandCloseDrawablesMethod()
+            miniplayerModernExpandCloseDrawablesMethod
                 .apply {
                     listOf(
                         ytOutlinePictureInPictureWhite24 to ytOutlineXWhite24,
@@ -418,15 +418,13 @@ val miniplayerPatch = bytecodePatch(
         // region Add hooks to hide modern miniplayer buttons.
 
         listOf(
-            ClassDef::miniplayerModernExpandButtonMethodMatch to "hideMiniplayerExpandClose",
-            ClassDef::miniplayerModernCloseButtonMethodMatch to "hideMiniplayerExpandClose",
-            ClassDef::miniplayerModernActionButtonMethodMatch to "hideMiniplayerActionButton",
-            ClassDef::miniplayerModernRewindButtonMethodMatch to "hideMiniplayerRewindForward",
-            ClassDef::miniplayerModernForwardButtonMethodMatch to "hideMiniplayerRewindForward",
-            ClassDef::miniplayerModernOverlayViewMethodMatch to "adjustMiniplayerOpacity",
-        ).forEach { (matching, methodName) ->
-            val match = matching.get(miniplayerModernViewParentMethod.immutableClassDef)
-
+            miniplayerModernExpandButtonMethodMatch to "hideMiniplayerExpandClose",
+            miniplayerModernCloseButtonMethodMatch to "hideMiniplayerExpandClose",
+            miniplayerModernActionButtonMethodMatch to "hideMiniplayerActionButton",
+            miniplayerModernRewindButtonMethodMatch to "hideMiniplayerRewindForward",
+            miniplayerModernForwardButtonMethodMatch to "hideMiniplayerRewindForward",
+            miniplayerModernOverlayViewMethodMatch to "adjustMiniplayerOpacity",
+        ).forEach { (match, methodName) ->
             match.method.apply {
                 val index = match[-1]
                 val register = getInstruction<OneRegisterInstruction>(index).registerA
@@ -438,7 +436,7 @@ val miniplayerPatch = bytecodePatch(
             }
         }
 
-        miniplayerModernViewParentMethod.immutableClassDef.getMiniplayerModernAddViewListenerMethod()
+        miniplayerModernAddViewListenerMethod
             .addInstruction(
                 0,
                 "invoke-static { p1 }, $EXTENSION_CLASS_DESCRIPTOR->" +

@@ -5,10 +5,12 @@ import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patches.shared.misc.mapping.ResourceType
 import app.revanced.patches.youtube.layout.player.overlay.createPlayerOverviewMethodMatch
 import app.revanced.patches.youtube.misc.playercontrols.playerBottomGradientScrimMethodMatch
+import app.revanced.patches.youtube.shared.getLayoutConstructorMethodMatch
 import app.revanced.patches.youtube.shared.seekbarMethod
+import app.revanced.util.getting
+import app.revanced.util.using
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.ClassDef
 
 internal val BytecodePatchContext.appendTimeMethodMatch by composingFirstMethod {
     accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
@@ -28,23 +30,24 @@ internal val BytecodePatchContext.appendTimeMethodMatch by composingFirstMethod 
 /**
  * Matches same method as [createPlayerOverviewMethodMatch] and [playerBottomGradientScrimMethodMatch].
  */
-internal val ClassDef.controlsOverlayMethodMatch by ClassDefComposing.composingFirstMethod {
-    returnType("V")
-    parameterTypes()
-    instructions(
-        ResourceType.ID.invoke("inset_overlay_view_layout"),
-        afterAtMost(20, allOf(Opcode.CHECK_CAST(), type("Landroid/widget/FrameLayout;"))),
-    )
-}
+internal val BytecodePatchContext.controlsOverlayMethodMatch by getting {
+    firstMethodComposite {
+        returnType("V")
+        parameterTypes()
+        instructions(
+            ResourceType.ID.invoke("inset_overlay_view_layout"),
+            afterAtMost(20, allOf(Opcode.CHECK_CAST(), type("Landroid/widget/FrameLayout;"))),
+        )
+    }
+} using { getLayoutConstructorMethodMatch().immutableMethod }
 
-/**
- * Resolves to the class found in [seekbarMethod].
- */
-internal val ClassDef.rectangleFieldInvalidatorMethodMatch by ClassDefComposing.composingFirstMethod {
-    returnType("V")
-    parameterTypes()
-    instructions(method("invalidate"))
-}
+internal val BytecodePatchContext.rectangleFieldInvalidatorMethodMatch by getting {
+    firstMethodComposite {
+        returnType("V")
+        parameterTypes()
+        instructions(method("invalidate"))
+    }
+} using { seekbarMethod }
 
 internal val BytecodePatchContext.adProgressTextViewVisibilityMethodMatch by composingFirstMethod {
     accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)

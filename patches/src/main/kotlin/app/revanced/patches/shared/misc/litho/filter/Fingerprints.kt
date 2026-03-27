@@ -5,9 +5,10 @@ import app.revanced.patcher.firstMethodComposite
 import app.revanced.patcher.instructions
 import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patcher.returnType
+import app.revanced.util.getting
+import app.revanced.util.using
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 internal val BytecodePatchContext.accessibilityIdMethodMatch by composingFirstMethod {
@@ -37,17 +38,18 @@ internal fun BytecodePatchContext.getAccessibilityTextMethodMatch(accessibilityI
     }
 
 
-context(_: BytecodePatchContext)
-internal fun ClassDef.getEmptyComponentMethod() = firstMethodDeclaratively {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.STATIC)
-    returnType("L")
-    parameterTypes("L")
-}
-
-internal val BytecodePatchContext.emptyComponentParentMethod by gettingFirstMethodDeclaratively {
-    accessFlags(AccessFlags.PRIVATE, AccessFlags.CONSTRUCTOR)
-    parameterTypes()
-    instructions("EmptyComponent"())
+internal val BytecodePatchContext.emptyComponentMethod by getting {
+    firstMethodDeclaratively {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.STATIC)
+        returnType("L")
+        parameterTypes("L")
+    }
+} using {
+    firstImmutableMethodDeclaratively {
+        accessFlags(AccessFlags.PRIVATE, AccessFlags.CONSTRUCTOR)
+        parameterTypes()
+        instructions("EmptyComponent"())
+    }
 }
 
 fun BytecodePatchContext.getComponentCreateMethodMatch(accessibilityIdMethod: MethodReference) = firstMethodComposite {

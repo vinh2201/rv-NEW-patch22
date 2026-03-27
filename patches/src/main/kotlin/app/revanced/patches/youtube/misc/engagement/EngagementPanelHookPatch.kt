@@ -9,9 +9,7 @@ import app.revanced.patcher.extensions.getInstruction
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patches.youtube.misc.extension.sharedExtensionPatch
 import app.revanced.patches.youtube.shared.getEngagementPanelControllerMethodMatch
-import app.revanced.util.getReference
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
-import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import kotlin.properties.Delegates
 
 private const val EXTENSION_CLASS_DESCRIPTOR =
@@ -32,32 +30,32 @@ val engagementPanelHookPatch = bytecodePatch(
     dependsOn(sharedExtensionPatch)
 
     apply {
-        val match = getEngagementPanelControllerMethodMatch()
-        match.method.apply {
-            val panelIdField = getInstruction(match[-1]).fieldReference
-            val insertIndex = match[5]
+        getEngagementPanelControllerMethodMatch().let { match ->
+            match.method.apply {
+                val panelIdField = getInstruction(match[-1]).fieldReference
+                val insertIndex = match[5]
 
-            val (freeRegister, panelRegister) =
-                with(getInstruction<TwoRegisterInstruction>(insertIndex)) {
-                    Pair(registerA, registerB)
-                }
+                val (freeRegister, panelRegister) =
+                    with(getInstruction<TwoRegisterInstruction>(insertIndex)) {
+                        Pair(registerA, registerB)
+                    }
 
-            panelControllerMethod = this
-            panelIdIndex = insertIndex
-            panelIdRegister = freeRegister
-            panelIdSmaliInstruction =
-                "iget-object v$panelIdRegister, v$panelRegister, $panelIdField"
+                panelControllerMethod = this
+                panelIdIndex = insertIndex
+                panelIdRegister = freeRegister
+                panelIdSmaliInstruction = "iget-object v$panelIdRegister, v$panelRegister, $panelIdField"
 
-            addInstructions(
-                insertIndex,
-                """
+                addInstructions(
+                    insertIndex,
+                    """
                         $panelIdSmaliInstruction
                         invoke-static { v${panelIdRegister} }, ${EXTENSION_CLASS_DESCRIPTOR}->open(Ljava/lang/String;)V
                     """
-            )
+                )
+            }
         }
 
-        match.immutableClassDef.getEngagementPanelUpdateMethod().addInstruction(
+        engagementPanelUpdateMethod.addInstruction(
             0,
             "invoke-static { }, $EXTENSION_CLASS_DESCRIPTOR->close()V"
         )

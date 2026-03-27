@@ -4,9 +4,10 @@ import app.revanced.patcher.*
 import app.revanced.patcher.extensions.instructions
 import app.revanced.patcher.gettingFirstMethodDeclaratively
 import app.revanced.patcher.patch.BytecodePatchContext
+import app.revanced.util.getting
+import app.revanced.util.using
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.ClassDef
 
 internal val BytecodePatchContext.dislikeMethod by gettingFirstMethodDeclaratively {
     returnType("V")
@@ -41,28 +42,27 @@ internal val BytecodePatchContext.rollingNumberMeasureAnimatedTextMethodMatch by
     )
 }
 
-/**
- * Matches to class found in [rollingNumberMeasureStaticLabelParentMethod].
- */
-internal val ClassDef.rollingNumberMeasureStaticLabelMethodMatch by ClassDefComposing.composingFirstMethod {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    returnType("F")
-    parameterTypes("Ljava/lang/String;")
-    opcodes(
-        Opcode.IGET_OBJECT,
-        Opcode.INVOKE_VIRTUAL,
-        Opcode.MOVE_RESULT,
-        Opcode.RETURN,
-    )
-}
-
-internal val BytecodePatchContext.rollingNumberMeasureStaticLabelParentMethod by gettingFirstImmutableMethodDeclaratively {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    returnType("Ljava/lang/String;")
-    parameterTypes()
-    instructions(
-        "RollingNumberFontProperties{paint="(),
-    )
+internal val BytecodePatchContext.rollingNumberMeasureStaticLabelMethodMatch by getting {
+    firstMethodComposite {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("F")
+        parameterTypes("Ljava/lang/String;")
+        opcodes(
+            Opcode.IGET_OBJECT,
+            Opcode.INVOKE_VIRTUAL,
+            Opcode.MOVE_RESULT,
+            Opcode.RETURN,
+        )
+    }
+} using {
+    firstImmutableMethodDeclaratively {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("Ljava/lang/String;")
+        parameterTypes()
+        instructions(
+            "RollingNumberFontProperties{paint="(),
+        )
+    }
 }
 
 internal val BytecodePatchContext.rollingNumberSetterMethodMatch by composingFirstMethod {
@@ -112,16 +112,14 @@ internal val BytecodePatchContext.textComponentDataMethod by gettingFirstImmutab
     custom { immutableClassDef.anyField { type == "Ljava/util/BitSet;" } }
 }
 
-/**
- * Matches against the same class found in [textComponentConstructorMethod].
- */
-context(_: BytecodePatchContext)
-internal fun ClassDef.getTextComponentLookupMethod() = firstMethodDeclaratively {
-    accessFlags(AccessFlags.PROTECTED, AccessFlags.FINAL)
-    returnType("L")
-    parameterTypes("L")
-    instructions("…"())
-}
+internal val BytecodePatchContext.textComponentLookupMethod by getting {
+    firstMethodDeclaratively {
+        accessFlags(AccessFlags.PROTECTED, AccessFlags.FINAL)
+        returnType("L")
+        parameterTypes("L")
+        instructions("…"())
+    }
+} using { textComponentConstructorMethod }
 
 internal val BytecodePatchContext.textComponentFeatureFlagMethodMatch by composingFirstMethod {
     accessFlags(AccessFlags.FINAL)

@@ -2,13 +2,15 @@ package app.revanced.patches.instagram.misc.signature
 
 import app.revanced.patcher.*
 import app.revanced.patcher.patch.BytecodePatchContext
-import com.android.tools.smali.dexlib2.iface.ClassDef
+import app.revanced.util.getting
+import app.revanced.util.using
 
-context(_: BytecodePatchContext)
-internal fun ClassDef.getIsValidSignatureClassMethod() = firstMethodDeclaratively(
-    "The provider for uri '",
-    "' is not trusted: ",
-)
+internal val BytecodePatchContext.isValidSignatureClassMethod by getting {
+    firstMethodDeclaratively(
+        "The provider for uri '",
+        "' is not trusted: ",
+    )
+} using { isValidSignatureMethodMethod }
 
 internal val BytecodePatchContext.isValidSignatureMethodMethod by gettingFirstMethodDeclaratively {
     parameterTypes("L", "Z")

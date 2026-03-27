@@ -22,7 +22,7 @@ import app.revanced.patches.youtube.misc.settings.PreferenceScreen
 import app.revanced.patches.youtube.misc.settings.settingsPatch
 import app.revanced.patches.youtube.shared.getLayoutConstructorMethodMatch
 import app.revanced.patches.youtube.shared.seekbarMethod
-import app.revanced.patches.youtube.shared.getSeekbarOnDrawMethodMatch
+import app.revanced.patches.youtube.shared.seekbarOnDrawMethodMatch
 import app.revanced.patches.youtube.video.information.onCreateHook
 import app.revanced.patches.youtube.video.information.videoInformationPatch
 import app.revanced.patches.youtube.video.information.videoTimeHook
@@ -154,7 +154,7 @@ val sponsorBlockPatch = bytecodePatch(
 
         // Set seekbar draw rectangle.
         val rectangleFieldName: FieldReference
-        seekbarMethod.immutableClassDef.rectangleFieldInvalidatorMethodMatch.let {
+        rectangleFieldInvalidatorMethodMatch.let {
             it.method.apply {
                 val rectangleIndex = indexOfFirstInstructionReversedOrThrow(
                     it[0],
@@ -170,7 +170,7 @@ val sponsorBlockPatch = bytecodePatch(
 
         // Cannot match using original immutable class because
         // class may have been modified by other patches
-        seekbarMethod.immutableClassDef.getSeekbarOnDrawMethodMatch().let {
+        seekbarOnDrawMethodMatch.let {
             it.method.apply {
                 // Set seekbar thickness.
                 val thicknessIndex = it[-1]
@@ -236,7 +236,7 @@ val sponsorBlockPatch = bytecodePatch(
         onCreateHook(EXTENSION_SEGMENT_PLAYBACK_CONTROLLER_CLASS_DESCRIPTOR, "initialize")
 
         // Initialize the SponsorBlock view.
-        getLayoutConstructorMethodMatch().immutableClassDef.controlsOverlayMethodMatch.let {
+        controlsOverlayMethodMatch.let {
             it.method.apply {
                 val checkCastIndex = it[-1]
                 val frameLayoutRegister =

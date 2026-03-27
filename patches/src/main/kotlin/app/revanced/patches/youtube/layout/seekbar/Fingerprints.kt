@@ -3,9 +3,10 @@ package app.revanced.patches.youtube.layout.seekbar
 import app.revanced.patcher.*
 import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patches.shared.misc.mapping.ResourceType
+import app.revanced.util.getting
+import app.revanced.util.using
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.ClassDef
 
 internal val BytecodePatchContext.fullscreenSeekbarThumbnailsMethod by gettingFirstMethodDeclaratively {
     returnType("Z")
@@ -132,16 +133,15 @@ internal val BytecodePatchContext.lottieCompositionFactoryZipMethod by gettingFi
 }
 
 /**
- * Resolves using class found in [lottieCompositionFactoryZipMethod].
- *
  * [Original method](https://github.com/airbnb/lottie-android/blob/26ad8bab274eac3f93dccccfa0cafc39f7408d13/lottie/src/main/java/com/airbnb/lottie/LottieCompositionFactory.java#L386)
  */
-context(_: BytecodePatchContext)
-internal fun ClassDef.getLottieCompositionFactoryFromJsonInputStreamMethod() = firstMethodDeclaratively {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.STATIC)
-    parameterTypes("Ljava/io/InputStream;", "Ljava/lang/String;")
-    returnType("L")
-    instructions(
-        anyOf(2L(), 3L()),
-    )
-}
+internal val BytecodePatchContext.lottieCompositionFactoryFromJsonInputStreamMethod by getting {
+    firstMethodDeclaratively {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.STATIC)
+        parameterTypes("Ljava/io/InputStream;", "Ljava/lang/String;")
+        returnType("L")
+        instructions(
+            anyOf(2L(), 3L()),
+        )
+    }
+} using { lottieCompositionFactoryZipMethod }

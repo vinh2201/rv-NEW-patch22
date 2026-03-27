@@ -51,10 +51,6 @@ val hideEndScreenSuggestedVideoPatch = bytecodePatch(
             SwitchPreference("revanced_end_screen_suggested_video"),
         )
 
-
-        val autoNavStatusMethod =
-            autoNavConstructorMethod.immutableClassDef.getAutoNavStatusMethod()
-
         val endScreenMethod = removeOnLayoutChangeListenerMethodMatch.let {
             firstMethod(it.method.getInstruction<ReferenceInstruction>(it[1]).methodReference!!)
         }

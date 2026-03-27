@@ -1,8 +1,8 @@
 package app.revanced.patches.youtube.misc.protobuf
 
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
+import app.revanced.patcher.classDef
 import app.revanced.patcher.extensions.addInstructions
-import app.revanced.patcher.immutableClassDef
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patches.youtube.misc.extension.sharedExtensionPatch
 import app.revanced.util.cloneMutable
@@ -15,22 +15,20 @@ val hookProtobufElementParserPatch = bytecodePatch(
     dependsOn(sharedExtensionPatch)
 
     apply {
-        protobufReflectionMethod.immutableClassDef.newElementProtobufParserMethodMatch.let {
-            protobufElementParserMethod = it.method.apply {
-                // Not enough registers in the method. Clone the method and use the
-                // original method as an intermediate to call extension code.
-                val helperMethod = cloneMutable(name = "patch_parseNewElement")
-                    .also(it.classDef.methods::add)
+        protobufElementParserMethod = newElementProtobufParserMethod.apply {
+            // Not enough registers in the method. Clone the method and use the
+            // original method as an intermediate to call extension code.
+            val helperMethod = cloneMutable(name = "patch_parseNewElement")
+                .also(newElementProtobufParserMethod.classDef.methods::add)
 
-                addInstructions(
-                    0,
-                    """
-                        invoke-static { p0 }, $helperMethod
-                        move-result-object p0
-                        return-object p0
-                    """
-                )
-            }
+            addInstructions(
+                0,
+                """
+                    invoke-static { p0 }, $helperMethod
+                    move-result-object p0
+                    return-object p0
+                """
+            )
         }
     }
 }

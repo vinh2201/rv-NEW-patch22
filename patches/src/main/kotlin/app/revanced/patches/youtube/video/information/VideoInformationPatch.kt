@@ -115,8 +115,8 @@ val videoInformationPatch = bytecodePatch(
             // Create extension interface methods.
             addSeekInterfaceMethods(
                 playerInitMethod.classDef,
-                classDef.getSeekMethod(),
-                classDef.getSeekRelativeMethod(),
+                seekMethod,
+                seekRelativeMethod,
             )
         }
 
@@ -135,27 +135,23 @@ val videoInformationPatch = bytecodePatch(
 
             addSeekInterfaceMethods(
                 classDef,
-                classDef.getMdxSeekMethod(),
-                classDef.getMdxSeekRelativeMethod(),
+                mdxSeekMethod,
+                mdxSeekRelativeMethod,
             )
         }
 
-        with(createVideoPlayerSeekbarMethod) {
-            val videoLengthMethodMatch = immutableClassDef.videoLengthMethodMatch
+        videoLengthMethodMatch.method.apply {
+            val videoLengthRegisterIndex = videoLengthMethodMatch[-1] - 2
+            val videoLengthRegister =
+                getInstruction<OneRegisterInstruction>(videoLengthRegisterIndex).registerA
+            val dummyRegisterForLong =
+                videoLengthRegister + 1 // Required for long values since they are wide.
 
-            videoLengthMethodMatch.method.apply {
-                val videoLengthRegisterIndex = videoLengthMethodMatch[-1] - 2
-                val videoLengthRegister =
-                    getInstruction<OneRegisterInstruction>(videoLengthRegisterIndex).registerA
-                val dummyRegisterForLong =
-                    videoLengthRegister + 1 // Required for long values since they are wide.
-
-                addInstruction(
-                    videoLengthMethodMatch[-1],
-                    "invoke-static {v$videoLengthRegister, v$dummyRegisterForLong}, " +
-                            "$EXTENSION_CLASS_DESCRIPTOR->setVideoLength(J)V",
-                )
-            }
+            addInstruction(
+                videoLengthMethodMatch[-1],
+                "invoke-static {v$videoLengthRegister, v$dummyRegisterForLong}, " +
+                        "$EXTENSION_CLASS_DESCRIPTOR->setVideoLength(J)V",
+            )
         }
 
         playerStatusMethod = playerInitMethod.immutableClassDef.getPlayerStatusMethod()
@@ -192,73 +188,72 @@ val videoInformationPatch = bytecodePatch(
         /*
          * Hook the user playback speed selection.
          */
-        playbackSpeedOnItemClickParentMethodMatch.immutableClassDef.getPlaybackSpeedOnItemClickMethod()
-            .apply {
-                val speedSelectionValueInstructionIndex =
-                    indexOfFirstInstructionOrThrow(Opcode.IGET)
+        playbackSpeedOnItemClickMethod.apply {
+            val speedSelectionValueInstructionIndex =
+                indexOfFirstInstructionOrThrow(Opcode.IGET)
 
-                legacySpeedSelectionInsertMethod = this
-                legacySpeedSelectionInsertIndex = speedSelectionValueInstructionIndex + 1
-                legacySpeedSelectionValueRegister =
-                    getInstruction<TwoRegisterInstruction>(speedSelectionValueInstructionIndex).registerA
+            legacySpeedSelectionInsertMethod = this
+            legacySpeedSelectionInsertIndex = speedSelectionValueInstructionIndex + 1
+            legacySpeedSelectionValueRegister =
+                getInstruction<TwoRegisterInstruction>(speedSelectionValueInstructionIndex).registerA
 
-                setPlaybackSpeedMethodReference = getInstruction<ReferenceInstruction>(
-                    indexOfFirstInstructionOrThrow(speedSelectionValueInstructionIndex) {
-                        val reference = getReference<MethodReference>()
-                        reference?.parameterTypes?.size == 1 && reference.parameterTypes.first() == "F"
-                    }
-                ).reference as MethodReference
-
-                setPlaybackSpeedContainerClassFieldReference = getInstruction<ReferenceInstruction>(
-                    indexOfFirstInstructionOrThrow(Opcode.IF_EQZ) - 1
-                ).reference as FieldReference
-
-                if (is_20_49_or_greater) {
-                    // Only one class implements the interface. Patcher currently does not have a
-                    // 'first' accessor for looking up classes, so do it ourselves to verify
-                    // we're using the expected class type.
-                    var fieldReferenceType: ClassDef? = null
-                    classDefs.forEach { classDef ->
-                        if (classDef.interfaces.contains(
-                                setPlaybackSpeedContainerClassFieldReference.type
-                            )
-                        ) {
-                            if (fieldReferenceType != null) {
-                                throw PatchException("Found more than one playback speed interface: $classDef")
-                            }
-                            fieldReferenceType = classDef
-                        }
-                    }
-                    setPlaybackSpeedContainerClassFieldReferenceClassType = fieldReferenceType!!
-                } else {
-                    setPlaybackSpeedContainerClassFieldReferenceClassType =
-                        classDefs[setPlaybackSpeedContainerClassFieldReference.type]!!
+            setPlaybackSpeedMethodReference = getInstruction<ReferenceInstruction>(
+                indexOfFirstInstructionOrThrow(speedSelectionValueInstructionIndex) {
+                    val reference = getReference<MethodReference>()
+                    reference?.parameterTypes?.size == 1 && reference.parameterTypes.first() == "F"
                 }
+            ).reference as MethodReference
 
-                setPlaybackSpeedClassFieldReference = getInstruction<ReferenceInstruction>(
-                    indexOfFirstInstructionOrThrow(speedSelectionValueInstructionIndex) {
-                        getReference<FieldReference>()?.type?.startsWith("L") == true
+            setPlaybackSpeedContainerClassFieldReference = getInstruction<ReferenceInstruction>(
+                indexOfFirstInstructionOrThrow(Opcode.IF_EQZ) - 1
+            ).reference as FieldReference
+
+            if (is_20_49_or_greater) {
+                // Only one class implements the interface. Patcher currently does not have a
+                // 'first' accessor for looking up classes, so do it ourselves to verify
+                // we're using the expected class type.
+                var fieldReferenceType: ClassDef? = null
+                classDefs.forEach { classDef ->
+                    if (classDef.interfaces.contains(
+                            setPlaybackSpeedContainerClassFieldReference.type
+                        )
+                    ) {
+                        if (fieldReferenceType != null) {
+                            throw PatchException("Found more than one playback speed interface: $classDef")
+                        }
+                        fieldReferenceType = classDef
                     }
-                ).reference as FieldReference
+                }
+                setPlaybackSpeedContainerClassFieldReferenceClassType = fieldReferenceType!!
+            } else {
+                setPlaybackSpeedContainerClassFieldReferenceClassType =
+                    classDefs[setPlaybackSpeedContainerClassFieldReference.type]!!
+            }
 
-                setPlaybackSpeedMethod = firstClassDef(
-                    setPlaybackSpeedMethodReference.definingClass
-                ).methods.first { it.name == setPlaybackSpeedMethodReference.name }
-                setPlaybackSpeedMethodIndex = 0
+            setPlaybackSpeedClassFieldReference = getInstruction<ReferenceInstruction>(
+                indexOfFirstInstructionOrThrow(speedSelectionValueInstructionIndex) {
+                    getReference<FieldReference>()?.type?.startsWith("L") == true
+                }
+            ).reference as FieldReference
 
-                // Add override playback speed method.
-                classDef.methods.add(
-                    ImmutableMethod(
-                        definingClass,
-                        "overridePlaybackSpeed",
-                        listOf(ImmutableMethodParameter("F", annotations, null)),
-                        "V",
-                        AccessFlags.PUBLIC.value or AccessFlags.PUBLIC.value,
-                        annotations,
-                        null,
-                        ImmutableMethodImplementation(
-                            4,
-                            """
+            setPlaybackSpeedMethod = firstClassDef(
+                setPlaybackSpeedMethodReference.definingClass
+            ).methods.first { it.name == setPlaybackSpeedMethodReference.name }
+            setPlaybackSpeedMethodIndex = 0
+
+            // Add override playback speed method.
+            classDef.methods.add(
+                ImmutableMethod(
+                    definingClass,
+                    "overridePlaybackSpeed",
+                    listOf(ImmutableMethodParameter("F", annotations, null)),
+                    "V",
+                    AccessFlags.PUBLIC.value or AccessFlags.PUBLIC.value,
+                    annotations,
+                    null,
+                    ImmutableMethodImplementation(
+                        4,
+                        """
                             # Check if the playback speed is not auto (-2.0f)
                             const/4 v0, 0x0
                             cmpg-float v0, v3, v0
@@ -282,12 +277,12 @@ val videoInformationPatch = bytecodePatch(
                             :ignore
                             return-void
                         """.toInstructions(),
-                            null,
-                            null,
-                        ),
-                    ).toMutable(),
-                )
-            }
+                        null,
+                        null,
+                    ),
+                ).toMutable(),
+            )
+        }
 
         playbackSpeedClassMethod.apply {
             val index = indexOfFirstInstructionOrThrow(Opcode.RETURN_OBJECT)
@@ -319,7 +314,7 @@ val videoInformationPatch = bytecodePatch(
         }
 
         // Handle new playback speed menu.
-        videoQualityChangedMethodMatch.immutableClassDef.playbackSpeedMenuSpeedChangedMethodMatch.let {
+        playbackSpeedMenuSpeedChangedMethodMatch.let {
             it.method.apply {
                 val index = it[0]
 
@@ -403,7 +398,7 @@ val videoInformationPatch = bytecodePatch(
         }
 
         // Detect video quality changes and override the current quality.
-        videoQualitySetterMethod.immutableClassDef.getSetVideoQualityMethod().let {
+        setVideoQualityMethod.let {
             it
             // This instruction refers to the field with the type that contains the setQuality method.
             val onItemClickListenerClassReference =

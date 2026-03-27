@@ -1,14 +1,14 @@
 package app.revanced.patches.music.misc.androidauto
 
+import app.revanced.patcher.firstImmutableMethodDeclaratively
 import app.revanced.patcher.firstMethodDeclaratively
 import app.revanced.patcher.gettingFirstMethodDeclaratively
-import app.revanced.patcher.instructions
-import app.revanced.patcher.invoke
 import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patcher.returnType
 import app.revanced.patcher.strings
-import com.android.tools.smali.dexlib2.iface.ClassDef
+import app.revanced.util.getting
+import app.revanced.util.using
 
 internal val BytecodePatchContext.checkCertificateMethod by gettingFirstMethodDeclaratively {
     returnType("Z")
@@ -16,13 +16,12 @@ internal val BytecodePatchContext.checkCertificateMethod by gettingFirstMethodDe
     strings("X509", "isPartnerSHAFingerprint")
 }
 
-internal val BytecodePatchContext.searchMediaItemsConstructorMethod by gettingFirstMethodDeclaratively(
-    "ytm_media_browser/search_media_items",
-) {
-    returnType("V")
-}
-
-context(_: BytecodePatchContext)
-internal fun ClassDef.getSearchMediaItemsExecuteMethod() = firstMethodDeclaratively {
-    parameterTypes()
+internal val BytecodePatchContext.searchMediaItemsExecuteMethod by getting {
+    firstMethodDeclaratively {
+        parameterTypes()
+    }
+} using {
+    firstImmutableMethodDeclaratively("ytm_media_browser/search_media_items") {
+        returnType("V")
+    }
 }

@@ -57,9 +57,6 @@ internal val BytecodePatchContext.showSplashScreen1MethodMatch by composingFirst
     )
 }
 
-/**
- * Matches to the same method as [splashScreenStyleMethodMatch].
- */
 internal val BytecodePatchContext.showSplashScreen2MethodMatch by composingFirstMethod {
     name("onCreate")
     definingClass(YOUTUBE_MAIN_ACTIVITY_CLASS_TYPE)

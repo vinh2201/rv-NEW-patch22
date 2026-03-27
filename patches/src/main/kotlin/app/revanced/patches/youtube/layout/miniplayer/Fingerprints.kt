@@ -3,12 +3,12 @@
 package app.revanced.patches.youtube.layout.miniplayer
 
 import app.revanced.patcher.*
-import app.revanced.patcher.ClassDefComposing
 import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patches.shared.misc.mapping.ResourceType
+import app.revanced.util.getting
+import app.revanced.util.using
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.ClassDef
 
 internal const val MINIPLAYER_MODERN_FEATURE_KEY = 45622882L
 
@@ -33,120 +33,113 @@ internal val BytecodePatchContext.miniplayerModernConstructorMethod by gettingFi
     )
 }
 
-internal val BytecodePatchContext.miniplayerDimensionsCalculatorParentMethod by gettingFirstImmutableMethodDeclaratively {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    returnType("V")
-    parameterTypes("L")
-    instructions(
-        ResourceType.DIMEN("floaty_bar_button_top_margin"),
-    )
+internal val BytecodePatchContext.miniplayerModernAddViewListenerMethod by getting {
+    firstMethodDeclaratively {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("V")
+        parameterTypes("Landroid/view/View;")
+    }
+} using {
+    firstImmutableMethodDeclaratively {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("Ljava/lang/String;")
+        parameterTypes()
+        instructions(
+            "player_overlay_modern_mini_player_controls"(),
+        )
+    }
 }
 
-internal val BytecodePatchContext.miniplayerModernViewParentMethod by gettingFirstImmutableMethodDeclaratively {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    returnType("Ljava/lang/String;")
-    parameterTypes()
-    instructions(
-        "player_overlay_modern_mini_player_controls"(),
-    )
+internal val BytecodePatchContext.miniplayerModernCloseButtonMethodMatch by getting {
+    firstMethodComposite {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("L")
+        parameterTypes()
+        instructions(
+            ResourceType.ID("modern_miniplayer_close"),
+            allOf(Opcode.CHECK_CAST(), type("Landroid/widget/ImageView;")),
+        )
+    }
+} using { miniplayerModernAddViewListenerMethod }
+
+internal val BytecodePatchContext.miniplayerModernExpandButtonMethodMatch by getting {
+    firstMethodComposite {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("L")
+        parameterTypes()
+        instructions(
+            ResourceType.ID("modern_miniplayer_expand"),
+            allOf(Opcode.CHECK_CAST(), type("Landroid/widget/ImageView;")),
+        )
+    }
+} using { miniplayerModernAddViewListenerMethod }
+
+internal val BytecodePatchContext.miniplayerModernExpandCloseDrawablesMethod by getting {
+    firstMethodDeclaratively {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("V")
+        parameterTypes("L")
+        instructions(
+            ytOutlinePictureInPictureWhite24(),
+        )
+    }
+} using {
+    firstImmutableMethodDeclaratively {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("Ljava/lang/String;")
+        parameterTypes()
+        instructions(
+            "player_overlay_modern_mini_player_controls"(),
+        )
+    }
 }
 
-/**
- * Matches using the class found in [miniplayerModernViewParentMethod].
- */
-context(_: BytecodePatchContext)
-internal fun ClassDef.getMiniplayerModernAddViewListenerMethod() = firstMethodDeclaratively {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    returnType("V")
-    parameterTypes("Landroid/view/View;")
-}
+internal val BytecodePatchContext.miniplayerModernForwardButtonMethodMatch by getting {
+    firstMethodComposite {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("L")
+        parameterTypes()
+        instructions(
+            ResourceType.ID("modern_miniplayer_forward_button"),
+            afterAtMost(5, Opcode.MOVE_RESULT_OBJECT()),
+        )
+    }
+} using { miniplayerModernAddViewListenerMethod }
 
-/**
- * Matches using the class found in [miniplayerModernViewParentMethod].
- */
-internal val ClassDef.miniplayerModernCloseButtonMethodMatch by ClassDefComposing.composingFirstMethod {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    returnType("L")
-    parameterTypes()
-    instructions(
-        ResourceType.ID("modern_miniplayer_close"),
-        allOf(Opcode.CHECK_CAST(), type("Landroid/widget/ImageView;")),
-    )
-}
+internal val BytecodePatchContext.miniplayerModernOverlayViewMethodMatch by getting {
+    firstMethodComposite {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        parameterTypes()
+        instructions(
+            ResourceType.ID("scrim_overlay"),
+            afterAtMost(5, Opcode.MOVE_RESULT_OBJECT()),
+        )
+    }
+} using { miniplayerModernAddViewListenerMethod }
 
-/**
- * Matches using the class found in [miniplayerModernViewParentMethod].
- */
-internal val ClassDef.miniplayerModernExpandButtonMethodMatch by ClassDefComposing.composingFirstMethod {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    returnType("L")
-    parameterTypes()
-    instructions(
-        ResourceType.ID("modern_miniplayer_expand"),
-        allOf(Opcode.CHECK_CAST(), type("Landroid/widget/ImageView;")),
-    )
-}
+internal val BytecodePatchContext.miniplayerModernRewindButtonMethodMatch by getting {
+    firstMethodComposite {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("L")
+        parameterTypes()
+        instructions(
+            ResourceType.ID("modern_miniplayer_rewind_button"),
+            afterAtMost(5, Opcode.MOVE_RESULT_OBJECT()),
+        )
+    }
+} using { miniplayerModernAddViewListenerMethod }
 
-/**
- * Matches using the class found in [miniplayerModernViewParentMethod].
- */
-context(_: BytecodePatchContext)
-internal fun ClassDef.getMiniplayerModernExpandCloseDrawablesMethod() = firstMethodDeclaratively {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    returnType("V")
-    parameterTypes("L")
-    instructions(
-        ytOutlinePictureInPictureWhite24(),
-    )
-}
-
-/**
- * Matches using the class found in [miniplayerModernViewParentMethod].
- */
-internal val ClassDef.miniplayerModernForwardButtonMethodMatch by ClassDefComposing.composingFirstMethod {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    returnType("L")
-    parameterTypes()
-    instructions(
-        ResourceType.ID("modern_miniplayer_forward_button"),
-        afterAtMost(5, Opcode.MOVE_RESULT_OBJECT()),
-    )
-}
-
-internal val ClassDef.miniplayerModernOverlayViewMethodMatch by ClassDefComposing.composingFirstMethod {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    parameterTypes()
-    instructions(
-        ResourceType.ID("scrim_overlay"),
-        afterAtMost(5, Opcode.MOVE_RESULT_OBJECT()),
-    )
-}
-
-/**
- * Matches using the class found in [miniplayerModernViewParentMethod].
- */
-internal val ClassDef.miniplayerModernRewindButtonMethodMatch by ClassDefComposing.composingFirstMethod {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    returnType("L")
-    parameterTypes()
-    instructions(
-        ResourceType.ID("modern_miniplayer_rewind_button"),
-        afterAtMost(5, Opcode.MOVE_RESULT_OBJECT()),
-    )
-}
-
-/**
- * Matches using the class found in [miniplayerModernViewParentMethod].
- */
-internal val ClassDef.miniplayerModernActionButtonMethodMatch by ClassDefComposing.composingFirstMethod {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    returnType("L")
-    parameterTypes()
-    instructions(
-        ResourceType.ID("modern_miniplayer_overlay_action_button"),
-        afterAtMost(5, Opcode.MOVE_RESULT_OBJECT()),
-    )
-}
+internal val BytecodePatchContext.miniplayerModernActionButtonMethodMatch by getting {
+    firstMethodComposite {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("L")
+        parameterTypes()
+        instructions(
+            ResourceType.ID("modern_miniplayer_overlay_action_button"),
+            afterAtMost(5, Opcode.MOVE_RESULT_OBJECT()),
+        )
+    }
+} using { miniplayerModernAddViewListenerMethod }
 
 internal val BytecodePatchContext.miniplayerMinimumSizeMethodMatch by composingFirstMethod {
     accessFlags(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
@@ -175,13 +168,23 @@ internal val BytecodePatchContext.miniplayerOverrideMethodMatch by composingFirs
     )
 }
 
-context(_: BytecodePatchContext)
-internal fun ClassDef.getMiniplayerOverrideNoContextMethod() = firstMethodDeclaratively {
-    accessFlags(AccessFlags.PRIVATE, AccessFlags.FINAL)
-    returnType("Z")
-    opcodes(
-        Opcode.IGET_BOOLEAN, // Anchor to insert the instruction.
-    )
+internal val BytecodePatchContext.miniplayerOverrideNoContextMethod by getting {
+    firstMethodDeclaratively {
+        accessFlags(AccessFlags.PRIVATE, AccessFlags.FINAL)
+        returnType("Z")
+        opcodes(
+            Opcode.IGET_BOOLEAN, // Anchor to insert the instruction.
+        )
+    }
+} using {
+    firstImmutableMethodDeclaratively {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("V")
+        parameterTypes("L")
+        instructions(
+            ResourceType.DIMEN("floaty_bar_button_top_margin"),
+        )
+    }
 }
 
 /**

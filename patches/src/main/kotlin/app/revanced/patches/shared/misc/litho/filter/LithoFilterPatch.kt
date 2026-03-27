@@ -125,8 +125,7 @@ internal fun lithoFilterPatch(
         // region Modify the create component method and
         // if the component is filtered then return an empty component.
 
-        val builderMethodDescriptor =
-            emptyComponentParentMethod.immutableClassDef.getEmptyComponentMethod()
+        val builderMethodDescriptor = emptyComponentMethod
 
         val emptyComponentField = firstClassDef(builderMethodDescriptor.returnType).fields.single()
 
