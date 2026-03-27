@@ -254,7 +254,7 @@ val hideLayoutComponentsPatch = hideLayoutComponentsPatch(
         SwitchPreference("revanced_hide_video_recommendation_labels"),
         SwitchPreference("revanced_hide_view_count"),
         SwitchPreference("revanced_hide_visual_spacer"),
-        SwitchPreference("revanced_hide_doodles"),
+        SwitchPreference("revanced_hide_youtube_doodles"),
     )
 
     if (is_20_21_or_greater) {

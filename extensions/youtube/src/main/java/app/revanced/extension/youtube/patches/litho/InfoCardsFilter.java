@@ -5,9 +5,9 @@ import app.revanced.extension.youtube.settings.Settings;
 import app.revanced.extension.shared.patches.litho.Filter;
 
 @SuppressWarnings("unused")
-public final class HideInfoCardsFilter extends Filter {
+public final class InfoCardsFilter extends Filter {
 
-    public HideInfoCardsFilter() {
+    public InfoCardsFilter() {
         addIdentifierCallbacks(
                 new StringFilterGroup(
                         Settings.HIDE_INFO_CARDS,

@@ -8,14 +8,13 @@ import app.revanced.extension.shared.patches.litho.FilterGroupList.ByteArrayFilt
 import app.revanced.extension.shared.settings.BaseSettings;
 import app.revanced.extension.shared.settings.Setting;
 import app.revanced.extension.shared.spoof.SpoofVideoStreamsPatch;
-import app.revanced.extension.youtube.patches.VersionCheckPatch;
 import app.revanced.extension.youtube.settings.Settings;
 import app.revanced.extension.youtube.shared.ShortsPlayerState;
 
 import java.util.List;
 
 @SuppressWarnings("unused")
-public final class PlayerFlyoutMenuItemsFilter extends Filter {
+public final class PlayerFlyoutMenuComponentsFilter extends Filter {
 
     public static final class HideAudioFlyoutMenuAvailability implements Setting.Availability {
         @Override
@@ -32,7 +31,7 @@ public final class PlayerFlyoutMenuItemsFilter extends Filter {
     private final ByteArrayFilterGroupList flyoutFilterGroupList = new ByteArrayFilterGroupList();
     private final StringFilterGroup videoQualityMenuFooter;
 
-    public PlayerFlyoutMenuItemsFilter() {
+    public PlayerFlyoutMenuComponentsFilter() {
         videoQualityMenuFooter = new StringFilterGroup(
                 Settings.HIDE_PLAYER_FLYOUT_VIDEO_QUALITY_FOOTER,
                 "quality_sheet_footer"

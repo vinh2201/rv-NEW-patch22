@@ -5,6 +5,7 @@ import static java.lang.Boolean.TRUE;
 import static app.revanced.extension.music.patches.ChangeHeaderPatch.*;
 import static app.revanced.extension.music.patches.ChangeStartPagePatch.*;
 import static app.revanced.extension.shared.settings.Setting.parent;
+import static app.revanced.extension.shared.settings.Setting.parentNot;
 
 import app.revanced.extension.shared.settings.YouTubeAndMusicSettings;
 import app.revanced.extension.shared.settings.BooleanSetting;
@@ -24,13 +25,13 @@ public class Settings extends YouTubeAndMusicSettings {
     public static final BooleanSetting HIDE_HISTORY_BUTTON = new BooleanSetting("revanced_music_hide_history_button", FALSE, true);
     public static final BooleanSetting HIDE_SEARCH_BUTTON = new BooleanSetting("revanced_music_hide_search_button", FALSE, true);
     public static final BooleanSetting HIDE_NOTIFICATION_BUTTON = new BooleanSetting("revanced_music_hide_notification_button", FALSE, true);
-    public static final BooleanSetting HIDE_NAVIGATION_BAR_HOME_BUTTON = new BooleanSetting("revanced_music_hide_navigation_bar_home_button", FALSE, true);
-    public static final BooleanSetting HIDE_NAVIGATION_BAR_SAMPLES_BUTTON = new BooleanSetting("revanced_music_hide_navigation_bar_samples_button", FALSE, true);
-    public static final BooleanSetting HIDE_NAVIGATION_BAR_EXPLORE_BUTTON = new BooleanSetting("revanced_music_hide_navigation_bar_explore_button", FALSE, true);
-    public static final BooleanSetting HIDE_NAVIGATION_BAR_LIBRARY_BUTTON = new BooleanSetting("revanced_music_hide_navigation_bar_library_button", FALSE, true);
-    public static final BooleanSetting HIDE_NAVIGATION_BAR_UPGRADE_BUTTON = new BooleanSetting("revanced_music_hide_navigation_bar_upgrade_button", TRUE, true);
     public static final BooleanSetting HIDE_NAVIGATION_BAR = new BooleanSetting("revanced_music_hide_navigation_bar", FALSE, true);
-    public static final BooleanSetting HIDE_NAVIGATION_BAR_LABEL = new BooleanSetting("revanced_music_hide_navigation_bar_labels", FALSE, true);
+    public static final BooleanSetting HIDE_NAVIGATION_BAR_HOME_BUTTON = new BooleanSetting("revanced_music_hide_navigation_bar_home_button", FALSE, true, parentNot(HIDE_NAVIGATION_BAR));
+    public static final BooleanSetting HIDE_NAVIGATION_BAR_SAMPLES_BUTTON = new BooleanSetting("revanced_music_hide_navigation_bar_samples_button", FALSE, true, parentNot(HIDE_NAVIGATION_BAR));
+    public static final BooleanSetting HIDE_NAVIGATION_BAR_EXPLORE_BUTTON = new BooleanSetting("revanced_music_hide_navigation_bar_explore_button", FALSE, true, parentNot(HIDE_NAVIGATION_BAR));
+    public static final BooleanSetting HIDE_NAVIGATION_BAR_LIBRARY_BUTTON = new BooleanSetting("revanced_music_hide_navigation_bar_library_button", FALSE, true, parentNot(HIDE_NAVIGATION_BAR));
+    public static final BooleanSetting HIDE_NAVIGATION_BAR_UPGRADE_BUTTON = new BooleanSetting("revanced_music_hide_navigation_bar_upgrade_button", TRUE, true, parentNot(HIDE_NAVIGATION_BAR));
+    public static final BooleanSetting HIDE_NAVIGATION_BAR_LABEL = new BooleanSetting("revanced_music_hide_navigation_bar_labels", FALSE, true, parentNot(HIDE_NAVIGATION_BAR));
     public static final EnumSetting<HeaderLogo> HEADER_LOGO = new EnumSetting<>("revanced_header_logo", HeaderLogo.DEFAULT, true);
 
     // Player

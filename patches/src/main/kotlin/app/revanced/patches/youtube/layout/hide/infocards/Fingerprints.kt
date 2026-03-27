@@ -8,7 +8,7 @@ import app.revanced.util.literal
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 
-internal val BytecodePatchContext.infocardsIncognitoMethod by getting {
+internal val BytecodePatchContext.infoCardsIncognitoMethod by getting {
     firstMethodDeclaratively {
     accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
     returnType("Ljava/lang/Boolean;")
@@ -25,7 +25,7 @@ internal val BytecodePatchContext.infocardsIncognitoMethod by getting {
     }
 }
 
-internal val BytecodePatchContext.infocardsMethodCallMethodMatch by
+internal val BytecodePatchContext.infoCardsMethodCallMethodMatch by
     composingFirstMethod("Missing ControlsOverlayPresenter for InfoCards to work.") {
         opcodes(
             Opcode.INVOKE_VIRTUAL,

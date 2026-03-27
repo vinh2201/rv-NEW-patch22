@@ -18,7 +18,7 @@ import static app.revanced.extension.youtube.patches.MiniplayerPatch.MiniplayerH
 import static app.revanced.extension.youtube.patches.MiniplayerPatch.MiniplayerHorizontalDragAvailability;
 import static app.revanced.extension.youtube.patches.MiniplayerPatch.MiniplayerType;
 import static app.revanced.extension.youtube.patches.OpenShortsInRegularPlayerPatch.ShortsPlayerType;
-import static app.revanced.extension.youtube.patches.litho.PlayerFlyoutMenuItemsFilter.HideAudioFlyoutMenuAvailability;
+import static app.revanced.extension.youtube.patches.litho.PlayerFlyoutMenuComponentsFilter.HideAudioFlyoutMenuAvailability;
 import static app.revanced.extension.youtube.patches.spoof.SpoofVideoStreamsPatch.SpoofClientAv1Availability;
 import static app.revanced.extension.youtube.patches.theme.ThemePatch.SplashScreenAnimationStyle;
 import static app.revanced.extension.youtube.sponsorblock.SegmentPlaybackController.SponsorBlockDuration;
@@ -96,7 +96,6 @@ public class Settings extends YouTubeAndMusicSettings {
     public static final BooleanSetting HIDE_CHIPS_SHELF = new BooleanSetting("revanced_hide_chips_shelf", TRUE);
     public static final BooleanSetting HIDE_COMMUNITY_POSTS = new BooleanSetting("revanced_hide_community_posts", FALSE);
     public static final BooleanSetting HIDE_COMPACT_BANNER = new BooleanSetting("revanced_hide_compact_banner", TRUE);
-    public static final BooleanSetting HIDE_DOODLES = new BooleanSetting("revanced_hide_doodles", FALSE, true);
     public static final BooleanSetting HIDE_EXPANDABLE_CARD = new BooleanSetting("revanced_hide_expandable_card", TRUE);
     public static final BooleanSetting HIDE_FEED_FLYOUT_MENU = new BooleanSetting("revanced_hide_feed_flyout_menu", FALSE);
     public static final StringSetting HIDE_FEED_FLYOUT_MENU_FILTER_STRINGS = new StringSetting("revanced_hide_feed_flyout_menu_filter_strings", "", true, parent(HIDE_FEED_FLYOUT_MENU));
@@ -122,6 +121,7 @@ public class Settings extends YouTubeAndMusicSettings {
     public static final BooleanSetting HIDE_VIEW_COUNT = new BooleanSetting("revanced_hide_view_count", FALSE, "revanced_hide_view_count_user_dialog_message");
     public static final BooleanSetting HIDE_WEB_SEARCH_RESULTS = new BooleanSetting("revanced_hide_web_search_results", TRUE);
     public static final BooleanSetting HIDE_YOU_MAY_LIKE_SECTION = new BooleanSetting("revanced_hide_you_may_like_section", TRUE, true);
+    public static final BooleanSetting HIDE_YOUTUBE_DOODLES = new BooleanSetting("revanced_hide_youtube_doodles", FALSE, true);
     public static final BooleanSetting HIDE_VISUAL_SPACER = new BooleanSetting("revanced_hide_visual_spacer", TRUE);
 
     // Alternative thumbnails
@@ -177,7 +177,7 @@ public class Settings extends YouTubeAndMusicSettings {
     public static final BooleanSetting HIDE_CROWDFUNDING_BOX = new BooleanSetting("revanced_hide_crowdfunding_box", FALSE, true);
     public static final BooleanSetting HIDE_EMERGENCY_BOX = new BooleanSetting("revanced_hide_emergency_box", TRUE);
     public static final BooleanSetting HIDE_END_SCREEN_CARDS = new BooleanSetting("revanced_hide_end_screen_cards", FALSE);
-    public static final BooleanSetting HIDE_END_SCREEN_SUGGESTED_VIDEO = new BooleanSetting("revanced_end_screen_suggested_video", FALSE, true);
+    public static final BooleanSetting HIDE_END_SCREEN_SUGGESTED_VIDEO = new BooleanSetting("revanced_hide_end_screen_suggested_video", FALSE, true, "revanced_hide_end_screen_suggested_video_user_dialog_message");
     public static final BooleanSetting HIDE_FULLSCREEN_BUTTON = new BooleanSetting("revanced_hide_fullscreen_button", FALSE, true);
     public static final BooleanSetting HIDE_INFO_CARDS = new BooleanSetting("revanced_hide_info_cards", FALSE);
     public static final BooleanSetting HIDE_INFO_PANELS = new BooleanSetting("revanced_hide_info_panels", TRUE);
@@ -216,7 +216,7 @@ public class Settings extends YouTubeAndMusicSettings {
             "com.deniscerri.ytdl" /* YTDLnis */, parentsAny(EXTERNAL_DOWNLOADER, EXTERNAL_DOWNLOADER_ACTION_BUTTON));
 
     // Comments
-    public static final BooleanSetting HIDE_COMMENTS_CAROUSEL = new BooleanSetting("revanced_hide_comments_carousel", FALSE, "revanced_hide_comments_carousel_dialog_message");
+    public static final BooleanSetting HIDE_COMMENTS_CAROUSEL = new BooleanSetting("revanced_hide_comments_carousel", FALSE, "revanced_hide_comments_carousel_user_dialog_message");
     public static final StringSetting HIDE_COMMENTS_CAROUSEL_FILTER_STRINGS = new StringSetting("revanced_hide_comments_carousel_filter_strings", "", true, parent(HIDE_COMMENTS_CAROUSEL));
     public static final BooleanSetting HIDE_COMMENTS_AI_CHAT_SUMMARY = new BooleanSetting("revanced_hide_comments_ai_chat_summary", FALSE);
     public static final BooleanSetting HIDE_COMMENTS_AI_SUMMARY = new BooleanSetting("revanced_hide_comments_ai_summary", FALSE);
@@ -314,7 +314,7 @@ public class Settings extends YouTubeAndMusicSettings {
     public static final BooleanSetting HIDE_NOTIFICATIONS_BUTTON = new BooleanSetting("revanced_hide_notifications_button", FALSE, true);
     public static final BooleanSetting SWITCH_CREATE_WITH_NOTIFICATIONS_BUTTON = new BooleanSetting("revanced_switch_create_with_notifications_button", TRUE, true,
             "revanced_switch_create_with_notifications_button_user_dialog_message");
-    public static final BooleanSetting DISABLE_AUTO_HIDE_NAVIGATION_BAR = new BooleanSetting("revanced_disable_auto_hide_navigation_bar", FALSE, true, parentNot(HIDE_NAVIGATION_BAR));
+    public static final BooleanSetting DISABLE_AUTO_HIDE_NAVIGATION_BAR = new BooleanSetting("revanced_disable_auto_hide_navigation_bar", FALSE, true);
     public static final BooleanSetting NAVIGATION_BAR_ANIMATIONS = new BooleanSetting("revanced_navigation_bar_animations", FALSE);
     public static final BooleanSetting DISABLE_TRANSLUCENT_STATUS_BAR = new BooleanSetting("revanced_disable_translucent_status_bar", FALSE, true,
             "revanced_disable_translucent_status_bar_user_dialog_message");
