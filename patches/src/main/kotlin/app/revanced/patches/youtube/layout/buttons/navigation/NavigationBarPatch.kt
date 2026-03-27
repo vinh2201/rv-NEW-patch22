@@ -2,6 +2,7 @@ package app.revanced.patches.youtube.layout.buttons.navigation
 
 import app.revanced.patcher.extensions.addInstruction
 import app.revanced.patcher.extensions.addInstructions
+import app.revanced.patcher.extensions.addInstructionsWithLabels
 import app.revanced.patcher.extensions.getInstruction
 import app.revanced.patcher.extensions.methodReference
 import app.revanced.patcher.patch.bytecodePatch
@@ -21,6 +22,7 @@ import app.revanced.patches.youtube.misc.navigation.navigationBarHookPatch
 import app.revanced.patches.youtube.misc.playservice.is_19_25_or_greater
 import app.revanced.patches.youtube.misc.playservice.is_20_15_or_greater
 import app.revanced.patches.youtube.misc.playservice.is_20_31_or_greater
+import app.revanced.patches.youtube.misc.playservice.is_20_45_or_greater
 import app.revanced.patches.youtube.misc.playservice.versionCheckPatch
 import app.revanced.patches.youtube.misc.settings.PreferenceScreen
 import app.revanced.patches.youtube.misc.settings.settingsPatch
@@ -88,8 +90,13 @@ val navigationBarPatch = bytecodePatch(
                 SwitchPreference("revanced_disable_translucent_status_bar")
             )
 
-            if (is_20_15_or_greater) {
+            if (is_20_15_or_greater && !is_20_45_or_greater) {
+                // Feature has not worked well for a while and YT seems to have abandoned this a/b test.
                 preferences += SwitchPreference("revanced_navigation_bar_animations")
+            }
+
+            if (is_20_31_or_greater) {
+                preferences += SwitchPreference("revanced_disable_auto_hide_navigation_bar")
             }
         }
 
@@ -174,9 +181,21 @@ val navigationBarPatch = bytecodePatch(
                     """
                 )
             }
-
         }
 
+        if (is_20_31_or_greater) {
+            autoHideNavigationBarMethod.addInstructionsWithLabels(
+                0,
+                """
+                    invoke-static { }, $EXTENSION_CLASS_DESCRIPTOR->disableAutoHidingNavigationBar()Z
+                    move-result v0      
+                    if-eqz v0, :show
+                    return-void      
+                    :show
+                    nop      
+                """
+            )
+        }
 
         //
         // Toolbar.
