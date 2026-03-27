@@ -9,7 +9,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.os.SystemClock;
 import android.preference.EditTextPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
@@ -22,6 +21,7 @@ import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -48,7 +48,6 @@ import app.revanced.extension.shared.ui.CustomDialog;
 public abstract class AbstractPreferenceFragment extends PreferenceFragment {
 
     private static class DebouncedListView extends ListView {
-        private long lastClick;
 
         public DebouncedListView(Context context) {
             super(context);
@@ -64,14 +63,40 @@ public abstract class AbstractPreferenceFragment extends PreferenceFragment {
 
         @Override
         public boolean performItemClick(View view, int position, long id) {
-            final long now = SystemClock.elapsedRealtime();
-            if (now - lastClick < 500) {
+            if (Utils.isFastClick()) {
                 return true; // Ignore fast double click.
             }
-            lastClick = now;
-
             return super.performItemClick(view, position, id);
         }
+    }
+
+    private record DebouncedItemClickListener(
+            AdapterView.OnItemClickListener originalListener) implements AdapterView.OnItemClickListener {
+
+        @Override
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            if (Utils.isFastClick()) {
+                return; // Ignore fast double click.
+            }
+            originalListener.onItemClick(parent, view, position, id);
+        }
+    }
+
+    @Override
+    public boolean onPreferenceTreeClick(PreferenceScreen preferenceScreen, Preference preference) {
+        if (preference instanceof PreferenceScreen) {
+            Dialog dialog = ((PreferenceScreen) preference).getDialog();
+            if (dialog != null) {
+                ListView listView = dialog.findViewById(android.R.id.list);
+                if (listView != null) {
+                    AdapterView.OnItemClickListener originalListener = listView.getOnItemClickListener();
+                    if (originalListener != null && !(originalListener instanceof DebouncedItemClickListener)) {
+                        listView.setOnItemClickListener(new DebouncedItemClickListener(originalListener));
+                    }
+                }
+            }
+        }
+        return super.onPreferenceTreeClick(preferenceScreen, preference);
     }
 
     @SuppressLint("StaticFieldLeak")
@@ -100,6 +125,8 @@ public abstract class AbstractPreferenceFragment extends PreferenceFragment {
     @Nullable
     protected static CharSequence restartDialogTitle, restartDialogMessage, restartDialogButtonText, confirmDialogTitle;
 
+    private android.content.ComponentCallbacks2 configurationListener;
+    private int currentUiMode = -1;
     private static final int READ_REQUEST_CODE = 42;
     private static final int WRITE_REQUEST_CODE = 43;
     private String existingSettings = "";
@@ -318,7 +345,7 @@ public abstract class AbstractPreferenceFragment extends PreferenceFragment {
     /**
      * Updates a UI Preference with the {@link Setting} that backs it.
      *
-     * @param syncSetting If the UI should be synced {@link Setting} <-> Preference
+     * @param syncSetting              If the UI should be synced {@link Setting} <-> Preference
      * @param applySettingToPreference If true, then apply {@link Setting} -> Preference.
      *                                 If false, then apply {@link Setting} <- Preference.
      */
@@ -371,7 +398,8 @@ public abstract class AbstractPreferenceFragment extends PreferenceFragment {
                 null,                            // No EditText.
                 restartDialogButtonText,         // OK button text.
                 () -> Utils.restartApp(context), // OK button action.
-                () -> {},                        // Cancel button action (dismiss only).
+                () -> {
+                },                        // Cancel button action (dismiss only).
                 null,                            // No Neutral button text.
                 null,                            // No Neutral button action.
                 true                             // Dismiss dialog when onNeutralClick.
@@ -412,6 +440,7 @@ public abstract class AbstractPreferenceFragment extends PreferenceFragment {
 
         return btn;
     }
+
     public void showImportExportTextDialog() {
         try {
             Activity context = getActivity();
@@ -428,7 +457,8 @@ public abstract class AbstractPreferenceFragment extends PreferenceFragment {
                     currentImportExportEditText, // Pass the EditText.
                     str("revanced_settings_save"), // OK button text.
                     () -> importSettingsText(context, currentImportExportEditText.getText().toString()), // OK button action.
-                    () -> {}, // Cancel button action (dismiss only).
+                    () -> {
+                    }, // Cancel button action (dismiss only).
                     str("revanced_settings_import_copy"), // Neutral button (Copy) text.
                     () -> Utils.setClipboard(currentImportExportEditText.getText().toString()), // Neutral button (Copy) action. Show the user the settings in JSON format.
                     true // Dismiss dialog when onNeutralClick.
@@ -455,7 +485,8 @@ public abstract class AbstractPreferenceFragment extends PreferenceFragment {
                         if (currentImportExportEditText != null) {
                             currentImportExportEditText.requestFocus();
                             android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
-                            if (imm != null) imm.showSoftInput(currentImportExportEditText, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
+                            if (imm != null)
+                                imm.showSoftInput(currentImportExportEditText, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
                         }
                     }, 100);
                 }
@@ -609,7 +640,40 @@ public abstract class AbstractPreferenceFragment extends PreferenceFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        currentUiMode = getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK;
         instance = this;
+
+        configurationListener = new android.content.ComponentCallbacks2() {
+            @SuppressLint("ChromeOsOnConfigurationChanged")
+            @Override
+            public void onConfigurationChanged(@NonNull android.content.res.Configuration newConfig) {
+                int newUiMode = newConfig.uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK;
+                if (currentUiMode != -1 && newUiMode != currentUiMode) {
+                    currentUiMode = newUiMode;
+                    Utils.setIsDarkModeEnabled(newUiMode == android.content.res.Configuration.UI_MODE_NIGHT_YES);
+
+                    Activity activity = getActivity();
+                    if (activity != null) {
+                        Intent intent = activity.getIntent();
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
+                        activity.finish();
+                        activity.overridePendingTransition(0, 0);
+                        startActivity(intent);
+                        activity.overridePendingTransition(0, 0);
+                    }
+                }
+            }
+
+            @Override
+            public void onLowMemory() {
+            }
+
+            @Override
+            public void onTrimMemory(int level) {
+            }
+        };
+        getActivity().getApplicationContext().registerComponentCallbacks(configurationListener);
+
         try {
             PreferenceManager preferenceManager = getPreferenceManager();
             preferenceManager.setSharedPreferencesName(Setting.preferences.name);
@@ -630,6 +694,9 @@ public abstract class AbstractPreferenceFragment extends PreferenceFragment {
     public void onDestroy() {
         if (instance == this) {
             instance = null;
+        }
+        if (configurationListener != null && getActivity() != null) {
+            getActivity().getApplicationContext().unregisterComponentCallbacks(configurationListener);
         }
         getPreferenceManager().getSharedPreferences().unregisterOnSharedPreferenceChangeListener(listener);
         super.onDestroy();
