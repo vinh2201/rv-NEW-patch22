@@ -14,7 +14,7 @@ private const val EXTENSION_CLASS_DESCRIPTOR = "Lapp/revanced/extension/tiktok/f
 @Suppress("unused")
 val feedFilterPatch = bytecodePatch(
     name = "Feed filter",
-    description = "Removes ads, livestreams, stories, image videos " +
+    description = "Removes ads, livestreams, stories, image videos, AI-generated content " +
         "and videos with a specific amount of views or likes from the feed.",
 ) {
     dependsOn(
