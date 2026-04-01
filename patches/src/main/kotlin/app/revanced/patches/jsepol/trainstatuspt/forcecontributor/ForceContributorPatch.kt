@@ -1,8 +1,8 @@
 package app.revanced.patches.jsepol.trainstatuspt.forcecontributor
 
-import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patcher.extensions.addInstruction
 import app.revanced.patcher.extensions.replaceInstruction
+import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.util.forEachInstructionAsSequence
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
@@ -25,40 +25,34 @@ val forceContributorPatch = bytecodePatch(
                 val className = classDef.type
 
                 if (className.startsWith("Lcom/jsepol/trainstatuspt/MainActivity")) {
-                    if (instruction.opcode == Opcode.IPUT_BOOLEAN) {
-                        val ref = (instruction as ReferenceInstruction).reference as? FieldReference
-                        if (ref?.name == "contribuidor") {
-                            val valueRegister = (instruction as TwoRegisterInstruction).registerA
-                            return@forEachInstructionAsSequence Triple(0, index, valueRegister)
-                        }
-                    } else if (instruction.opcode == Opcode.IGET_BOOLEAN) {
-                        val ref = (instruction as ReferenceInstruction).reference as? FieldReference
-                        if (ref?.name == "contribuidor") {
-                            val valueRegister = (instruction as TwoRegisterInstruction).registerA
-                            return@forEachInstructionAsSequence Triple(3, index, valueRegister)
+                    val ref = (instruction as? ReferenceInstruction)?.reference as? FieldReference
+                    if (ref?.name == "contribuidor") {
+                        val twoRegInstr = instruction as? TwoRegisterInstruction ?: return@forEachInstructionAsSequence null
+
+                        if (instruction.opcode == Opcode.IPUT_BOOLEAN) {
+                            return@forEachInstructionAsSequence Triple(0, index, twoRegInstr.registerA)
+                        } else if (instruction.opcode == Opcode.IGET_BOOLEAN) {
+                            return@forEachInstructionAsSequence Triple(3, index, twoRegInstr.registerA)
                         }
                     }
                 }
 
                 if (className.startsWith("Lcom/jsepol/trainstatuspt/TrainDetailsActivity")) {
-                    if (instruction.opcode == Opcode.IGET_OBJECT) {
-                        val ref = (instruction as ReferenceInstruction).reference as? FieldReference
-                        if (ref?.name == "contribuidor") {
-                            val valueRegister = (instruction as TwoRegisterInstruction).registerA
-                            return@forEachInstructionAsSequence Triple(1, index, valueRegister)
-                        }
-                    } else if (instruction.opcode == Opcode.INVOKE_DIRECT) {
-                        val ref = (instruction as ReferenceInstruction).reference as? MethodReference
-                        if (ref?.definingClass == "Lcom/jsepol/trainstatuspt/TrainDetailsActivity;" && ref.name == "bloquearMenus") {
-                            val objRegister = (instruction as FiveRegisterInstruction).registerC
-                            return@forEachInstructionAsSequence Triple(2, index, objRegister)
-                        }
+                    val ref = (instruction as? ReferenceInstruction)?.reference
+
+                    if (instruction.opcode == Opcode.IGET_OBJECT && (ref as? FieldReference)?.name == "contribuidor") {
+                        val twoRegInstr = instruction as? TwoRegisterInstruction ?: return@forEachInstructionAsSequence null
+                        return@forEachInstructionAsSequence Triple(1, index, twoRegInstr.registerA)
+                    }
+
+                    if (instruction.opcode == Opcode.INVOKE_DIRECT && (ref as? MethodReference)?.name == "bloquearMenus") {
+                        val fiveRegInstr = instruction as? FiveRegisterInstruction ?: return@forEachInstructionAsSequence null
+                        return@forEachInstructionAsSequence Triple(2, index, fiveRegInstr.registerC)
                     }
                 }
                 null
             },
-            transform = { mutableMethod, matchData ->
-                val (type, targetIndex, register) = matchData
+            transform = { mutableMethod, (type, targetIndex, register) ->
                 when (type) {
                     0 -> mutableMethod.addInstruction(targetIndex, "const/4 v$register, 0x1")
                     1 -> mutableMethod.replaceInstruction(targetIndex, "sget-object v$register, Ljava/lang/Boolean;->TRUE:Ljava/lang/Boolean;")
