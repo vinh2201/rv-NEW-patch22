@@ -20,15 +20,16 @@ import app.revanced.patches.youtube.misc.playercontrols.playerControlsPatch
 import app.revanced.patches.youtube.misc.playertype.playerTypeHookPatch
 import app.revanced.patches.youtube.misc.settings.PreferenceScreen
 import app.revanced.patches.youtube.misc.settings.settingsPatch
-import app.revanced.patches.youtube.shared.getLayoutConstructorMethodMatch
-import app.revanced.patches.youtube.shared.seekbarMethod
-import app.revanced.patches.youtube.shared.seekbarOnDrawMethodMatch
+import app.revanced.patches.youtube.shared.getSeekbarOnDrawMethodMatch
 import app.revanced.patches.youtube.video.information.onCreateHook
 import app.revanced.patches.youtube.video.information.videoInformationPatch
 import app.revanced.patches.youtube.video.information.videoTimeHook
 import app.revanced.patches.youtube.video.videoid.hookBackgroundPlayVideoId
 import app.revanced.patches.youtube.video.videoid.videoIdPatch
-import app.revanced.util.*
+import app.revanced.util.ResourceGroup
+import app.revanced.util.addInstructionsAtControlFlowLabel
+import app.revanced.util.copyResources
+import app.revanced.util.indexOfFirstInstructionReversedOrThrow
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
@@ -170,7 +171,7 @@ val sponsorBlockPatch = bytecodePatch(
 
         // Cannot match using original immutable class because
         // class may have been modified by other patches
-        seekbarOnDrawMethodMatch.let {
+        getSeekbarOnDrawMethodMatch().let {
             it.method.apply {
                 // Set seekbar thickness.
                 val thicknessIndex = it[-1]

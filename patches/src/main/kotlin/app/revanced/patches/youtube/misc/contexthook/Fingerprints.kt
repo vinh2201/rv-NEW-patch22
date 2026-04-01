@@ -11,6 +11,7 @@ import app.revanced.patcher.extensions.methodReference
 import app.revanced.patcher.field
 import app.revanced.patcher.firstImmutableMethodDeclaratively
 import app.revanced.patcher.firstMethodComposite
+import app.revanced.patcher.firstMethodDeclaratively
 import app.revanced.patcher.gettingFirstImmutableMethodDeclaratively
 import app.revanced.patcher.gettingFirstMethodDeclaratively
 import app.revanced.patcher.immutableClassDef
@@ -104,7 +105,7 @@ internal fun BytecodePatchContext.getSetClientFormFactorMethodMatch(): Composite
         "WEARABLE_FORM_FACTOR",
     ) {
         accessFlags(AccessFlags.STATIC, AccessFlags.CONSTRUCTOR)
-    }.immutableClassDef.firstMethodComposite {
+    }.immutableClassDef.firstMethodDeclaratively {
         accessFlags(AccessFlags.PUBLIC, AccessFlags.STATIC)
         returnType("L")
         parameterTypes("I")

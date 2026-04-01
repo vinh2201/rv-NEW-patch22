@@ -136,15 +136,15 @@ internal val BytecodePatchContext.seekbarMethod by gettingFirstImmutableMethodDe
     instructions("timed_markers_width"())
 }
 
-internal val BytecodePatchContext.seekbarOnDrawMethodMatch by getting {
-    firstMethodComposite {
+internal fun BytecodePatchContext.getSeekbarOnDrawMethodMatch() =
+    seekbarMethod.immutableClassDef.firstMethodComposite {
         name("onDraw")
         instructions(
             method { toString() == "Ljava/lang/Math;->round(F)I" },
             after(Opcode.MOVE_RESULT()),
         )
     }
-} using { seekbarMethod }
+
 
 internal val BytecodePatchContext.subtitleButtonControllerMethod by gettingFirstMethodDeclaratively {
     accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
@@ -161,9 +161,9 @@ internal val BytecodePatchContext.playbackSpeedOnItemClickParentMethodMatch by c
     returnType("L")
     parameterTypes("L", "Ljava/lang/String;")
     instructions(
-         method { name == "getSupportFragmentManager" },
+        method { name == "getSupportFragmentManager" },
         after(Opcode.MOVE_RESULT_OBJECT()),
-        after(method { returnType == "L" && parameterTypes == listOf("Ljava/lang/String;") }),
+        after(method { returnType.startsWith("L") && parameterTypes == listOf("Ljava/lang/String;") }),
         after(Opcode.MOVE_RESULT_OBJECT()),
         after(Opcode.IF_EQZ()),
         after(Opcode.CHECK_CAST()),
