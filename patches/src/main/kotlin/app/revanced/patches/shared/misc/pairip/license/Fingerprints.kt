@@ -14,3 +14,8 @@ internal val BytecodePatchContext.validateLicenseResponseMethod by gettingFirstM
     name("validateResponse")
     definingClass("Lcom/pairip/licensecheck/ResponseValidator;")
 }
+
+internal val BytecodePatchContext.checkLocalInstallerMethod by gettingFirstMethodDeclarativelyOrNull {
+    name("performLocalInstallerCheck")
+    definingClass("Lcom/pairip/licensecheck/LicenseClient;")
+}

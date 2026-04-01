@@ -23,5 +23,9 @@ val disablePairipLicenseCheckPatch = bytecodePatch(
         // Short-circuit the license response validation.
         validateLicenseResponseMethod?.returnEarly()
             ?: logMissing("validateLicenseResponseMethod")
+
+        // Make sure the installer app is a system app (one of the pass methods).
+        checkLocalInstallerMethod?.returnEarly(true)
+            ?: logMissing("checkLocalInstallerMethod")
     }
 }
