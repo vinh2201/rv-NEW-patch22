@@ -19,3 +19,8 @@ internal val BytecodePatchContext.checkLocalInstallerMethod by gettingFirstMetho
     name("performLocalInstallerCheck")
     definingClass("Lcom/pairip/licensecheck/LicenseClient;")
 }
+
+internal val BytecodePatchContext.licenseClientClinit by gettingFirstMethodDeclarativelyOrNull {
+    name("<clinit>")
+    definingClass("Lcom/pairip/licensecheck/LicenseClient;")
+}
