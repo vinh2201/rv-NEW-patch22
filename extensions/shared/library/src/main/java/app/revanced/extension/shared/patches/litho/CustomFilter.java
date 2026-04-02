@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import app.revanced.extension.shared.ConversionContext;
 import app.revanced.extension.shared.ConversionContext.ContextInterface;
 import app.revanced.extension.shared.Logger;
 import app.revanced.extension.shared.StringTrieSearch;

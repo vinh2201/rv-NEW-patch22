@@ -2,15 +2,13 @@
 
 package app.revanced.patches.shared.misc.litho.filter
 
-import app.revanced.com.android.tools.smali.dexlib2.iface.value.MutableEncodedValue.Companion.toMutable
-import app.revanced.patcher.classDef
-import app.revanced.util.getFreeRegisterProvider
 import app.revanced.patcher.extensions.addInstructions
+import app.revanced.patcher.extensions.fieldReference
 import app.revanced.patcher.extensions.getInstruction
 import app.revanced.patcher.extensions.methodReference
+import app.revanced.patcher.extensions.removeInstruction
 import app.revanced.patcher.extensions.removeInstructions
 import app.revanced.patcher.firstClassDef
-import app.revanced.patcher.immutableClassDef
 import app.revanced.patcher.patch.BytecodePatchBuilder
 import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patcher.patch.bytecodePatch
@@ -18,9 +16,10 @@ import app.revanced.patches.shared.misc.extension.sharedExtensionPatch
 import app.revanced.patches.shared.misc.litho.context.EXTENSION_CONTEXT_INTERFACE
 import app.revanced.patches.shared.misc.litho.context.conversionContextPatch
 import app.revanced.util.addInstructionsAtControlFlowLabel
+import app.revanced.util.getFreeRegisterProvider
+import app.revanced.util.indexOfFirstInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
-import com.android.tools.smali.dexlib2.immutable.value.ImmutableBooleanEncodedValue
 
 /**
  * Used to add a hook point to the extension stub.
@@ -230,8 +229,22 @@ internal fun lithoFilterPatch(
         }
 
         if (getExtractIdentifierFromBuffer()) {
-            lithoFilterInitMethod.classDef.fields.first { it.name == "EXTRACT_IDENTIFIER_FROM_BUFFER" }
-                .initialValue = ImmutableBooleanEncodedValue.forBoolean(true).toMutable()
+            lithoFilterInitMethod.apply {
+                val index = indexOfFirstInstruction {
+                    fieldReference?.name == "EXTRACT_IDENTIFIER_FROM_BUFFER"
+                }
+
+                val freeRegister = getFreeRegisterProvider(index, 1)
+                    .getFreeRegister()
+
+                addInstructions(
+                    index + 1,
+                    """
+                        const/4 v$freeRegister, 0x1
+                        sput-boolean v$freeRegister, ${EXTENSION_CLASS_DESCRIPTOR}->EXTRACT_IDENTIFIER_FROM_BUFFER:Z
+                    """
+                )
+            }
         }
 
         // endregion

@@ -44,12 +44,6 @@ val conversionContextPatch = bytecodePatch(
 
         // The conversionContext class can be used as is in most versions.
         if (conversionContextClassDef.superclass == "Ljava/lang/Object;") {
-            arrayOf(
-                identifierField,
-                stringBuilderField
-            ).map {
-
-            }
             conversionContextClassDef.apply {
                 // Add interface and helper methods to allow extension code to call obfuscated methods.
                 interfaces += EXTENSION_CONTEXT_INTERFACE

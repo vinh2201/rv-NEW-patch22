@@ -9,9 +9,9 @@ import java.util.List;
 
 import app.revanced.extension.shared.ConversionContext.ContextInterface;
 import app.revanced.extension.shared.Logger;
+import app.revanced.extension.shared.StringTrieSearch;
 import app.revanced.extension.shared.patches.litho.FilterGroup.StringFilterGroup;
 import app.revanced.extension.shared.settings.BaseSettings;
-import app.revanced.extension.shared.StringTrieSearch;
 import app.revanced.extension.shared.settings.YouTubeAndMusicSettings;
 
 @SuppressWarnings("unused")
@@ -146,7 +146,10 @@ public final class LithoFilterPatch {
      * <p>
      * <b>This is set during patching, do not change manually.</b>
      */
-    private static final boolean EXTRACT_IDENTIFIER_FROM_BUFFER = false;
+    // Must use non-final boolean to allow patching to change value from false to true,
+    // otherwise compiler inlines the value and the patch has no effect.
+    @SuppressWarnings({"FieldCanBeLocal", "FieldMayBeFinal"})
+    private static boolean EXTRACT_IDENTIFIER_FROM_BUFFER = false;
 
     /**
      * String suffix for components.
