@@ -7,7 +7,7 @@ public class ForciblyEnableMiniplayerPatch {
     /**
      * Injection point
      */
-    public static boolean enableForcedMiniplayerPatch(boolean original) {
+    public static boolean forciblyEnableMiniplayerPatch(boolean original) {
         return Settings.FORCIBLY_ENABLE_MINIPLAYER.get() || original;
     }
 }
