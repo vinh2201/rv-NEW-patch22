@@ -86,7 +86,7 @@ val conversionContextPatch = bytecodePatch(
             // in which case a helper method is added to the abstract class.
 
             // Since fields cannot be accessed directly in an abstract class, abstract methods are linked.
-            val stringBuilderMethodName = conversionContextClassDef.firstMethodDeclaratively {
+            val identifierMethodName = conversionContextClassDef.firstMethodDeclaratively {
                 parameterTypes()
                 returnType("Ljava/lang/String;")
                 instructions(
@@ -95,7 +95,7 @@ val conversionContextPatch = bytecodePatch(
                 )
             }.name
 
-            val identifierMethodName = conversionContextClassDef.firstMethodDeclaratively {
+            val stringBuilderMethodName = conversionContextClassDef.firstMethodDeclaratively {
                 parameterTypes()
                 returnType("Ljava/lang/StringBuilder;")
                 instructions(
