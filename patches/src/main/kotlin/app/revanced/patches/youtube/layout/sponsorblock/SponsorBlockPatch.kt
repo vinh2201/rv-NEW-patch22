@@ -3,7 +3,6 @@ package app.revanced.patches.youtube.layout.sponsorblock
 import app.revanced.patcher.extensions.addInstruction
 import app.revanced.patcher.extensions.addInstructions
 import app.revanced.patcher.extensions.getInstruction
-import app.revanced.patcher.immutableClassDef
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patcher.patch.resourcePatch
 import app.revanced.patches.all.misc.resources.addResources
@@ -29,6 +28,7 @@ import app.revanced.patches.youtube.video.videoid.videoIdPatch
 import app.revanced.util.ResourceGroup
 import app.revanced.util.addInstructionsAtControlFlowLabel
 import app.revanced.util.copyResources
+import app.revanced.util.getReference
 import app.revanced.util.indexOfFirstInstructionReversedOrThrow
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
