@@ -17,11 +17,14 @@ import app.revanced.patches.music.misc.settings.PreferenceScreen
 import app.revanced.patches.music.misc.settings.settingsPatch
 import app.revanced.patches.shared.misc.mapping.resourceMappingPatch
 import app.revanced.patches.shared.misc.settings.preference.SwitchPreference
-import app.revanced.util.*
+import app.revanced.util.addInstructionsAtControlFlowLabel
+import app.revanced.util.findFreeRegister
+import app.revanced.util.getReference
+import app.revanced.util.indexOfFirstInstructionOrThrow
+import app.revanced.util.indexOfFirstInstructionReversedOrThrow
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
-import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 private const val EXTENSION_CLASS_DESCRIPTOR =
@@ -45,7 +48,8 @@ val changeMiniplayerColorPatch = bytecodePatch(
             "8.10.52",
             "8.37.56",
             "8.40.54",
-            "8.44.54"
+            "8.44.54",
+            "9.13.50"
         ),
     )
 
@@ -57,7 +61,8 @@ val changeMiniplayerColorPatch = bytecodePatch(
         )
 
         switchToggleColorMethodMatch.let {
-            val colorMathPlayerInvokeVirtualReference = it.method.getInstruction(it[-1]).methodReference!!
+            val colorMathPlayerInvokeVirtualReference =
+                it.method.getInstruction(it[-1]).methodReference!!
             val colorMathPlayerIGetReference = it.method.getInstruction(it[4]).fieldReference!!
 
             val colorGreyIndex =

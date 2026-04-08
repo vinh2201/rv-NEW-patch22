@@ -3,10 +3,14 @@ package app.revanced.patches.music.misc.spoof
 import app.revanced.patches.all.misc.resources.addResources
 import app.revanced.patches.all.misc.resources.addResourcesPatch
 import app.revanced.patches.music.misc.extension.sharedExtensionPatch
-import app.revanced.patches.music.shared.mainActivityOnCreateMethod
 import app.revanced.patches.music.misc.settings.PreferenceScreen
 import app.revanced.patches.music.misc.settings.settingsPatch
-import app.revanced.patches.music.playservice.*
+import app.revanced.patches.music.playservice.is_7_16_or_greater
+import app.revanced.patches.music.playservice.is_7_33_or_greater
+import app.revanced.patches.music.playservice.is_8_11_or_greater
+import app.revanced.patches.music.playservice.is_8_15_or_greater
+import app.revanced.patches.music.playservice.versionCheckPatch
+import app.revanced.patches.music.shared.mainActivityOnCreateMethod
 import app.revanced.patches.shared.misc.settings.preference.ListPreference
 import app.revanced.patches.shared.misc.settings.preference.PreferenceScreenPreference
 import app.revanced.patches.shared.misc.settings.preference.SwitchPreference
@@ -34,7 +38,8 @@ val spoofVideoStreamsPatch = spoofVideoStreamsPatch(
                 "8.10.52",
                 "8.37.56",
                 "8.40.54",
-                "8.44.54"
+                "8.44.54",
+                "9.13.50"
             )
         )
     },

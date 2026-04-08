@@ -3,7 +3,6 @@ package app.revanced.patches.music.misc.androidauto
 import app.revanced.patcher.extensions.fieldReference
 import app.revanced.patcher.extensions.instructions
 import app.revanced.patcher.extensions.replaceInstruction
-import app.revanced.patcher.immutableClassDef
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.util.registersUsed
 import app.revanced.util.returnEarly
@@ -20,7 +19,8 @@ val unlockAndroidAutoMediaBrowserPatch = bytecodePatch(
             "8.10.52",
             "8.37.56",
             "8.40.54",
-            "8.44.54"
+            "8.44.54",
+            "9.13.50"
         ),
     )
 

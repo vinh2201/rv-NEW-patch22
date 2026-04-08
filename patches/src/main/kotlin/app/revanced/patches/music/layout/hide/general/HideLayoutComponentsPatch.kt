@@ -1,9 +1,9 @@
 package app.revanced.patches.music.layout.hide.general
 
 import app.revanced.patches.music.misc.litho.filter.lithoFilterPatch
+import app.revanced.patches.music.misc.settings.PreferenceScreen
 import app.revanced.patches.music.misc.settings.settingsPatch
 import app.revanced.patches.shared.layout.hide.general.hideLayoutComponentsPatch
-import app.revanced.patches.music.misc.settings.PreferenceScreen
 
 val hideLayoutComponentsPatch = hideLayoutComponentsPatch(
     lithoFilterPatch = lithoFilterPatch,
@@ -16,7 +16,8 @@ val hideLayoutComponentsPatch = hideLayoutComponentsPatch(
             "8.10.52",
             "8.37.56",
             "8.40.54",
-            "8.44.54"
+            "8.44.54",
+            "9.13.50"
         )
     ),
 )
