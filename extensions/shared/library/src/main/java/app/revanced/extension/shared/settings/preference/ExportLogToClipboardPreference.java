@@ -5,15 +5,15 @@ import android.util.AttributeSet;
 import android.preference.Preference;
 
 /**
- * A custom preference that triggers exporting ReVanced debug logs to the clipboard when clicked.
- * Invokes the {@link LogBufferManager#exportToClipboard} method.
+ * A custom preference that displays a preview of ReVanced debug logs.
+ * Invokes the {@link LogBufferManager#showLogDialog} method.
  */
 @SuppressWarnings({"deprecation", "unused"})
 public class ExportLogToClipboardPreference extends Preference {
 
     {
         setOnPreferenceClickListener(pref -> {
-            LogBufferManager.exportToClipboard();
+            LogBufferManager.showLogDialog(getContext());
             return true;
         });
     }

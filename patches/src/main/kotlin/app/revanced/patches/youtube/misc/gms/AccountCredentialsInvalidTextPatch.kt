@@ -30,8 +30,8 @@ internal val accountCredentialsInvalidTextPatch = bytecodePatch {
         // MicroG accounts look almost identical to Google device accounts,
         // and it's more foolproof to instead uninstall/reinstall.
         arrayOf(
-            specificNetworkErrorViewControllerMethodMatch,
-            loadingFrameLayoutControllerMethodMatch,
+            getSpecificNetworkErrorViewControllerMethodMatch(true),
+            getSpecificNetworkErrorViewControllerMethodMatch(false)
         ).forEach { match ->
             val index = match[-1]
             val register = match.method.getInstruction<OneRegisterInstruction>(index).registerA
