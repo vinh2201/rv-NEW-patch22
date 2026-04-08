@@ -6,6 +6,7 @@ import app.revanced.patches.youtube.shared.mainActivityOnBackPressedMethod
 import app.revanced.util.addInstructionsAtControlFlowLabel
 import app.revanced.util.getReference
 import app.revanced.util.indexOfFirstInstructionOrThrow
+import app.revanced.util.insertLiteralOverride
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
@@ -21,6 +22,12 @@ internal val fixBackToExitGesturePatch = bytecodePatch(
                 recyclerViewTopScrollingMethodMatch[-1] + 1,
                 "invoke-static { }, $EXTENSION_CLASS_DESCRIPTOR->onTopView()V",
             )
+        }
+
+        // Flag that seems to change the back button to not
+        // exit the app but instead scrolls to the top of the home feed.
+        backToRefreshFeatureFlagMethodMatch.let {
+            it.method.insertLiteralOverride(it[0], false)
         }
 
         with(scrollPositionMethodMatch) {
