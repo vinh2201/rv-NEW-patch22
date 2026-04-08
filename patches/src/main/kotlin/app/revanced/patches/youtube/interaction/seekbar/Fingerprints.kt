@@ -9,6 +9,8 @@ import app.revanced.patcher.custom
 import app.revanced.patcher.definingClass
 import app.revanced.patcher.extensions.instructions
 import app.revanced.patcher.field
+import app.revanced.patcher.firstImmutableMethodDeclaratively
+import app.revanced.patcher.firstMethodComposite
 import app.revanced.patcher.firstMethodDeclaratively
 import app.revanced.patcher.gettingFirstImmutableMethodDeclaratively
 import app.revanced.patcher.instructions
@@ -123,4 +125,23 @@ internal val BytecodePatchContext.fullscreenLargeSeekbarFeatureFlagMethodMatch b
     returnType("Z")
     parameterTypes()
     instructions(45691569L())
+}
+
+internal val BytecodePatchContext.videoStreamingDataAllowSeekingMethod by getting {
+    firstMethodDeclaratively {
+        returnType("Z")
+        parameterTypes()
+        instructions(
+            8L(),
+            after(Opcode.IF_EQ()),
+            after(1L()) // Another method in the same class almost matches this but uses 0 here.
+        )
+    }
+} using {
+    firstImmutableMethodDeclaratively {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("Ljava/lang/String;")
+        name("toString")
+        instructions("VideoStreamingData(itags="())
+    }
 }
