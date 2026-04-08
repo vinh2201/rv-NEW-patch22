@@ -10,14 +10,18 @@ import app.revanced.patches.shared.misc.mapping.resourceMappingPatch
 import app.revanced.patches.shared.misc.settings.preference.SwitchPreference
 import app.revanced.patches.youtube.misc.extension.sharedExtensionPatch
 import app.revanced.patches.youtube.misc.playertype.playerTypeHookPatch
-import app.revanced.patches.youtube.misc.playservice.is_19_34_or_greater
 import app.revanced.patches.youtube.misc.playservice.is_20_29_or_greater
 import app.revanced.patches.youtube.misc.playservice.versionCheckPatch
 import app.revanced.patches.youtube.misc.settings.PreferenceScreen
 import app.revanced.patches.youtube.misc.settings.settingsPatch
 import app.revanced.patches.youtube.shared.backgroundPlaybackManagerShortsMethod
 import app.revanced.patches.youtube.video.information.videoInformationPatch
-import app.revanced.util.*
+import app.revanced.util.addInstructionsAtControlFlowLabel
+import app.revanced.util.findInstructionIndicesReversedOrThrow
+import app.revanced.util.getReference
+import app.revanced.util.insertLiteralOverride
+import app.revanced.util.returnEarly
+import app.revanced.util.returnLate
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -105,13 +109,11 @@ val removeBackgroundPlaybackRestrictionsPatch = bytecodePatch(
         kidsBackgroundPlaybackPolicyControllerMethod.returnEarly()
 
         // Fix PiP buttons not working after locking/unlocking device screen.
-        if (is_19_34_or_greater) {
-            pipInputConsumerFeatureFlagMethodMatch.let {
-                it.method.insertLiteralOverride(
-                    it[0],
-                    false,
-                )
-            }
+        pipInputConsumerFeatureFlagMethodMatch.let {
+            it.method.insertLiteralOverride(
+                it[0],
+                false,
+            )
         }
 
         if (is_20_29_or_greater) {

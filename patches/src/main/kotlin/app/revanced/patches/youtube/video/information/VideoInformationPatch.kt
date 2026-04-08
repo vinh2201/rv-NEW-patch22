@@ -4,16 +4,18 @@ import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableClassDef
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod.Companion.toMutable
 import app.revanced.patcher.classDef
-import app.revanced.patcher.extensions.*
+import app.revanced.patcher.extensions.addInstruction
+import app.revanced.patcher.extensions.addInstructions
+import app.revanced.patcher.extensions.fieldReference
+import app.revanced.patcher.extensions.getInstruction
+import app.revanced.patcher.extensions.toInstructions
 import app.revanced.patcher.firstClassDef
 import app.revanced.patcher.immutableClassDef
+import app.revanced.patcher.patch.PatchException
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patches.youtube.misc.extension.sharedExtensionPatch
-import app.revanced.patches.youtube.misc.playservice.is_20_19_or_greater
-import app.revanced.patches.youtube.misc.playservice.is_20_20_or_greater
 import app.revanced.patches.youtube.misc.playservice.is_20_49_or_greater
 import app.revanced.patches.youtube.misc.playservice.versionCheckPatch
-import app.revanced.patches.youtube.shared.videoQualityChangedMethodMatch
 import app.revanced.patches.youtube.video.playerresponse.Hook
 import app.revanced.patches.youtube.video.playerresponse.addPlayerResponseMethodHook
 import app.revanced.patches.youtube.video.playerresponse.playerResponseMethodHookPatch
@@ -25,8 +27,6 @@ import app.revanced.util.addInstructionsAtControlFlowLabel
 import app.revanced.util.addStaticFieldToExtension
 import app.revanced.util.getReference
 import app.revanced.util.indexOfFirstInstructionOrThrow
-import app.revanced.patcher.patch.PatchException
-import app.revanced.patches.youtube.shared.playbackSpeedOnItemClickParentMethodMatch
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
@@ -326,15 +326,14 @@ val videoInformationPatch = bytecodePatch(
         }
 
         val videoQualityClassType: String
-        (if (is_20_19_or_greater) videoQualityMethod else videoQualityLegacyMethod).apply {
+        videoQualityMethod.apply {
             videoQualityClassType = immutableClassDef.type
 
             // Fix bad data used by YouTube.
-            val nameRegister = if (is_20_20_or_greater) "p3" else "p2"
             addInstructions(
                 0,
                 """
-                    invoke-static { $nameRegister, p1 }, $EXTENSION_CLASS_DESCRIPTOR->fixVideoQualityResolution(Ljava/lang/String;I)I    
+                    invoke-static { p3, p1 }, $EXTENSION_CLASS_DESCRIPTOR->fixVideoQualityResolution(Ljava/lang/String;I)I    
                     move-result p1
                 """,
             )

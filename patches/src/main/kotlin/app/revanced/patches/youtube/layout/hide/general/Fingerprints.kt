@@ -1,8 +1,26 @@
 package app.revanced.patches.youtube.layout.hide.general
 
-import app.revanced.patcher.*
+import app.revanced.patcher.accessFlags
 import app.revanced.patcher.after
+import app.revanced.patcher.afterAtMost
+import app.revanced.patcher.allOf
+import app.revanced.patcher.anyField
+import app.revanced.patcher.composingFirstMethod
+import app.revanced.patcher.custom
+import app.revanced.patcher.field
+import app.revanced.patcher.firstImmutableMethodDeclaratively
+import app.revanced.patcher.firstMethodComposite
+import app.revanced.patcher.firstMethodDeclaratively
+import app.revanced.patcher.gettingFirstMethodDeclaratively
+import app.revanced.patcher.immutableClassDef
+import app.revanced.patcher.instructions
+import app.revanced.patcher.invoke
+import app.revanced.patcher.method
+import app.revanced.patcher.opcodes
+import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.BytecodePatchContext
+import app.revanced.patcher.returnType
+import app.revanced.patcher.type
 import app.revanced.patches.shared.misc.mapping.ResourceType
 import app.revanced.patches.youtube.layout.buttons.navigation.wideSearchbarLayoutMethod
 import app.revanced.util.getting
@@ -71,7 +89,7 @@ internal val BytecodePatchContext.hideSubscribedChannelsBarConstructorMethodMatc
 }
 
 /**
- * ~ 20.21
+ * 20.21
  */
 internal val BytecodePatchContext.hideSubscribedChannelsBarConstructorLegacyMethodMatch by composingFirstMethod {
     accessFlags(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
@@ -208,18 +226,6 @@ internal fun BytecodePatchContext.getRelatedChipCloudMethodMatch() = firstMethod
         after(Opcode.MOVE_RESULT()),
     )
 }
-
-/**
- * ~ 20.09
- */
-internal val BytecodePatchContext.relatedChipCloudLegacyMethodMatch by composingFirstMethod {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
-    instructions(
-        ResourceType.ID("related_chip_cloud"),
-        allOf(Opcode.INVOKE_VIRTUAL(), method { name == "findViewById" }),
-    )
-}
-
 
 internal val BytecodePatchContext.searchResultsChipBarMethodMatch by composingFirstMethod {
     accessFlags(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)

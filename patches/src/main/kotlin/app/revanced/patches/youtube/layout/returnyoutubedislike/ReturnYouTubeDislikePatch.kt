@@ -10,18 +10,17 @@ import app.revanced.patcher.patch.PatchException
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patches.all.misc.resources.addResources
 import app.revanced.patches.all.misc.resources.addResourcesPatch
+import app.revanced.patches.shared.misc.litho.context.EXTENSION_CONTEXT_INTERFACE
+import app.revanced.patches.shared.misc.litho.context.conversionContextClassDef
+import app.revanced.patches.shared.misc.litho.context.conversionContextPatch
+import app.revanced.patches.shared.misc.litho.filter.addLithoFilter
 import app.revanced.patches.shared.misc.settings.preference.NonInteractivePreference
 import app.revanced.patches.shared.misc.settings.preference.PreferenceCategory
 import app.revanced.patches.shared.misc.settings.preference.PreferenceScreenPreference
 import app.revanced.patches.shared.misc.settings.preference.SwitchPreference
-import app.revanced.patches.shared.misc.litho.filter.addLithoFilter
 import app.revanced.patches.youtube.misc.extension.sharedExtensionPatch
-import app.revanced.patches.shared.misc.litho.context.EXTENSION_CONTEXT_INTERFACE
-import app.revanced.patches.shared.misc.litho.context.conversionContextClassDef
-import app.revanced.patches.shared.misc.litho.context.conversionContextPatch
 import app.revanced.patches.youtube.misc.litho.filter.lithoFilterPatch
 import app.revanced.patches.youtube.misc.playertype.playerTypeHookPatch
-import app.revanced.patches.youtube.misc.playservice.*
 import app.revanced.patches.youtube.misc.settings.PreferenceScreen
 import app.revanced.patches.youtube.misc.settings.settingsPatch
 import app.revanced.patches.youtube.shared.rollingNumberTextViewAnimationUpdateMethodMatch
@@ -57,7 +56,6 @@ val returnYouTubeDislikePatch = bytecodePatch(
         lithoFilterPatch,
         videoIdPatch,
         playerTypeHookPatch,
-        versionCheckPatch,
     )
 
     compatibleWith(
@@ -139,44 +137,29 @@ val returnYouTubeDislikePatch = bytecodePatch(
         // 21.05 clobbers p0 (this) register.
         // Add additional registers so all parameters including p0 are free to use anywhere in the method.
         textComponentLookupMethod.cloneMutableAndPreserveParameters().apply {
-                // Find the instruction for creating the text data object.
-                val textDataClassType = textComponentDataMethod.immutableClassDef.type
+            // Find the instruction for creating the text data object.
+            val textDataClassType = textComponentDataMethod.immutableClassDef.type
 
-                val insertIndex: Int
-                val charSequenceRegister: Int
+            val insertIndex = indexOfFirstInstructionOrThrow {
+                opcode == Opcode.NEW_INSTANCE &&
+                        typeReference?.type == textDataClassType
+            }
 
-                if (is_19_33_or_greater && !is_20_10_or_greater) {
-                    val index = indexOfFirstInstructionOrThrow {
-                        (opcode == Opcode.INVOKE_STATIC || opcode == Opcode.INVOKE_STATIC_RANGE) &&
-                                methodReference?.returnType == textDataClassType
-                    }
+            val charSequenceIndex = indexOfFirstInstructionOrThrow(insertIndex) {
+                opcode == Opcode.IPUT_OBJECT &&
+                        fieldReference?.type == "Ljava/lang/CharSequence;"
 
-                    insertIndex = indexOfFirstInstructionOrThrow(index) {
-                        opcode == Opcode.INVOKE_VIRTUAL &&
-                                methodReference?.parameterTypes?.firstOrNull() == "Ljava/lang/CharSequence;"
-                    }
+            }
 
-                    charSequenceRegister =
-                        getInstruction<FiveRegisterInstruction>(insertIndex).registerD
-                } else {
-                    insertIndex = indexOfFirstInstructionOrThrow {
-                        opcode == Opcode.NEW_INSTANCE &&
-                                typeReference?.type == textDataClassType
-                    }
+            val charSequenceRegister =
+                getInstruction<TwoRegisterInstruction>(charSequenceIndex).registerA
 
-                    val charSequenceIndex = indexOfFirstInstructionOrThrow(insertIndex) {
-                        opcode == Opcode.IPUT_OBJECT &&
-                                fieldReference?.type == "Ljava/lang/CharSequence;"
-                    }
-                    charSequenceRegister =
-                        getInstruction<TwoRegisterInstruction>(charSequenceIndex).registerA
-                }
 
-                val conversionContext = findFreeRegister(insertIndex, charSequenceRegister)
+            val conversionContext = findFreeRegister(insertIndex, charSequenceRegister)
 
-                addInstructionsAtControlFlowLabel(
-                    insertIndex,
-                    """
+            addInstructionsAtControlFlowLabel(
+                insertIndex,
+                """
                     # Copy conversion context.
                     move-object/from16 v$conversionContext, p0
                     iget-object v$conversionContext, v$conversionContext, $textComponentConversionContextField
@@ -186,40 +169,38 @@ val returnYouTubeDislikePatch = bytecodePatch(
                     :ignore
                     nop
                 """
-                )
-            }
+            )
+        }
 
         // Hook new litho text creation code.
-        if (is_20_07_or_greater) {
-            textComponentFeatureFlagMethodMatch.let {
-                it.method.insertLiteralOverride(
-                    it[0],
-                    "$EXTENSION_CLASS_DESCRIPTOR->useNewLithoTextCreation(Z)Z"
+        textComponentFeatureFlagMethodMatch.let {
+            it.method.insertLiteralOverride(
+                it[0],
+                "$EXTENSION_CLASS_DESCRIPTOR->useNewLithoTextCreation(Z)Z"
+            )
+        }
+
+        lithoSpannableStringCreationMethodMatch.let {
+            val conversionContextField = it.immutableClassDef.type +
+                    "->" + textComponentConversionContextField.name +
+                    ":" + textComponentConversionContextField.type
+
+            it.method.apply {
+                val insertIndex = it[1]
+                val charSequenceRegister =
+                    getInstruction<FiveRegisterInstruction>(insertIndex).registerD
+                val conversionContextRegister =
+                    findFreeRegister(insertIndex, charSequenceRegister)
+
+                addInstructions(
+                    insertIndex,
+                    """
+                        move-object/from16 v$conversionContextRegister, p0
+                        iget-object v$conversionContextRegister, v$conversionContextRegister, $conversionContextField
+                        invoke-static { v$conversionContextRegister, v$charSequenceRegister }, $EXTENSION_CLASS_DESCRIPTOR->onLithoTextLoaded(${EXTENSION_CONTEXT_INTERFACE}Ljava/lang/CharSequence;)Ljava/lang/CharSequence;
+                        move-result-object v$charSequenceRegister
+                    """
                 )
-            }
-
-            lithoSpannableStringCreationMethodMatch.let {
-                val conversionContextField = it.immutableClassDef.type +
-                        "->" + textComponentConversionContextField.name +
-                        ":" + textComponentConversionContextField.type
-
-                it.method.apply {
-                    val insertIndex = it[1]
-                    val charSequenceRegister =
-                        getInstruction<FiveRegisterInstruction>(insertIndex).registerD
-                    val conversionContextRegister =
-                        findFreeRegister(insertIndex, charSequenceRegister)
-
-                    addInstructions(
-                        insertIndex,
-                        """
-                            move-object/from16 v$conversionContextRegister, p0
-                            iget-object v$conversionContextRegister, v$conversionContextRegister, $conversionContextField
-                            invoke-static { v$conversionContextRegister, v$charSequenceRegister }, $EXTENSION_CLASS_DESCRIPTOR->onLithoTextLoaded(${EXTENSION_CONTEXT_INTERFACE}Ljava/lang/CharSequence;)Ljava/lang/CharSequence;
-                            move-result-object v$charSequenceRegister
-                        """
-                    )
-                }
             }
         }
 

@@ -16,7 +16,6 @@ import java.util.Arrays;
 import java.util.Scanner;
 
 import app.revanced.extension.shared.Logger;
-import app.revanced.extension.shared.ResourceType;
 import app.revanced.extension.shared.Utils;
 import app.revanced.extension.shared.settings.BaseSettings;
 import app.revanced.extension.youtube.settings.Settings;
@@ -37,17 +36,17 @@ public final class SeekbarColorPatch {
     /**
      * Feed default colors of the gradient seekbar.
      */
-    private static final int[] FEED_ORIGINAL_SEEKBAR_GRADIENT_COLORS = { 0xFFFF0033, 0xFFFF2791 };
+    private static final int[] FEED_ORIGINAL_SEEKBAR_GRADIENT_COLORS = {0xFFFF0033, 0xFFFF2791};
 
     /**
      * Feed default positions of the gradient seekbar.
      */
-    private static final float[] FEED_ORIGINAL_SEEKBAR_GRADIENT_POSITIONS = { 0.8f, 1.0f };
+    private static final float[] FEED_ORIGINAL_SEEKBAR_GRADIENT_POSITIONS = {0.8f, 1.0f};
 
     /**
      * Empty seekbar gradient, if hide seekbar in feed is enabled.
      */
-    private static final int[] HIDDEN_SEEKBAR_GRADIENT_COLORS = { 0x0, 0x0 };
+    private static final int[] HIDDEN_SEEKBAR_GRADIENT_COLORS = {0x0, 0x0};
 
     /**
      * Default YouTube seekbar color brightness.
@@ -169,10 +168,10 @@ public final class SeekbarColorPatch {
 
     /**
      * Injection point.
-     *
+     * <p>
      * Overrides all Litho components that use the YouTube seekbar color.
      * Used only for the video thumbnails seekbar.
-     *
+     * <p>
      * If {@link Settings#HIDE_SEEKBAR_THUMBNAIL} is enabled, this returns a fully transparent color.
      */
     public static int getLithoColor(int colorValue) {
@@ -214,14 +213,6 @@ public final class SeekbarColorPatch {
         if (HIDE_SEEKBAR_THUMBNAIL_ENABLED && x0 == 0 && y1 == 0) {
             return HIDDEN_SEEKBAR_GRADIENT_COLORS;
         }
-        return getPlayerLinearGradient(original);
-    }
-
-    /**
-     * Injection point.
-     * Pre 19.49
-     */
-    public static int[] getPlayerLinearGradient(int[] original) {
         return SEEKBAR_CUSTOM_COLOR_ENABLED
                 ? customSeekbarColorGradient
                 : original;
@@ -250,7 +241,7 @@ public final class SeekbarColorPatch {
 
     /**
      * Injection point.
-     *
+     * <p>
      * Overrides color when video player seekbar is clicked.
      */
     public static int getVideoPlayerSeekbarClickedColor(int colorValue) {
@@ -265,7 +256,7 @@ public final class SeekbarColorPatch {
 
     /**
      * Injection point.
-     *
+     * <p>
      * Overrides color used for the video player seekbar.
      */
     public static int getVideoPlayerSeekbarColor(int originalColor) {
@@ -295,7 +286,7 @@ public final class SeekbarColorPatch {
             final int replacementAlpha = clamp(Color.alpha(customSeekbarColor) + alphaDifference, 0, 255);
             final int replacementColor = Color.HSVToColor(replacementAlpha, hsv);
             Logger.printDebug(() -> String.format("Original color: #%08X  replacement color: #%08X",
-                            originalColor, replacementColor));
+                    originalColor, replacementColor));
             return replacementColor;
         } catch (Exception ex) {
             Logger.printException(() -> "getSeekbarColorValue failure", ex);

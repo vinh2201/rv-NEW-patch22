@@ -19,8 +19,6 @@ import app.revanced.patches.youtube.misc.contexthook.hookClientContextPatch
 import app.revanced.patches.youtube.misc.extension.sharedExtensionPatch
 import app.revanced.patches.youtube.misc.navigation.hookNavigationButtonCreated
 import app.revanced.patches.youtube.misc.navigation.navigationBarHookPatch
-import app.revanced.patches.youtube.misc.playservice.is_19_25_or_greater
-import app.revanced.patches.youtube.misc.playservice.is_20_15_or_greater
 import app.revanced.patches.youtube.misc.playservice.is_20_31_or_greater
 import app.revanced.patches.youtube.misc.playservice.is_20_45_or_greater
 import app.revanced.patches.youtube.misc.playservice.versionCheckPatch
@@ -35,7 +33,6 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
-import kotlin.collections.plusAssign
 
 private const val EXTENSION_CLASS_DESCRIPTOR =
     "Lapp/revanced/extension/youtube/patches/NavigationBarPatch;"
@@ -82,22 +79,20 @@ val navigationBarPatch = bytecodePatch(
             SwitchPreference("revanced_narrow_navigation_buttons"),
         )
 
-        if (is_19_25_or_greater) {
-            preferences += SwitchPreference("revanced_disable_translucent_navigation_bar_light")
-            preferences += SwitchPreference("revanced_disable_translucent_navigation_bar_dark")
+        preferences += SwitchPreference("revanced_disable_translucent_navigation_bar_light")
+        preferences += SwitchPreference("revanced_disable_translucent_navigation_bar_dark")
 
-            PreferenceScreen.GENERAL.addPreferences(
-                SwitchPreference("revanced_disable_translucent_status_bar")
-            )
+        PreferenceScreen.GENERAL.addPreferences(
+            SwitchPreference("revanced_disable_translucent_status_bar")
+        )
 
-            if (is_20_15_or_greater && !is_20_45_or_greater) {
-                // Feature has not worked well for a while and YT seems to have abandoned this a/b test.
-                preferences += SwitchPreference("revanced_navigation_bar_animations")
-            }
+        if (!is_20_45_or_greater) {
+            // Feature has not worked well for a while and YT seems to have abandoned this a/b test.
+            preferences += SwitchPreference("revanced_navigation_bar_animations")
+        }
 
-            if (is_20_31_or_greater) {
-                preferences += SwitchPreference("revanced_disable_auto_hide_navigation_bar")
-            }
+        if (is_20_31_or_greater) {
+            preferences += SwitchPreference("revanced_disable_auto_hide_navigation_bar")
         }
 
         PreferenceScreen.GENERAL.addPreferences(
@@ -133,36 +128,32 @@ val navigationBarPatch = bytecodePatch(
         hookNavigationButtonCreated(EXTENSION_CLASS_DESCRIPTOR)
 
         // Force on/off translucent effect on status bar and navigation buttons.
-        if (is_19_25_or_greater) {
-            translucentNavigationStatusBarFeatureFlagMethodMatch.let {
-                it.method.insertLiteralOverride(
-                    it[0],
-                    "$EXTENSION_CLASS_DESCRIPTOR->useTranslucentNavigationStatusBar(Z)Z",
-                )
-            }
-
-            translucentNavigationButtonsFeatureFlagMethodMatch.let {
-                it.method.insertLiteralOverride(
-                    it[0],
-                    "$EXTENSION_CLASS_DESCRIPTOR->useTranslucentNavigationButtons(Z)Z",
-                )
-            }
-
-            translucentNavigationButtonsSystemFeatureFlagMethodMatch.let {
-                it.method.insertLiteralOverride(
-                    it[0],
-                    "$EXTENSION_CLASS_DESCRIPTOR->useTranslucentNavigationButtons(Z)Z",
-                )
-            }
+        translucentNavigationStatusBarFeatureFlagMethodMatch.let {
+            it.method.insertLiteralOverride(
+                it[0],
+                "$EXTENSION_CLASS_DESCRIPTOR->useTranslucentNavigationStatusBar(Z)Z",
+            )
         }
 
-        if (is_20_15_or_greater) {
-            animatedNavigationTabsFeatureFlagMethodMatch.let {
-                it.method.insertLiteralOverride(
-                    it[0],
-                    "$EXTENSION_CLASS_DESCRIPTOR->useAnimatedNavigationButtons(Z)Z",
-                )
-            }
+        translucentNavigationButtonsFeatureFlagMethodMatch.let {
+            it.method.insertLiteralOverride(
+                it[0],
+                "$EXTENSION_CLASS_DESCRIPTOR->useTranslucentNavigationButtons(Z)Z",
+            )
+        }
+
+        translucentNavigationButtonsSystemFeatureFlagMethodMatch.let {
+            it.method.insertLiteralOverride(
+                it[0],
+                "$EXTENSION_CLASS_DESCRIPTOR->useTranslucentNavigationButtons(Z)Z",
+            )
+        }
+
+        animatedNavigationTabsFeatureFlagMethodMatch.let {
+            it.method.insertLiteralOverride(
+                it[0],
+                "$EXTENSION_CLASS_DESCRIPTOR->useAnimatedNavigationButtons(Z)Z",
+            )
         }
 
         arrayOf(

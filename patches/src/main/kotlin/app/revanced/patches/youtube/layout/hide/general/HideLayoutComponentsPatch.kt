@@ -2,20 +2,32 @@ package app.revanced.patches.youtube.layout.hide.general
 
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod.Companion.toMutable
 import app.revanced.patcher.classDef
-import app.revanced.patcher.extensions.*
-import app.revanced.patcher.immutableClassDef
+import app.revanced.patcher.extensions.ExternalLabel
+import app.revanced.patcher.extensions.addInstruction
+import app.revanced.patcher.extensions.addInstructions
+import app.revanced.patcher.extensions.addInstructionsWithLabels
+import app.revanced.patcher.extensions.fieldReference
+import app.revanced.patcher.extensions.getInstruction
+import app.revanced.patcher.extensions.instructions
+import app.revanced.patcher.extensions.methodReference
+import app.revanced.patcher.extensions.removeInstruction
+import app.revanced.patcher.extensions.replaceInstruction
 import app.revanced.patches.all.misc.resources.addResources
 import app.revanced.patches.shared.layout.hide.general.hideLayoutComponentsPatch
 import app.revanced.patches.shared.misc.mapping.resourceMappingPatch
-import app.revanced.patches.shared.misc.settings.preference.*
+import app.revanced.patches.shared.misc.settings.preference.InputType
+import app.revanced.patches.shared.misc.settings.preference.NonInteractivePreference
+import app.revanced.patches.shared.misc.settings.preference.PreferenceCategory
+import app.revanced.patches.shared.misc.settings.preference.PreferenceScreenPreference
 import app.revanced.patches.shared.misc.settings.preference.PreferenceScreenPreference.Sorting
+import app.revanced.patches.shared.misc.settings.preference.SwitchPreference
+import app.revanced.patches.shared.misc.settings.preference.TextPreference
 import app.revanced.patches.youtube.layout.hide.shelves.hideHorizontalShelvesPatch
 import app.revanced.patches.youtube.misc.engagement.engagementPanelHookPatch
 import app.revanced.patches.youtube.misc.litho.filter.lithoFilterPatch
-import app.revanced.patches.youtube.misc.litho.lazily.hookTreeNodeResult
 import app.revanced.patches.youtube.misc.litho.lazily.hookLazilyConvertedElementPatch
+import app.revanced.patches.youtube.misc.litho.lazily.hookTreeNodeResult
 import app.revanced.patches.youtube.misc.navigation.navigationBarHookPatch
-import app.revanced.patches.youtube.misc.playservice.is_20_10_or_greater
 import app.revanced.patches.youtube.misc.playservice.is_20_21_or_greater
 import app.revanced.patches.youtube.misc.playservice.is_21_11_or_greater
 import app.revanced.patches.youtube.misc.playservice.versionCheckPatch
@@ -529,14 +541,11 @@ val hideLayoutComponentsPatch = hideLayoutComponentsPatch(
 
     // region Hide filter bar
 
-    val filterBarMatches = mutableMapOf(
+    mutableMapOf(
         filterBarHeightMethodMatch to "hideInFeed",
         searchResultsChipBarMethodMatch to "hideInSearch",
-    )
-    if (is_20_10_or_greater)
-        filterBarMatches += getRelatedChipCloudMethodMatch() to "hideInRelatedVideos"
-
-    filterBarMatches.forEach { (match, methodName) ->
+        getRelatedChipCloudMethodMatch() to "hideInRelatedVideos"
+    ).forEach { (match, methodName) ->
         match.method.apply {
             val moveIndex = match[-1]
             val sizeRegister = getInstruction<OneRegisterInstruction>(moveIndex).registerA
@@ -551,22 +560,16 @@ val hideLayoutComponentsPatch = hideLayoutComponentsPatch(
         }
     }
 
-    if (is_20_10_or_greater) {
-        getRelatedChipCloudMethodMatch().let {
-            it.method.apply {
-                insertLiteralOverride(
-                    it[2],
-                    "$LAYOUT_COMPONENTS_FILTER_CLASS_DESCRIPTOR->hideInRelatedVideos(Z)Z"
-                )
-            }
+    getRelatedChipCloudMethodMatch().let {
+        it.method.apply {
+            insertLiteralOverride(
+                it[2],
+                "$LAYOUT_COMPONENTS_FILTER_CLASS_DESCRIPTOR->hideInRelatedVideos(Z)Z"
+            )
         }
     }
 
-    val relatedChipCloudMethodMatch = if (is_20_10_or_greater)
-        getRelatedChipCloudMethodMatch()
-    else relatedChipCloudLegacyMethodMatch
-
-    relatedChipCloudMethodMatch.let {
+    getRelatedChipCloudMethodMatch().let {
         it.method.apply {
             val viewIndex = it[1]
             val viewRegister = getInstruction<FiveRegisterInstruction>(viewIndex).registerC

@@ -1,11 +1,20 @@
 package app.revanced.patches.youtube.layout.shortsresuming
 
-import app.revanced.patcher.*
+import app.revanced.patcher.accessFlags
+import app.revanced.patcher.after
+import app.revanced.patcher.afterAtMost
+import app.revanced.patcher.allOf
+import app.revanced.patcher.composingFirstMethod
+import app.revanced.patcher.gettingFirstMethodDeclaratively
+import app.revanced.patcher.instructions
+import app.revanced.patcher.invoke
+import app.revanced.patcher.method
+import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.BytecodePatchContext
+import app.revanced.patcher.returnType
+import app.revanced.patcher.type
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
-import kotlin.collections.all
-import kotlin.collections.zip
 
 
 /**
@@ -49,19 +58,6 @@ val BytecodePatchContext.userWasInShortsListenerMethodMatch by composingFirstMet
         after(Opcode.MOVE_RESULT()),
         // 20.40+ string was merged into another string and is a partial match.
         afterAtMost(30, "ShortsStartup SetUserWasInShortsListener"(String::contains)),
-    )
-}
-
-/**
- * Pre 20.02
- */
-internal
-val BytecodePatchContext.userWasInShortsLegacyMethod by gettingFirstMethodDeclaratively {
-    returnType("V")
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    parameterTypes("Ljava/lang/Object;")
-    instructions(
-        "Failed to read user_was_in_shorts proto after successful warmup"(),
     )
 }
 

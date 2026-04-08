@@ -7,19 +7,12 @@ import app.revanced.patches.all.misc.resources.addResources
 import app.revanced.patches.all.misc.resources.addResourcesPatch
 import app.revanced.patches.shared.misc.settings.preference.SwitchPreference
 import app.revanced.patches.youtube.misc.extension.sharedExtensionPatch
-import app.revanced.patches.youtube.misc.playservice.is_20_03_or_greater
 import app.revanced.patches.youtube.misc.playservice.is_21_03_or_greater
 import app.revanced.patches.youtube.misc.playservice.versionCheckPatch
 import app.revanced.patches.youtube.misc.settings.PreferenceScreen
 import app.revanced.patches.youtube.misc.settings.settingsPatch
-import app.revanced.util.addInstructionsAtControlFlowLabel
-import app.revanced.util.findFreeRegister
-import app.revanced.util.getReference
-import app.revanced.util.indexOfFirstInstructionOrThrow
-import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
-import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 private const val EXTENSION_CLASS_DESCRIPTOR =
     "Lapp/revanced/extension/youtube/patches/DisableResumingShortsOnStartupPatch;"
@@ -71,7 +64,7 @@ val disableResumingShortsOnStartupPatch = bytecodePatch(
                     )
                 }
             }
-        } else if (is_20_03_or_greater) {
+        } else {
             userWasInShortsListenerMethodMatch.let {
                 it.method.apply {
                     val insertIndex = it[2] + 1
@@ -85,27 +78,6 @@ val disableResumingShortsOnStartupPatch = bytecodePatch(
                         """,
                     )
                 }
-            }
-        } else {
-            userWasInShortsLegacyMethod.apply {
-                val listenableInstructionIndex = indexOfFirstInstructionOrThrow {
-                    opcode == Opcode.INVOKE_INTERFACE &&
-                            getReference<MethodReference>()?.definingClass == "Lcom/google/common/util/concurrent/ListenableFuture;" &&
-                            getReference<MethodReference>()?.name == "isDone"
-                }
-                val freeRegister = findFreeRegister(listenableInstructionIndex)
-
-                addInstructionsAtControlFlowLabel(
-                    listenableInstructionIndex,
-                    """
-                        invoke-static { }, $EXTENSION_CLASS_DESCRIPTOR->disableResumingShortsOnStartup()Z
-                        move-result v$freeRegister
-                        if-eqz v$freeRegister, :show_startup_shorts_player
-                        return-void
-                        :show_startup_shorts_player
-                        nop
-                    """
-                )
             }
         }
 

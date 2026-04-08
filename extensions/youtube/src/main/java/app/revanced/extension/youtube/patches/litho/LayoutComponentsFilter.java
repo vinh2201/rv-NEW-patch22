@@ -1,7 +1,6 @@
 package app.revanced.extension.youtube.patches.litho;
 
 import static app.revanced.extension.shared.Utils.getFilterStrings;
-import static app.revanced.extension.youtube.patches.VersionCheckPatch.IS_20_10_OR_GREATER;
 import static app.revanced.extension.youtube.shared.NavigationBar.NavigationButton;
 
 import android.graphics.drawable.Drawable;
@@ -515,11 +514,7 @@ public final class LayoutComponentsFilter extends Filter {
      * Injection point.
      */
     public static void hideInRelatedVideos(View chipView) {
-        if (IS_20_10_OR_GREATER) {
-            Utils.hideViewUnderCondition(HIDE_FILTER_BAR_FEED_IN_RELATED_VIDEOS_ENABLED, chipView);
-        } else {
-            Utils.hideViewBy0dpUnderCondition(HIDE_FILTER_BAR_FEED_IN_RELATED_VIDEOS_ENABLED, chipView);
-        }
+        Utils.hideViewUnderCondition(HIDE_FILTER_BAR_FEED_IN_RELATED_VIDEOS_ENABLED, chipView);
     }
 
     private static final boolean HIDE_YOUTUBE_DOODLES_ENABLED = Settings.HIDE_YOUTUBE_DOODLES.get();

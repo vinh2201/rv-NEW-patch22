@@ -12,14 +12,16 @@ import app.revanced.patches.shared.misc.settings.preference.SwitchPreference
 import app.revanced.patches.shared.misc.settings.preference.TextPreference
 import app.revanced.patches.youtube.misc.extension.sharedExtensionPatch
 import app.revanced.patches.youtube.misc.playertype.playerTypeHookPatch
-import app.revanced.patches.youtube.misc.playservice.is_19_43_or_greater
-import app.revanced.patches.youtube.misc.playservice.is_20_22_or_greater
 import app.revanced.patches.youtube.misc.playservice.is_20_34_or_greater
 import app.revanced.patches.youtube.misc.playservice.versionCheckPatch
 import app.revanced.patches.youtube.misc.settings.PreferenceScreen
 import app.revanced.patches.youtube.misc.settings.settingsPatch
 import app.revanced.patches.youtube.shared.mainActivityConstructorMethod
-import app.revanced.util.*
+import app.revanced.util.ResourceGroup
+import app.revanced.util.copyResources
+import app.revanced.util.insertLiteralOverride
+import app.revanced.util.transformMethods
+import app.revanced.util.traverseClassHierarchy
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 
@@ -39,7 +41,7 @@ private val swipeControlsResourcePatch = resourcePatch {
         // If fullscreen swipe is enabled in newer versions the app can crash.
         // It likely is caused by conflicting experimental flags that are never enabled together.
         // Flag was completely removed in 20.34+
-        if (is_19_43_or_greater && !is_20_22_or_greater) {
+        if (!is_20_34_or_greater) {
             PreferenceScreen.SWIPE_CONTROLS.addPreferences(
                 SwitchPreference("revanced_swipe_change_video"),
             )
@@ -142,7 +144,7 @@ val swipeControlsPatch = bytecodePatch(
 
         // region patch to enable/disable swipe to change video.
 
-        if (is_19_43_or_greater && !is_20_34_or_greater) {
+        if (!is_20_34_or_greater) {
             swipeChangeVideoMethodMatch.let {
                 it.method.insertLiteralOverride(
                     it[-1],

@@ -3,62 +3,37 @@
 package app.revanced.patches.youtube.layout.miniplayer
 
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
-import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod.Companion.toMutable
 import app.revanced.patcher.classDef
 import app.revanced.patcher.extensions.addInstruction
 import app.revanced.patcher.extensions.addInstructions
 import app.revanced.patcher.extensions.getInstruction
 import app.revanced.patcher.extensions.replaceInstruction
-import app.revanced.patcher.immutableClassDef
 import app.revanced.patcher.patch.bytecodePatch
-import app.revanced.patcher.patch.resourcePatch
 import app.revanced.patches.all.misc.resources.addResources
 import app.revanced.patches.all.misc.resources.addResourcesPatch
-import app.revanced.patches.shared.misc.mapping.ResourceType
-import app.revanced.patches.shared.misc.mapping.resourceMappingPatch
-import app.revanced.patches.shared.misc.settings.preference.*
+import app.revanced.patches.shared.misc.settings.preference.InputType
+import app.revanced.patches.shared.misc.settings.preference.ListPreference
+import app.revanced.patches.shared.misc.settings.preference.PreferenceScreenPreference
+import app.revanced.patches.shared.misc.settings.preference.SwitchPreference
+import app.revanced.patches.shared.misc.settings.preference.TextPreference
 import app.revanced.patches.youtube.misc.extension.sharedExtensionPatch
-import app.revanced.patches.youtube.misc.playservice.*
+import app.revanced.patches.youtube.misc.playservice.is_20_31_or_greater
+import app.revanced.patches.youtube.misc.playservice.is_20_37_or_greater
 import app.revanced.patches.youtube.misc.settings.PreferenceScreen
 import app.revanced.patches.youtube.misc.settings.settingsPatch
-import app.revanced.util.*
+import app.revanced.util.addInstructionsAtControlFlowLabel
+import app.revanced.util.findInstructionIndicesReversedOrThrow
+import app.revanced.util.getReference
+import app.revanced.util.indexOfFirstInstructionOrThrow
+import app.revanced.util.indexOfFirstLiteralInstructionOrThrow
+import app.revanced.util.insertLiteralOverride
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
-import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
-import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
-import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
-
-// Only available in 19.15 and upwards.
-internal var ytOutlineXWhite24 = -1L
-    private set
-internal var ytOutlinePictureInPictureWhite24 = -1L
-    private set
-
-private val miniplayerResourcePatch = resourcePatch {
-    dependsOn(
-        resourceMappingPatch,
-        versionCheckPatch,
-    )
-
-    apply {
-        // Resource id is not used during patching, but is used by extension.
-        // Verify the resource is present while patching.
-        ResourceType.ID["modern_miniplayer_subtitle_text"]
-
-        // Only required for exactly 19.16
-        if (!is_19_17_or_greater) {
-            ytOutlinePictureInPictureWhite24 =
-                ResourceType.DRAWABLE["yt_outline_picture_in_picture_white_24"]
-            ytOutlineXWhite24 = ResourceType.DRAWABLE["yt_outline_x_white_24"]
-        }
-    }
-}
 
 private const val EXTENSION_CLASS_DESCRIPTOR =
     "Lapp/revanced/extension/youtube/patches/MiniplayerPatch;"
@@ -72,7 +47,6 @@ val miniplayerPatch = bytecodePatch(
         sharedExtensionPatch,
         settingsPatch,
         addResourcesPatch,
-        miniplayerResourcePatch,
     )
 
     compatibleWith(
@@ -91,71 +65,24 @@ val miniplayerPatch = bytecodePatch(
     apply {
         addResources("youtube", "layout.miniplayer.miniplayerPatch")
 
-        val preferences = mutableSetOf<BasePreference>()
-
-        preferences +=
+        val preferences = setOf(
             if (is_20_37_or_greater) {
                 ListPreference("revanced_miniplayer_type")
-            } else if (is_20_03_or_greater) {
+            } else {
                 ListPreference(
                     key = "revanced_miniplayer_type",
                     entriesKey = "revanced_miniplayer_type_legacy_20_03_entries",
                     entryValuesKey = "revanced_miniplayer_type_legacy_20_03_entry_values",
                 )
-            } else if (is_19_43_or_greater) {
-                ListPreference(
-                    key = "revanced_miniplayer_type",
-                    entriesKey = "revanced_miniplayer_type_legacy_19_43_entries",
-                    entryValuesKey = "revanced_miniplayer_type_legacy_19_43_entry_values",
-                )
-            } else {
-                ListPreference(
-                    key = "revanced_miniplayer_type",
-                    entriesKey = "revanced_miniplayer_type_legacy_19_16_entries",
-                    entryValuesKey = "revanced_miniplayer_type_legacy_19_16_entry_values",
-                )
-            }
-
-        if (is_19_25_or_greater) {
-            if (!is_19_29_or_greater) {
-                preferences += SwitchPreference("revanced_miniplayer_double_tap_action")
-            }
-            preferences += SwitchPreference("revanced_miniplayer_disable_drag_and_drop")
-        }
-
-        if (is_19_43_or_greater) {
-            preferences += SwitchPreference("revanced_miniplayer_disable_horizontal_drag")
-        }
-
-        if (is_19_36_or_greater) {
-            preferences += SwitchPreference("revanced_miniplayer_disable_rounded_corners")
-        }
-
-        preferences += SwitchPreference("revanced_miniplayer_hide_subtext")
-
-        preferences += if (is_19_26_or_greater) {
-            SwitchPreference("revanced_miniplayer_hide_overlay_buttons")
-        } else {
-            SwitchPreference(
-                key = "revanced_miniplayer_hide_overlay_buttons",
-                titleKey = "revanced_miniplayer_hide_overlay_buttons_legacy_title",
-                summaryOnKey = "revanced_miniplayer_hide_overlay_buttons_legacy_summary_on",
-                summaryOffKey = "revanced_miniplayer_hide_overlay_buttons_legacy_summary_off",
-            )
-        }
-
-        if (!is_19_26_or_greater) {
-            preferences += SwitchPreference("revanced_miniplayer_hide_rewind_forward")
-        }
-
-        if (is_19_26_or_greater) {
-            preferences += TextPreference(
-                "revanced_miniplayer_width_dip",
-                inputType = InputType.NUMBER
-            )
-        }
-
-        preferences += TextPreference("revanced_miniplayer_opacity", inputType = InputType.NUMBER)
+            },
+            SwitchPreference("revanced_miniplayer_disable_drag_and_drop"),
+            SwitchPreference("revanced_miniplayer_disable_horizontal_drag"),
+            SwitchPreference("revanced_miniplayer_disable_rounded_corners"),
+            SwitchPreference("revanced_miniplayer_hide_subtext"),
+            SwitchPreference("revanced_miniplayer_hide_overlay_buttons"),
+            TextPreference("revanced_miniplayer_width_dip", inputType = InputType.NUMBER),
+            TextPreference("revanced_miniplayer_opacity", inputType = InputType.NUMBER)
+        )
 
         PreferenceScreen.PLAYER.addPreferences(
             PreferenceScreenPreference(
@@ -285,46 +212,40 @@ val miniplayerPatch = bytecodePatch(
             }
         }
 
-        if (is_19_23_or_greater) {
-            miniplayerModernConstructorMethod.insertMiniplayerFeatureFlagBooleanOverride(
-                MINIPLAYER_DRAG_DROP_FEATURE_KEY,
-                "getMiniplayerDragAndDrop",
+        miniplayerModernConstructorMethod.insertMiniplayerFeatureFlagBooleanOverride(
+            MINIPLAYER_DRAG_DROP_FEATURE_KEY,
+            "getMiniplayerDragAndDrop",
+        )
+
+        miniplayerModernConstructorMethod.insertMiniplayerFeatureFlagBooleanOverride(
+            MINIPLAYER_MODERN_FEATURE_LEGACY_KEY,
+            "getModernMiniplayerOverride",
+        )
+
+        miniplayerModernConstructorMethod.insertMiniplayerFeatureFlagBooleanOverride(
+            MINIPLAYER_MODERN_FEATURE_KEY,
+            "getModernFeatureFlagsActiveOverride",
+        )
+
+        miniplayerModernConstructorMethod.insertMiniplayerFeatureFlagBooleanOverride(
+            MINIPLAYER_DOUBLE_TAP_FEATURE_KEY,
+            "getMiniplayerDoubleTapAction",
+        )
+
+        miniplayerModernConstructorMethod.apply {
+            val literalIndex = indexOfFirstLiteralInstructionOrThrow(
+                MINIPLAYER_INITIAL_SIZE_FEATURE_KEY,
             )
-        }
+            val targetIndex = indexOfFirstInstructionOrThrow(literalIndex, Opcode.LONG_TO_INT)
+            val register = getInstruction<OneRegisterInstruction>(targetIndex).registerA
 
-        if (is_19_25_or_greater) {
-            miniplayerModernConstructorMethod.insertMiniplayerFeatureFlagBooleanOverride(
-                MINIPLAYER_MODERN_FEATURE_LEGACY_KEY,
-                "getModernMiniplayerOverride",
-            )
-
-            miniplayerModernConstructorMethod.insertMiniplayerFeatureFlagBooleanOverride(
-                MINIPLAYER_MODERN_FEATURE_KEY,
-                "getModernFeatureFlagsActiveOverride",
-            )
-
-            miniplayerModernConstructorMethod.insertMiniplayerFeatureFlagBooleanOverride(
-                MINIPLAYER_DOUBLE_TAP_FEATURE_KEY,
-                "getMiniplayerDoubleTapAction",
-            )
-        }
-
-        if (is_19_26_or_greater) {
-            miniplayerModernConstructorMethod.apply {
-                val literalIndex = indexOfFirstLiteralInstructionOrThrow(
-                    MINIPLAYER_INITIAL_SIZE_FEATURE_KEY,
-                )
-                val targetIndex = indexOfFirstInstructionOrThrow(literalIndex, Opcode.LONG_TO_INT)
-                val register = getInstruction<OneRegisterInstruction>(targetIndex).registerA
-
-                addInstructions(
-                    targetIndex + 1,
-                    """
+            addInstructions(
+                targetIndex + 1,
+                """
                         invoke-static { v$register }, $EXTENSION_CLASS_DESCRIPTOR->getMiniplayerDefaultSize(I)I
                         move-result v$register
                     """,
-                )
-            }
+            )
 
             // Override a minimum size constant.
             miniplayerMinimumSizeMethodMatch.let {
@@ -340,54 +261,25 @@ val miniplayerPatch = bytecodePatch(
             }
         }
 
-        if (is_19_36_or_greater) {
-            miniplayerModernConstructorMethod.insertMiniplayerFeatureFlagBooleanOverride(
-                MINIPLAYER_ROUNDED_CORNERS_FEATURE_KEY,
-                "getRoundedCorners",
-            )
-        }
+        miniplayerModernConstructorMethod.insertMiniplayerFeatureFlagBooleanOverride(
+            MINIPLAYER_ROUNDED_CORNERS_FEATURE_KEY,
+            "getRoundedCorners",
+        )
 
-        if (is_19_43_or_greater) {
-            miniplayerOnCloseHandlerMethod.insertMiniplayerFeatureFlagBooleanOverride(
-                MINIPLAYER_DISABLED_FEATURE_KEY,
-                "getMiniplayerOnCloseHandler",
-            )
+        miniplayerOnCloseHandlerMethod.insertMiniplayerFeatureFlagBooleanOverride(
+            MINIPLAYER_DISABLED_FEATURE_KEY,
+            "getMiniplayerOnCloseHandler",
+        )
 
-            miniplayerModernConstructorMethod.insertMiniplayerFeatureFlagBooleanOverride(
-                MINIPLAYER_HORIZONTAL_DRAG_FEATURE_KEY,
-                "getHorizontalDrag",
-            )
+        miniplayerModernConstructorMethod.insertMiniplayerFeatureFlagBooleanOverride(
+            MINIPLAYER_HORIZONTAL_DRAG_FEATURE_KEY,
+            "getHorizontalDrag",
+        )
 
-            miniplayerModernConstructorMethod.insertMiniplayerFeatureFlagBooleanOverride(
-                MINIPLAYER_ANIMATED_EXPAND_FEATURE_KEY,
-                "getMaximizeAnimation",
-            )
-        }
-
-        // endregion
-
-        // region Fix 19.16 using mixed up drawables for tablet modern.
-        // YT fixed this mistake in 19.17.
-        // Fix this, by swapping the drawable resource values with each other.
-        if (!is_19_17_or_greater) {
-            miniplayerModernExpandCloseDrawablesMethod
-                .apply {
-                    listOf(
-                        ytOutlinePictureInPictureWhite24 to ytOutlineXWhite24,
-                        ytOutlineXWhite24 to ytOutlinePictureInPictureWhite24,
-                    ).forEach { (originalResource, replacementResource) ->
-                        val imageResourceIndex =
-                            indexOfFirstLiteralInstructionOrThrow(originalResource)
-                        val register =
-                            getInstruction<OneRegisterInstruction>(imageResourceIndex).registerA
-
-                        replaceInstruction(
-                            imageResourceIndex,
-                            "const v$register, $replacementResource"
-                        )
-                    }
-                }
-        }
+        miniplayerModernConstructorMethod.insertMiniplayerFeatureFlagBooleanOverride(
+            MINIPLAYER_ANIMATED_EXPAND_FEATURE_KEY,
+            "getMaximizeAnimation",
+        )
 
         // endregion
 
@@ -442,45 +334,6 @@ val miniplayerPatch = bytecodePatch(
                 "invoke-static { p1 }, $EXTENSION_CLASS_DESCRIPTOR->" +
                         "hideMiniplayerSubTexts(Landroid/view/View;)V",
             )
-
-        // Modern 2 has a broken overlay subtitle view that is always present.
-        // Modern 2 uses the same overlay controls as the regular video player,
-        // and the overlay views are added at runtime.
-        // Add a hook to the overlay class, and pass the added views to extension.
-        // Problem is fixed in 19.21+
-        //
-        // NOTE: Modern 2 uses the same video UI as the regular player except resized to smaller.
-        // This patch code could be used to hide other player overlays that do not use Litho.
-        if (!is_19_17_or_greater) {
-            playerOverlaysLayoutMethod.classDef.methods.add(
-                ImmutableMethod(
-                    YOUTUBE_PLAYER_OVERLAYS_LAYOUT_CLASS_NAME,
-                    "addView",
-                    listOf(
-                        ImmutableMethodParameter("Landroid/view/View;", null, null),
-                        ImmutableMethodParameter("I", null, null),
-                        ImmutableMethodParameter(
-                            "Landroid/view/ViewGroup\$LayoutParams;",
-                            null,
-                            null,
-                        ),
-                    ),
-                    "V",
-                    AccessFlags.PUBLIC.value,
-                    null,
-                    null,
-                    MutableMethodImplementation(4),
-                ).toMutable().apply {
-                    addInstructions(
-                        """
-                        invoke-super { p0, p1, p2, p3 }, Landroid/view/ViewGroup;->addView(Landroid/view/View;ILandroid/view/ViewGroup${'$'}LayoutParams;)V
-                        invoke-static { p1 }, $EXTENSION_CLASS_DESCRIPTOR->playerOverlayGroupCreated(Landroid/view/View;)V
-                        return-void
-                    """,
-                    )
-                },
-            )
-        }
 
         // endregion
     }

@@ -1,7 +1,24 @@
 package app.revanced.patches.youtube.misc.playercontrols
 
-import app.revanced.patcher.*
+import app.revanced.patcher.accessFlags
+import app.revanced.patcher.after
+import app.revanced.patcher.afterAtMost
+import app.revanced.patcher.allOf
+import app.revanced.patcher.composingFirstMethod
+import app.revanced.patcher.definingClass
+import app.revanced.patcher.firstImmutableMethodDeclaratively
+import app.revanced.patcher.firstMethodComposite
+import app.revanced.patcher.firstMethodDeclaratively
+import app.revanced.patcher.gettingFirstMethodDeclaratively
+import app.revanced.patcher.instructions
+import app.revanced.patcher.invoke
+import app.revanced.patcher.method
+import app.revanced.patcher.name
+import app.revanced.patcher.opcodes
+import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.BytecodePatchContext
+import app.revanced.patcher.returnType
+import app.revanced.patcher.type
 import app.revanced.patches.shared.misc.mapping.ResourceType
 import app.revanced.patches.youtube.layout.player.overlay.createPlayerOverviewMethodMatch
 import app.revanced.patches.youtube.layout.sponsorblock.controlsOverlayMethodMatch
@@ -116,13 +133,6 @@ internal val BytecodePatchContext.playerBottomControlsExploderFeatureFlagMethod 
     returnType("Z")
     parameterTypes()
     instructions(45643739L())
-}
-
-internal val BytecodePatchContext.playerTopControlsExperimentalLayoutFeatureFlagMethod by gettingFirstMethodDeclaratively {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    returnType("I")
-    parameterTypes()
-    instructions(45629424L())
 }
 
 internal val BytecodePatchContext.playerControlsLargeOverlayButtonsFeatureFlagMethod by gettingFirstMethodDeclaratively {

@@ -3,16 +3,22 @@ package app.revanced.patches.youtube.misc.playercontrols
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
 import app.revanced.patcher.extensions.addInstruction
 import app.revanced.patcher.extensions.getInstruction
-import app.revanced.patcher.immutableClassDef
 import app.revanced.patcher.patch.PatchException
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patcher.patch.resourcePatch
 import app.revanced.patcher.util.Document
 import app.revanced.patches.shared.misc.mapping.resourceMappingPatch
 import app.revanced.patches.youtube.misc.extension.sharedExtensionPatch
-import app.revanced.patches.youtube.misc.playservice.*
-import app.revanced.util.*
-import com.android.tools.smali.dexlib2.Opcode
+import app.revanced.patches.youtube.misc.playservice.is_20_28_or_greater
+import app.revanced.patches.youtube.misc.playservice.is_20_30_or_greater
+import app.revanced.patches.youtube.misc.playservice.is_20_40_or_greater
+import app.revanced.patches.youtube.misc.playservice.versionCheckPatch
+import app.revanced.util.copyXmlNode
+import app.revanced.util.findElementByAttributeValue
+import app.revanced.util.findElementByAttributeValueOrThrow
+import app.revanced.util.inputStreamFromBundledResource
+import app.revanced.util.returnEarly
+import app.revanced.util.returnLate
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import org.w3c.dom.Node
@@ -280,62 +286,44 @@ val playerControlsPatch = bytecodePatch(
         // that uses layout file youtube_video_exploder_controls_bottom_ui_container.xml
         // The change to support this is simple and only requires adding buttons to both layout files,
         // but for now force this different layout off since it's still an experimental test.
-        if (is_19_35_or_greater) {
-            playerBottomControlsExploderFeatureFlagMethod.returnLate(false)
-        }
-
-        // A/B test of different top overlay controls. Two different layouts can be used:
-        // youtube_cf_navigation_improvement_controls_layout.xml
-        // youtube_cf_minimal_impact_controls_layout.xml
-        //
-        // Flag was removed in 20.19+
-        if (is_19_25_or_greater && !is_20_19_or_greater) {
-            playerTopControlsExperimentalLayoutFeatureFlagMethod.apply {
-                val index = indexOfFirstInstructionOrThrow(Opcode.MOVE_RESULT_OBJECT)
-                val register = getInstruction<OneRegisterInstruction>(index).registerA
-
-                addInstruction(index + 1, "const-string v$register, \"default\"")
-            }
-        }
+        playerBottomControlsExploderFeatureFlagMethod.returnLate(false)
 
         // Turn off a/b tests of ugly player buttons that don't match the style of custom player buttons.
-        if (is_20_20_or_greater) {
-            playerControlsFullscreenLargeButtonsFeatureFlagMethod.returnLate(false)
+        playerControlsFullscreenLargeButtonsFeatureFlagMethod.returnLate(false)
 
-            if (is_20_28_or_greater) {
-                playerControlsLargeOverlayButtonsFeatureFlagMethod.returnLate(false)
-            }
+        if (is_20_28_or_greater) {
+            playerControlsLargeOverlayButtonsFeatureFlagMethod.returnLate(false)
+        }
 
-            if (is_20_30_or_greater) {
-                playerControlsButtonStrokeFeatureFlagMethod.returnLate(false)
+        if (is_20_30_or_greater) {
+            playerControlsButtonStrokeFeatureFlagMethod.returnLate(false)
 
 
-                if (is_20_40_or_greater) {
-                    // Clear bottom gradient.
-                    // This may not be needed if the new bold player overlay icons are in use.
-                    playerBottomGradientScrimMethodMatch.let {
-                        it.method.apply {
-                            val gradientFieldIndex = it[-1]
-                            val gradientFieldRegister =
-                                getInstruction<TwoRegisterInstruction>(gradientFieldIndex).registerA
+            if (is_20_40_or_greater) {
+                // Clear bottom gradient.
+                // This may not be needed if the new bold player overlay icons are in use.
+                playerBottomGradientScrimMethodMatch.let {
+                    it.method.apply {
+                        val gradientFieldIndex = it[-1]
+                        val gradientFieldRegister =
+                            getInstruction<TwoRegisterInstruction>(gradientFieldIndex).registerA
 
-                            val gradientViewIndex = it[1]
-                            val gradientViewRegister =
-                                getInstruction<OneRegisterInstruction>(gradientViewIndex).registerA
+                        val gradientViewIndex = it[1]
+                        val gradientViewRegister =
+                            getInstruction<OneRegisterInstruction>(gradientViewIndex).registerA
 
-                            // This field is nullable, and if null, the bottom gradient is not set.
-                            addInstruction(
-                                gradientFieldIndex,
-                                "const/4 v$gradientFieldRegister, 0x0"
-                            )
+                        // This field is nullable, and if null, the bottom gradient is not set.
+                        addInstruction(
+                            gradientFieldIndex,
+                            "const/4 v$gradientFieldRegister, 0x0"
+                        )
 
-                            // Make the bottom gradient transparent and hide it.
-                            addInstruction(
-                                gradientViewIndex + 1,
-                                "invoke-static { v$gradientViewRegister }, " +
-                                        "${EXTENSION_CLASS_DESCRIPTOR}->hideBottomGradientScrim(Landroid/widget/ImageView;)V"
-                            )
-                        }
+                        // Make the bottom gradient transparent and hide it.
+                        addInstruction(
+                            gradientViewIndex + 1,
+                            "invoke-static { v$gradientViewRegister }, " +
+                                    "${EXTENSION_CLASS_DESCRIPTOR}->hideBottomGradientScrim(Landroid/widget/ImageView;)V"
+                        )
                     }
                 }
             }

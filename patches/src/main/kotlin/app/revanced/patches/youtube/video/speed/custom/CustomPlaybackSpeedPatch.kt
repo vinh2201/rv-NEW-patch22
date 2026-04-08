@@ -15,14 +15,13 @@ import app.revanced.patcher.immutableClassDef
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patches.all.misc.resources.addResources
 import app.revanced.patches.all.misc.resources.addResourcesPatch
+import app.revanced.patches.shared.misc.litho.filter.addLithoFilter
 import app.revanced.patches.shared.misc.mapping.resourceMappingPatch
 import app.revanced.patches.shared.misc.settings.preference.InputType
 import app.revanced.patches.shared.misc.settings.preference.SwitchPreference
 import app.revanced.patches.shared.misc.settings.preference.TextPreference
-import app.revanced.patches.shared.misc.litho.filter.addLithoFilter
 import app.revanced.patches.youtube.misc.extension.sharedExtensionPatch
 import app.revanced.patches.youtube.misc.litho.filter.lithoFilterPatch
-import app.revanced.patches.youtube.misc.playservice.is_19_47_or_greater
 import app.revanced.patches.youtube.misc.playservice.is_20_34_or_greater
 import app.revanced.patches.youtube.misc.playservice.is_21_02_or_greater
 import app.revanced.patches.youtube.misc.playservice.is_21_12_or_greater
@@ -77,11 +76,10 @@ internal val customPlaybackSpeedPatch = bytecodePatch(
             ),
         )
 
-        if (is_19_47_or_greater) {
-            settingsMenuVideoSpeedGroup.add(
-                TextPreference("revanced_speed_tap_and_hold", inputType = InputType.NUMBER_DECIMAL),
-            )
-        }
+        settingsMenuVideoSpeedGroup += TextPreference(
+            "revanced_speed_tap_and_hold",
+            inputType = InputType.NUMBER_DECIMAL
+        )
 
         // Override the min/max speeds that can be used.
         (if (is_20_34_or_greater) speedLimiterMethod else speedLimiterLegacyMethod).apply {
@@ -300,34 +298,31 @@ internal val customPlaybackSpeedPatch = bytecodePatch(
 
         // region Custom tap and hold 2x speed.
 
-        if (is_19_47_or_greater) {
-            // Function, because it can be the same method as getTapAndHoldHapticsMethodMatch.
-            getTapAndHoldSpeedMethodMatch().let {
-                it.method.apply {
-                    val speedIndex = it[-1]
-                    val speedRegister =
-                        getInstruction<OneRegisterInstruction>(speedIndex).registerA
+        // Function, because it can be the same method as getTapAndHoldHapticsMethodMatch.
+        getTapAndHoldSpeedMethodMatch().let {
+            it.method.apply {
+                val speedIndex = it[-1]
+                val speedRegister = getInstruction<OneRegisterInstruction>(speedIndex).registerA
 
-                    addInstructions(
-                        speedIndex + 1,
-                        """
-                            invoke-static { }, ${EXTENSION_CLASS_DESCRIPTOR}->getTapAndHoldSpeed()F
-                            move-result v$speedRegister
-                        """
-                    )
+                addInstructions(
+                    speedIndex + 1,
+                    """
+                        invoke-static { }, ${EXTENSION_CLASS_DESCRIPTOR}->getTapAndHoldSpeed()F
+                        move-result v$speedRegister
+                    """
+                )
 
-                    val enabledIndex = it[3]
-                    val enabledRegister =
-                        getInstruction<OneRegisterInstruction>(enabledIndex).registerA
+                val enabledIndex = it[3]
+                val enabledRegister =
+                    getInstruction<OneRegisterInstruction>(enabledIndex).registerA
 
-                    addInstructions(
-                        enabledIndex,
-                        """
-                            invoke-static { v$enabledRegister }, $EXTENSION_CLASS_DESCRIPTOR->disableTapAndHoldSpeed(Z)Z
-                            move-result v$enabledRegister
-                        """
-                    )
-                }
+                addInstructions(
+                    enabledIndex,
+                    """
+                        invoke-static { v$enabledRegister }, $EXTENSION_CLASS_DESCRIPTOR->disableTapAndHoldSpeed(Z)Z
+                        move-result v$enabledRegister
+                    """
+                )
             }
         }
 

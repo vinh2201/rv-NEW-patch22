@@ -24,8 +24,6 @@ import app.revanced.patches.shared.misc.settings.preference.SwitchPreference
 import app.revanced.patches.shared.misc.settings.preference.TextPreference
 import app.revanced.patches.youtube.layout.seekbar.seekbarColorPatch
 import app.revanced.patches.youtube.misc.extension.sharedExtensionPatch
-import app.revanced.patches.youtube.misc.playservice.is_19_47_or_greater
-import app.revanced.patches.youtube.misc.playservice.is_20_02_or_greater
 import app.revanced.patches.youtube.misc.playservice.is_21_06_or_greater
 import app.revanced.patches.youtube.misc.playservice.is_21_08_or_greater
 import app.revanced.patches.youtube.misc.playservice.versionCheckPatch
@@ -236,11 +234,9 @@ val themePatch = baseThemePatch(
             ),
         )
 
-        if (is_19_47_or_greater) {
-            PreferenceScreen.GENERAL.addPreferences(
-                ListPreference("revanced_splash_screen_animation_style"),
-            )
-        }
+        PreferenceScreen.GENERAL.addPreferences(
+            ListPreference("revanced_splash_screen_animation_style"),
+        )
 
         useGradientLoadingScreenMethodMatch.method.insertLiteralOverride(
             useGradientLoadingScreenMethodMatch[0],
@@ -254,13 +250,11 @@ val themePatch = baseThemePatch(
             )
         }
 
-        if (is_19_47_or_greater) {
-            // Lottie splash screen exists in earlier versions, but it may not be always on.
-            splashScreenStyleMethodMatch.method.insertLiteralOverride(
-                splashScreenStyleMethodMatch[0],
-                "$EXTENSION_CLASS_DESCRIPTOR->getLoadingScreenType(I)I",
-            )
-        }
+        // Lottie splash screen exists in earlier versions, but it may not be always on.
+        splashScreenStyleMethodMatch.method.insertLiteralOverride(
+            splashScreenStyleMethodMatch[0],
+            "$EXTENSION_CLASS_DESCRIPTOR->getLoadingScreenType(I)I",
+        )
 
         showSplashScreen1MethodMatch.let {
             it.method.apply {
@@ -277,22 +271,20 @@ val themePatch = baseThemePatch(
             }
         }
 
-        if (is_20_02_or_greater) {
-            showSplashScreen2MethodMatch.let {
-                val insertIndex = it[1]
-                it.method.apply {
-                    val insertInstruction = getInstruction<TwoRegisterInstruction>(insertIndex)
-                    val registerA = insertInstruction.registerA
-                    val registerB = insertInstruction.registerB
+        showSplashScreen2MethodMatch.let {
+            val insertIndex = it[1]
+            it.method.apply {
+                val insertInstruction = getInstruction<TwoRegisterInstruction>(insertIndex)
+                val registerA = insertInstruction.registerA
+                val registerB = insertInstruction.registerB
 
-                    addInstructions(
-                        insertIndex,
-                        """
-                            invoke-static { v$registerA, v$registerB }, ${EXTENSION_CLASS_DESCRIPTOR}->showSplashScreen(II)I
-                            move-result v$registerA
-                        """
-                    )
-                }
+                addInstructions(
+                    insertIndex,
+                    """
+                        invoke-static { v$registerA, v$registerB }, ${EXTENSION_CLASS_DESCRIPTOR}->showSplashScreen(II)I
+                        move-result v$registerA
+                    """
+                )
             }
         }
     },

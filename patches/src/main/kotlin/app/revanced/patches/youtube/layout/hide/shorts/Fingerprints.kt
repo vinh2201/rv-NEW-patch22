@@ -1,7 +1,20 @@
 package app.revanced.patches.youtube.layout.hide.shorts
 
-import app.revanced.patcher.*
+import app.revanced.patcher.accessFlags
+import app.revanced.patcher.after
+import app.revanced.patcher.composingFirstMethod
+import app.revanced.patcher.firstImmutableMethodDeclaratively
+import app.revanced.patcher.firstMethodComposite
+import app.revanced.patcher.firstMethodDeclaratively
+import app.revanced.patcher.gettingFirstImmutableMethodDeclaratively
+import app.revanced.patcher.gettingFirstMethodDeclaratively
+import app.revanced.patcher.instructions
+import app.revanced.patcher.invoke
+import app.revanced.patcher.method
+import app.revanced.patcher.opcodes
+import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.BytecodePatchContext
+import app.revanced.patcher.returnType
 import app.revanced.patches.shared.misc.mapping.ResourceType
 import app.revanced.util.getting
 import app.revanced.util.using
@@ -24,72 +37,55 @@ internal val BytecodePatchContext.shortsBottomBarContainerMethodMatch by composi
 
 context(_: BytecodePatchContext)
 internal fun ClassDef.getRenderBottomNavigationBarMethodMatch() = firstMethodDeclaratively {
-        returnType("V")
-        parameterTypes("Ljava/lang/String;")
-        instructions(
-            Opcode.IGET_OBJECT(),
-            after(Opcode.MONITOR_ENTER()),
-            after(Opcode.IGET_OBJECT()),
-            after(Opcode.IF_EQZ()),
-            after(Opcode.INVOKE_INTERFACE()),
-            Opcode.MONITOR_EXIT(),
-            Opcode.RETURN_VOID(),
-            Opcode.MOVE_EXCEPTION(),
-            Opcode.MONITOR_EXIT(),
-            Opcode.THROW()
-        )
-    }
-
-/**
- * Less than 19.41.
- */
-internal val BytecodePatchContext.legacyRenderBottomNavigationBarLegacyParentMethod by gettingFirstImmutableMethodDeclaratively {
-        parameterTypes(
-            "I",
-            "I",
-            "L",
-            "L",
-            "J",
-            "L",
-        )
-        instructions(
-            "aa"(),
-        )
+    returnType("V")
+    parameterTypes("Ljava/lang/String;")
+    instructions(
+        Opcode.IGET_OBJECT(),
+        after(Opcode.MONITOR_ENTER()),
+        after(Opcode.IGET_OBJECT()),
+        after(Opcode.IF_EQZ()),
+        after(Opcode.INVOKE_INTERFACE()),
+        Opcode.MONITOR_EXIT(),
+        Opcode.RETURN_VOID(),
+        Opcode.MOVE_EXCEPTION(),
+        Opcode.MONITOR_EXIT(),
+        Opcode.THROW()
+    )
 }
 
 /**
  * 19.41 - 20.44
  */
 internal val BytecodePatchContext.renderBottomNavigationBarLegacy1941ParentMethod by gettingFirstImmutableMethodDeclaratively {
-        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-        parameterTypes(
-            "I",
-            "I",
-            "L", // ReelWatchEndpointOuterClass
-            "L",
-            "J",
-            "Ljava/lang/String;",
-            "L",
-        )
-        instructions(
-            "aa"(),
-        )
+    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+    parameterTypes(
+        "I",
+        "I",
+        "L", // ReelWatchEndpointOuterClass
+        "L",
+        "J",
+        "Ljava/lang/String;",
+        "L",
+    )
+    instructions(
+        "aa"(),
+    )
 }
 
 /**
  * 20.45+
  */
 internal val BytecodePatchContext.renderBottomNavigationBarParentMethod by gettingFirstImmutableMethodDeclaratively {
-        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-        returnType("[Ljava/lang/Class;")
-        parameterTypes(
-            "Ljava/lang/Class;",
-            "Ljava/lang/Object;",
-            "I",
-        )
-        instructions(
-            "RPCAC"(),
-        )
+    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+    returnType("[Ljava/lang/Class;")
+    parameterTypes(
+        "Ljava/lang/Class;",
+        "Ljava/lang/Object;",
+        "I",
+    )
+    instructions(
+        "RPCAC"(),
+    )
 }
 
 internal val BytecodePatchContext.setPivotBarVisibilityMethodMatch by getting {
