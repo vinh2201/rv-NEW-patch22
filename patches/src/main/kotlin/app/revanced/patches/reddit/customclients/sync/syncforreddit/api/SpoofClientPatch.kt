@@ -30,27 +30,30 @@ val spoofClientPatch = spoofClientPatch { clientIdOption, redirectUriOption, use
     val userAgent by userAgentOption
 
     apply {
-        bearerTokenMethodMatch.method.apply {
+        bearerTokenMethod.apply {
             val auth = Base64.getEncoder().encodeToString("$clientId:".toByteArray(Charsets.UTF_8))
             returnEarly("Basic $auth")
 
-            val occurrenceIndex = getAuthorizationStringMethodMatch[0]
 
-            getAuthorizationStringMethodMatch.method.apply {
-                val authorizationStringInstruction =
-                    getInstruction<OneRegisterInstruction>(occurrenceIndex)
-                val targetRegister = authorizationStringInstruction.registerA
+            getAuthorizationStringMethodMatch.let { match ->
+                match.method.apply {
+                    val occurrenceIndex = match[0]
 
-                val newAuthorizationUrl =
-                    authorizationStringInstruction.stringReference!!.string.replace(
-                        "client_id=.*?&".toRegex(),
-                        "client_id=$clientId&",
+                    val authorizationStringInstruction =
+                        getInstruction<OneRegisterInstruction>(occurrenceIndex)
+                    val targetRegister = authorizationStringInstruction.registerA
+
+                    val newAuthorizationUrl =
+                        authorizationStringInstruction.stringReference!!.string.replace(
+                            "client_id=.*?&".toRegex(),
+                            "client_id=$clientId&",
+                        )
+
+                    replaceInstruction(
+                        occurrenceIndex,
+                        "const-string v$targetRegister, \"$newAuthorizationUrl\"",
                     )
-
-                replaceInstruction(
-                    occurrenceIndex,
-                    "const-string v$targetRegister, \"$newAuthorizationUrl\"",
-                )
+                }
             }
         }
 

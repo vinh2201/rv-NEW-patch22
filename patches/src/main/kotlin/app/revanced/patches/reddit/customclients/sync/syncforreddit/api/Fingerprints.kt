@@ -1,7 +1,7 @@
 package app.revanced.patches.reddit.customclients.sync.syncforreddit.api
 
 import app.revanced.patcher.composingFirstMethod
-import app.revanced.patcher.firstMethodComposite
+import app.revanced.patcher.firstMethodDeclaratively
 import app.revanced.patcher.gettingFirstMethodDeclaratively
 import app.revanced.patcher.instructions
 import app.revanced.patcher.invoke
@@ -14,8 +14,8 @@ internal val BytecodePatchContext.getAuthorizationStringMethodMatch by composing
     instructions(string { contains("authorize.compact?client_id") })
 }
 
-internal val BytecodePatchContext.bearerTokenMethodMatch by getting {
-    firstMethodComposite {
+internal val BytecodePatchContext.bearerTokenMethod by getting {
+    firstMethodDeclaratively {
         instructions(string { contains("Basic") })
     }
 } using { getAuthorizationStringMethodMatch.immutableMethod }
