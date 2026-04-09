@@ -1,7 +1,7 @@
 package app.revanced.patches.youtube.misc.debugging
 
-import app.revanced.patches.youtube.misc.extension.sharedExtensionPatch;
 import app.revanced.patches.shared.misc.debugging.enableDebuggingPatch
+import app.revanced.patches.youtube.misc.extension.sharedExtensionPatch
 import app.revanced.patches.youtube.misc.playservice.is_20_40_or_greater
 import app.revanced.patches.youtube.misc.playservice.is_20_41_or_greater
 import app.revanced.patches.youtube.misc.playservice.versionCheckPatch
@@ -25,7 +25,6 @@ val enableDebuggingPatch = enableDebuggingPatch(
                 "20.31.42",
                 "20.37.48",
                 "20.40.45",
-                "20.44.38",
                 "20.45.36"
             )
         )

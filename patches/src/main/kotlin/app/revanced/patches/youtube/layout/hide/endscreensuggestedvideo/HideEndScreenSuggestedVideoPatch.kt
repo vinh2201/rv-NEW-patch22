@@ -6,7 +6,6 @@ import app.revanced.patcher.extensions.fieldReference
 import app.revanced.patcher.extensions.getInstruction
 import app.revanced.patcher.extensions.methodReference
 import app.revanced.patcher.firstMethod
-import app.revanced.patcher.immutableClassDef
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patches.all.misc.resources.addResources
 import app.revanced.patches.all.misc.resources.addResourcesPatch
@@ -36,7 +35,6 @@ val hideEndScreenSuggestedVideoPatch = bytecodePatch(
             "20.31.42",
             "20.37.48",
             "20.40.45",
-            "20.44.38",
             "20.45.36"
         ),
     )

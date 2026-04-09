@@ -229,3 +229,13 @@ internal val BytecodePatchContext.setVideoQualityMethod by getting {
         )
     }
 } using { videoQualitySetterMethod }
+
+
+internal val BytecodePatchContext.channelIdMethod by gettingFirstMethodDeclaratively {
+    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+    returnType("V")
+    parameterTypes("Ljava/lang/Object;")
+    instructions(
+        "com.google.android.apps.youtube.mdx.watch.LAST_MEALBAR_PROMOTED_LIVE_FEED_CHANNELS"(),
+    )
+}

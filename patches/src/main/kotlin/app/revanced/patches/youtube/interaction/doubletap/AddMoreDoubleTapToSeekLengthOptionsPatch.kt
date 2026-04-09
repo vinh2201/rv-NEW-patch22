@@ -1,6 +1,5 @@
 package app.revanced.patches.youtube.interaction.doubletap
 
-import app.revanced.patcher.patch.PatchException
 import app.revanced.patcher.patch.resourcePatch
 import app.revanced.patches.youtube.misc.extension.sharedExtensionPatch
 import app.revanced.util.findElementByAttributeValueOrThrow
@@ -23,7 +22,6 @@ val addMoreDoubleTapToSeekLengthOptionsPatch = resourcePatch(
             "20.31.42",
             "20.37.48",
             "20.40.45",
-            "20.44.38",
             "20.45.36"
         )
     )

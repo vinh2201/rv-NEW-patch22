@@ -1,6 +1,5 @@
 package app.revanced.patches.youtube.misc.links
 
-import app.revanced.patcher.CompositeMatch
 import app.revanced.patcher.extensions.getInstruction
 import app.revanced.patcher.extensions.replaceInstruction
 import app.revanced.patcher.patch.bytecodePatch
@@ -36,7 +35,6 @@ val bypassURLRedirectsPatch = bytecodePatch(
             "20.31.42",
             "20.37.48",
             "20.40.45",
-            "20.44.38",
             "20.45.36"
         ),
     )

@@ -1,9 +1,14 @@
 package app.revanced.patches.youtube.layout.formfactor
 
-import app.revanced.patcher.*
+import app.revanced.patcher.accessFlags
 import app.revanced.patcher.extensions.addInstructions
 import app.revanced.patcher.extensions.getInstruction
+import app.revanced.patcher.field
+import app.revanced.patcher.firstMethodComposite
+import app.revanced.patcher.instructions
+import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.bytecodePatch
+import app.revanced.patcher.returnType
 import app.revanced.patches.all.misc.resources.addResources
 import app.revanced.patches.all.misc.resources.addResourcesPatch
 import app.revanced.patches.shared.misc.settings.preference.ListPreference
@@ -11,7 +16,6 @@ import app.revanced.patches.youtube.misc.contexthook.Endpoint
 import app.revanced.patches.youtube.misc.contexthook.addClientFormFactorHook
 import app.revanced.patches.youtube.misc.contexthook.hookClientContextPatch
 import app.revanced.patches.youtube.misc.extension.sharedExtensionPatch
-import app.revanced.patches.youtube.misc.navigation.hookNavigationButtonCreated
 import app.revanced.patches.youtube.misc.navigation.navigationBarHookPatch
 import app.revanced.patches.youtube.misc.settings.PreferenceScreen
 import app.revanced.patches.youtube.misc.settings.settingsPatch
@@ -42,7 +46,6 @@ val changeFormFactorPatch = bytecodePatch(
             "20.31.42",
             "20.37.48",
             "20.40.45",
-            "20.44.38",
             "20.45.36"
         ),
     )

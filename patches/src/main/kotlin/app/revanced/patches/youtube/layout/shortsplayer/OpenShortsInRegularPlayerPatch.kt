@@ -1,7 +1,5 @@
 package app.revanced.patches.youtube.layout.shortsplayer
 
-import app.revanced.util.findFreeRegister
-import app.revanced.util.registersUsed
 import app.revanced.patcher.extensions.ExternalLabel
 import app.revanced.patcher.extensions.addInstruction
 import app.revanced.patcher.extensions.addInstructions
@@ -23,11 +21,13 @@ import app.revanced.patches.youtube.misc.settings.settingsPatch
 import app.revanced.patches.youtube.shared.mainActivityOnCreateMethod
 import app.revanced.patches.youtube.video.information.playbackStartDescriptorToStringMethodMatch
 import app.revanced.util.addInstructionsAtControlFlowLabel
+import app.revanced.util.findFreeRegister
 import app.revanced.util.findInstructionIndicesReversedOrThrow
 import app.revanced.util.getReference
 import app.revanced.util.indexOfFirstInstruction
 import app.revanced.util.indexOfFirstInstructionOrThrow
 import app.revanced.util.indexOfFirstInstructionReversedOrThrow
+import app.revanced.util.registersUsed
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -58,7 +58,6 @@ val openShortsInRegularPlayerPatch = bytecodePatch(
             "20.31.42",
             "20.37.48",
             "20.40.45",
-            "20.44.38",
             "20.45.36"
         ),
     )

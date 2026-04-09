@@ -3,9 +3,9 @@ package app.revanced.patches.youtube.layout.hide.player.flyoutmenu
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patches.all.misc.resources.addResources
 import app.revanced.patches.all.misc.resources.addResourcesPatch
+import app.revanced.patches.shared.misc.litho.filter.addLithoFilter
 import app.revanced.patches.shared.misc.settings.preference.PreferenceScreenPreference
 import app.revanced.patches.shared.misc.settings.preference.SwitchPreference
-import app.revanced.patches.shared.misc.litho.filter.addLithoFilter
 import app.revanced.patches.youtube.misc.litho.filter.lithoFilterPatch
 import app.revanced.patches.youtube.misc.playertype.playerTypeHookPatch
 import app.revanced.patches.youtube.misc.settings.PreferenceScreen
@@ -31,7 +31,6 @@ val hidePlayerFlyoutMenuComponentsPatch = bytecodePatch(
             "20.31.42",
             "20.37.48",
             "20.40.45",
-            "20.44.38",
             "20.45.36"
         ),
     )
