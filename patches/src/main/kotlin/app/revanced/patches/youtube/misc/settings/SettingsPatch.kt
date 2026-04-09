@@ -31,6 +31,7 @@ import app.revanced.patches.youtube.misc.check.checkEnvironmentPatch
 import app.revanced.patches.youtube.misc.extension.sharedExtensionPatch
 import app.revanced.patches.youtube.misc.fix.contentprovider.fixContentProviderPatch
 import app.revanced.patches.youtube.misc.fix.playbackspeed.fixPlaybackSpeedWhilePlayingPatch
+import app.revanced.patches.youtube.misc.fix.preference.fixPreferenceIconPatch
 import app.revanced.patches.youtube.misc.playservice.is_20_31_or_greater
 import app.revanced.patches.youtube.misc.playservice.versionCheckPatch
 import app.revanced.util.ResourceGroup
@@ -188,6 +189,7 @@ val settingsPatch = bytecodePatch(
         settingsResourcePatch,
         addResourcesPatch,
         versionCheckPatch,
+        fixPreferenceIconPatch,
         fixPlaybackSpeedWhilePlayingPatch,
         fixContentProviderPatch,
         // Currently there is no easy way to make a mandatory patch,
