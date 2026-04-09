@@ -2,20 +2,13 @@ package app.revanced.patches.youtube.misc.contexthook
 
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod.Companion.toMutable
 import app.revanced.patcher.accessFlags
-import app.revanced.patcher.allOf
 import app.revanced.patcher.classDef
-import app.revanced.patcher.composingFirstMethod
 import app.revanced.patcher.extensions.addInstructionsWithLabels
 import app.revanced.patcher.extensions.fieldReference
 import app.revanced.patcher.extensions.getInstruction
 import app.revanced.patcher.extensions.methodReference
-import app.revanced.patcher.field
-import app.revanced.patcher.firstMethodComposite
 import app.revanced.patcher.firstMethodDeclaratively
 import app.revanced.patcher.immutableClassDef
-import app.revanced.patcher.instructions
-import app.revanced.patcher.invoke
-import app.revanced.patcher.method
 import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patcher.patch.bytecodePatch
@@ -32,7 +25,6 @@ import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
-import java.lang.ref.WeakReference
 
 private lateinit var clientFormFactorField: FieldReference
 private lateinit var clientInfoField: FieldReference

@@ -63,7 +63,6 @@ val videoAdsPatch = bytecodePatch(
             )
         }
 
-
         setOf(
             Endpoint.GET_WATCH,
             Endpoint.PLAYER,

@@ -2,6 +2,7 @@ package app.revanced.patches.youtube.misc.gms
 
 import app.revanced.patcher.accessFlags
 import app.revanced.patcher.after
+import app.revanced.patcher.custom
 import app.revanced.patcher.firstMethodComposite
 import app.revanced.patcher.instructions
 import app.revanced.patcher.invoke
@@ -14,12 +15,12 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 
 internal fun BytecodePatchContext.getSpecificNetworkErrorViewControllerMethodMatch(
-    hasContentBooleanParameter: Boolean
+    hasContentMethod: Boolean
 ) = firstMethodComposite {
     accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
     returnType("V")
 
-    if (hasContentBooleanParameter) parameterTypes("Z")
+    if (hasContentMethod) custom { parameterTypes.size == 1 }
     else parameterTypes()
 
     instructions(

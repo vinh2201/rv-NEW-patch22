@@ -8,6 +8,7 @@ import app.revanced.patcher.extensions.addInstruction
 import app.revanced.patcher.extensions.addInstructions
 import app.revanced.patcher.extensions.fieldReference
 import app.revanced.patcher.extensions.getInstruction
+import app.revanced.patcher.extensions.methodReference
 import app.revanced.patcher.extensions.toInstructions
 import app.revanced.patcher.firstClassDef
 import app.revanced.patcher.immutableClassDef
