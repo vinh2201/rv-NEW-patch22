@@ -4,6 +4,17 @@ import app.revanced.extension.youtube.settings.Settings;
 
 @SuppressWarnings("unused")
 public class EnableLivestreamSeekingPatch {
+    private static final int SEVEN_DAYS_IN_SECONDS = 7 * 24 * 60 * 60;
+
+    /**
+     * Injection point.
+     */
+    public static double overrideMaxDvrDurationSec(double originalDurationSec) {
+        if (!Settings.INCREASE_LIVESTREAM_SEEKING_DURATION.get()) return originalDurationSec;
+        if (originalDurationSec <= 0) return originalDurationSec;
+
+        return SEVEN_DAYS_IN_SECONDS;
+    }
 
     /**
      * Injection point.

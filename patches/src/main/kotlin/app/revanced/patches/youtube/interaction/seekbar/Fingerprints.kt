@@ -145,3 +145,21 @@ internal val BytecodePatchContext.videoStreamingDataAllowSeekingMethod by gettin
         instructions("VideoStreamingData(itags="())
     }
 }
+
+internal val BytecodePatchContext.formatStreamModelMaxDvrDurationMethodMatch by getting {
+    firstMethodComposite {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("D")
+        parameterTypes()
+        instructions(
+            Opcode.IGET_OBJECT(),
+            after(allOf(Opcode.IGET_WIDE(), field { type == "D" })),
+            after(Opcode.RETURN_WIDE()),
+        )
+    }
+} using {
+    firstImmutableMethodDeclaratively {
+        returnType("Ljava/lang/String;")
+        instructions("FormatStream(itag="())
+    }
+}

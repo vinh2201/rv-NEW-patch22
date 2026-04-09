@@ -8,7 +8,7 @@ val seekbarPatch = bytecodePatch(
     description = "Adds options to disable precise seeking when swiping up on the seekbar, " +
             "slide to seek instead of playing at 2x speed when pressing and holding, " +
             "tapping the player seekbar to seek, hiding the video player seekbar " +
-            "and enabling seeking in livestreams.",
+            "and enabling seeking and expanding seeking duration of livestreams.",
 ) {
     dependsOn(
         disablePreciseSeekingGesturePatch,
