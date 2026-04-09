@@ -38,7 +38,6 @@ import app.revanced.patches.youtube.misc.settings.settingsPatch
 import app.revanced.util.addInstructionsAtControlFlowLabel
 import app.revanced.util.findFreeRegister
 import app.revanced.util.findInstructionIndicesReversedOrThrow
-import app.revanced.util.getReference
 import app.revanced.util.indexOfFirstInstructionReversedOrThrow
 import app.revanced.util.injectHideViewCall
 import app.revanced.util.insertLiteralOverride
@@ -49,7 +48,6 @@ import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
-import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
 
@@ -492,7 +490,7 @@ val hideLayoutComponentsPatch = hideLayoutComponentsPatch(
 
     yoodlesImageViewMethod.apply {
         findInstructionIndicesReversedOrThrow {
-            getReference<MethodReference>()?.name == "setImageDrawable"
+            methodReference?.name == "setImageDrawable"
         }.forEach { insertIndex ->
             val drawableRegister = getInstruction<FiveRegisterInstruction>(insertIndex).registerD
             val imageViewRegister = getInstruction<FiveRegisterInstruction>(insertIndex).registerC
@@ -515,7 +513,7 @@ val hideLayoutComponentsPatch = hideLayoutComponentsPatch(
 
         // Find the instruction where the text dimension is retrieved.
         val applyDimensionIndex = indexOfFirstInstructionReversedOrThrow {
-            val reference = getReference<MethodReference>()
+            val reference = methodReference
             opcode == Opcode.INVOKE_STATIC &&
                     reference?.definingClass == "Landroid/util/TypedValue;" &&
                     reference.returnType == "F" &&

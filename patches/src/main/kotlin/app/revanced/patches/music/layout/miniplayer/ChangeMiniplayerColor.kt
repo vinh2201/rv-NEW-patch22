@@ -19,13 +19,11 @@ import app.revanced.patches.shared.misc.mapping.resourceMappingPatch
 import app.revanced.patches.shared.misc.settings.preference.SwitchPreference
 import app.revanced.util.addInstructionsAtControlFlowLabel
 import app.revanced.util.findFreeRegister
-import app.revanced.util.getReference
 import app.revanced.util.indexOfFirstInstructionOrThrow
 import app.revanced.util.indexOfFirstInstructionReversedOrThrow
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
-import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 private const val EXTENSION_CLASS_DESCRIPTOR =
     "Lapp/revanced/extension/music/patches/ChangeMiniplayerColorPatch;"
@@ -67,7 +65,7 @@ val changeMiniplayerColorPatch = bytecodePatch(
 
             val colorGreyIndex =
                 miniPlayerConstructorMethodMatch.immutableMethod.indexOfFirstInstructionReversedOrThrow {
-                    getReference<MethodReference>()?.name == "getColor"
+                    methodReference?.name == "getColor"
                 }
             val iPutIndex =
                 miniPlayerConstructorMethodMatch.immutableMethod.indexOfFirstInstructionOrThrow(

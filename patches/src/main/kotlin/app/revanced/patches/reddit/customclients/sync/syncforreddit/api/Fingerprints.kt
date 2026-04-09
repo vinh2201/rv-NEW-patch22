@@ -20,6 +20,10 @@ internal val BytecodePatchContext.bearerTokenMethodMatch by getting {
     }
 } using { getAuthorizationStringMethodMatch.immutableMethod }
 
+internal val BytecodePatchContext.getRedirectUriMethod by gettingFirstMethodDeclaratively(
+    "http://redditsync/auth"
+)
+
 internal val BytecodePatchContext.getUserAgentMethod by gettingFirstMethodDeclaratively {
     instructions("android:com.laurencedawson.reddit_sync"(String::contains))
 }

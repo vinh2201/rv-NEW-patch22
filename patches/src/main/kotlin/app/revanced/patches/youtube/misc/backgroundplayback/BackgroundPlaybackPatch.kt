@@ -2,6 +2,7 @@ package app.revanced.patches.youtube.misc.backgroundplayback
 
 import app.revanced.patcher.extensions.getInstruction
 import app.revanced.patcher.extensions.instructions
+import app.revanced.patcher.extensions.methodReference
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patches.all.misc.resources.addResources
 import app.revanced.patches.all.misc.resources.addResourcesPatch
@@ -24,7 +25,6 @@ import app.revanced.util.returnEarly
 import app.revanced.util.returnLate
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
-import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 internal var prefBackgroundAndOfflineCategoryId = -1L
     private set
@@ -91,7 +91,7 @@ val removeBackgroundPlaybackRestrictionsPatch = bytecodePatch(
         // Enable background playback option in YouTube settings
         backgroundPlaybackSettingsMethod.apply {
             val booleanCalls = instructions.withIndex().filter {
-                it.value.getReference<MethodReference>()?.returnType == "Z"
+                it.value.methodReference?.returnType == "Z"
             }
 
             val settingsBooleanIndex = booleanCalls.elementAt(1).index

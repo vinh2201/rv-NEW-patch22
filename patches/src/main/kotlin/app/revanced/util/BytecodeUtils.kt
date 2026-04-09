@@ -5,37 +5,76 @@ import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableField
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableField.Companion.toMutable
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod.Companion.toMutable
-import app.revanced.patcher.*
-import app.revanced.patcher.extensions.*
+import app.revanced.patcher.MutablePredicateList
+import app.revanced.patcher.classDef
+import app.revanced.patcher.custom
+import app.revanced.patcher.extensions.ExternalLabel
+import app.revanced.patcher.extensions.addInstruction
+import app.revanced.patcher.extensions.addInstructions
+import app.revanced.patcher.extensions.addInstructionsWithLabels
+import app.revanced.patcher.extensions.fieldReference
+import app.revanced.patcher.extensions.getInstruction
+import app.revanced.patcher.extensions.instructions
+import app.revanced.patcher.extensions.instructionsOrNull
+import app.revanced.patcher.extensions.methodReference
+import app.revanced.patcher.extensions.removeInstruction
+import app.revanced.patcher.extensions.stringReference
+import app.revanced.patcher.firstClassDef
+import app.revanced.patcher.firstClassDefOrNull
+import app.revanced.patcher.firstMethod
+import app.revanced.patcher.immutableClassDef
 import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patcher.patch.PatchException
 import app.revanced.patches.shared.misc.mapping.ResourceType
 import app.revanced.patches.shared.misc.mapping.resourceMappingPatch
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.Opcode.*
+import com.android.tools.smali.dexlib2.Opcode.MOVE_RESULT
+import com.android.tools.smali.dexlib2.Opcode.MOVE_RESULT_OBJECT
+import com.android.tools.smali.dexlib2.Opcode.MOVE_RESULT_WIDE
+import com.android.tools.smali.dexlib2.Opcode.RETURN
+import com.android.tools.smali.dexlib2.Opcode.RETURN_OBJECT
+import com.android.tools.smali.dexlib2.Opcode.RETURN_WIDE
 import com.android.tools.smali.dexlib2.analysis.reflection.util.ReflectionUtils
 import com.android.tools.smali.dexlib2.formatter.DexFormatter
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.MethodParameter
-import com.android.tools.smali.dexlib2.iface.instruction.*
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.WideLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.Reference
-import com.android.tools.smali.dexlib2.iface.reference.StringReference
-import com.android.tools.smali.dexlib2.iface.value.*
+import com.android.tools.smali.dexlib2.iface.value.BooleanEncodedValue
+import com.android.tools.smali.dexlib2.iface.value.ByteEncodedValue
+import com.android.tools.smali.dexlib2.iface.value.CharEncodedValue
+import com.android.tools.smali.dexlib2.iface.value.DoubleEncodedValue
+import com.android.tools.smali.dexlib2.iface.value.EncodedValue
+import com.android.tools.smali.dexlib2.iface.value.FloatEncodedValue
+import com.android.tools.smali.dexlib2.iface.value.IntEncodedValue
+import com.android.tools.smali.dexlib2.iface.value.LongEncodedValue
+import com.android.tools.smali.dexlib2.iface.value.NullEncodedValue
+import com.android.tools.smali.dexlib2.iface.value.ShortEncodedValue
+import com.android.tools.smali.dexlib2.iface.value.StringEncodedValue
 import com.android.tools.smali.dexlib2.immutable.ImmutableField
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
-import com.android.tools.smali.dexlib2.immutable.value.*
-import java.util.*
-import kotlin.apply
-import kotlin.collections.HashMap
-import kotlin.collections.remove
+import com.android.tools.smali.dexlib2.immutable.value.ImmutableBooleanEncodedValue
+import com.android.tools.smali.dexlib2.immutable.value.ImmutableByteEncodedValue
+import com.android.tools.smali.dexlib2.immutable.value.ImmutableCharEncodedValue
+import com.android.tools.smali.dexlib2.immutable.value.ImmutableDoubleEncodedValue
+import com.android.tools.smali.dexlib2.immutable.value.ImmutableFloatEncodedValue
+import com.android.tools.smali.dexlib2.immutable.value.ImmutableIntEncodedValue
+import com.android.tools.smali.dexlib2.immutable.value.ImmutableLongEncodedValue
+import com.android.tools.smali.dexlib2.immutable.value.ImmutableNullEncodedValue
+import com.android.tools.smali.dexlib2.immutable.value.ImmutableShortEncodedValue
+import com.android.tools.smali.dexlib2.immutable.value.ImmutableStringEncodedValue
+import java.util.ArrayDeque
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
-
 /**
  * Find the instruction index used for a toString() StringBuilder write of a given String name.
  *
@@ -43,7 +82,7 @@ import kotlin.reflect.KProperty
  */
 private fun Method.findInstructionIndexFromToString(fieldName: String, isField: Boolean): Int {
     val stringIndex = indexOfFirstInstruction {
-        val reference = getReference<StringReference>()
+        val reference = stringReference
         reference?.string?.contains(fieldName) == true
     }
     if (stringIndex < 0) {
@@ -53,7 +92,7 @@ private fun Method.findInstructionIndexFromToString(fieldName: String, isField: 
 
     // Find use of the string with a StringBuilder.
     val stringUsageIndex = indexOfFirstInstruction(stringIndex) {
-        val reference = getReference<MethodReference>()
+        val reference = methodReference
         reference?.definingClass == "Ljava/lang/StringBuilder;" &&
                 (this as? FiveRegisterInstruction)?.registerD == stringRegister
     }
@@ -63,7 +102,7 @@ private fun Method.findInstructionIndexFromToString(fieldName: String, isField: 
 
     // Find the next usage of StringBuilder, which should be the desired field.
     val fieldUsageIndex = indexOfFirstInstruction(stringUsageIndex + 1) {
-        val reference = getReference<MethodReference>()
+        val reference = methodReference
         reference?.definingClass == "Ljava/lang/StringBuilder;" && reference.name == "append"
     }
     if (fieldUsageIndex < 0) {
@@ -140,7 +179,7 @@ internal fun Method.findMethodFromToString(fieldName: String): MutableMethod {
  */
 internal fun Method.findFieldFromToString(fieldName: String): FieldReference {
     val methodUsageIndex = findInstructionIndexFromToString(fieldName, true)
-    return getInstruction<ReferenceInstruction>(methodUsageIndex).getReference<FieldReference>()!!
+    return getInstruction<ReferenceInstruction>(methodUsageIndex).fieldReference!!
 }
 
 /**
@@ -440,6 +479,8 @@ fun BytecodePatchContext.traverseClassHierarchy(
  * if the [Instruction] is not a [ReferenceInstruction] or the [Reference] is not of type [T].
  * @see ReferenceInstruction
  */
+@Deprecated("Instead use `methodReference`, `fieldReference`, `typeReference` or `stringReference`")
+@Suppress("unused")
 inline fun <reified T : Reference> Instruction.getReference() =
     (this as? ReferenceInstruction)?.reference as? T
 

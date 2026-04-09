@@ -7,6 +7,7 @@ import app.revanced.patcher.classDef
 import app.revanced.patcher.definingClass
 import app.revanced.patcher.extensions.addInstructions
 import app.revanced.patcher.extensions.getInstruction
+import app.revanced.patcher.extensions.methodReference
 import app.revanced.patcher.extensions.replaceInstruction
 import app.revanced.patcher.firstImmutableMethodDeclaratively
 import app.revanced.patcher.immutableClassDef
@@ -22,14 +23,12 @@ import app.revanced.patches.youtube.misc.playservice.is_21_02_or_greater
 import app.revanced.patches.youtube.misc.playservice.versionCheckPatch
 import app.revanced.patches.youtube.shared.mainActivityOnCreateMethod
 import app.revanced.util.findInstructionIndicesReversedOrThrow
-import app.revanced.util.getReference
 import app.revanced.util.insertLiteralOverride
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
-import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
 
@@ -139,7 +138,7 @@ val seekbarColorPatch = bytecodePatch(
             val setAnimationIntMethodName = lottieAnimationViewSetAnimationIntMethod.name
 
             findInstructionIndicesReversedOrThrow {
-                val reference = getReference<MethodReference>()
+                val reference = methodReference
                 reference?.definingClass == LOTTIE_ANIMATION_VIEW_CLASS_TYPE &&
                         reference.name == setAnimationIntMethodName
             }.forEach { index ->
