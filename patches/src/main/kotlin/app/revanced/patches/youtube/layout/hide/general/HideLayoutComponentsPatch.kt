@@ -258,6 +258,7 @@ val hideLayoutComponentsPatch = hideLayoutComponentsPatch(
         SwitchPreference("revanced_hide_movies_section"),
         SwitchPreference("revanced_hide_notify_me_button"),
         SwitchPreference("revanced_hide_playables"),
+        SwitchPreference("revanced_hide_search_term_thumbnails"),
         SwitchPreference("revanced_hide_show_more_button"),
         SwitchPreference("revanced_hide_surveys"),
         SwitchPreference("revanced_hide_ticket_shelf"),
@@ -749,6 +750,29 @@ val hideLayoutComponentsPatch = hideLayoutComponentsPatch(
                 """,
             ExternalLabel("next_iterator", getInstruction(iteratorIndex))
         )
+    }
+
+    // endregion
+
+    // region Hide search term thumbnails
+
+    createSearchSuggestionsMethodMatch.let { match ->
+        match.method.apply {
+            val insertIndex = match[2] - 1
+            val freeRegister = findFreeRegister(insertIndex)
+            val jumpIndex = match[-1]
+
+            addInstructionsWithLabels(
+                insertIndex,
+                """
+                        invoke-static { }, ${LAYOUT_COMPONENTS_FILTER_CLASS_DESCRIPTOR}->hideSearchTermThumbnails()Z
+                        move-result v$freeRegister
+                        
+                        if-nez v$freeRegister, :hidden
+                    """,
+                ExternalLabel("hidden", getInstruction(jumpIndex))
+            )
+        }
     }
 
     // endregion

@@ -413,11 +413,28 @@ internal val BytecodePatchContext.channelTabRendererMethod by gettingFirstMethod
     )
 }
 
-
 internal val BytecodePatchContext.engagementPanelInformationButtonMethodMatch by composingFirstMethod {
     parameterTypes("Landroid/content/Context;")
     instructions(
         ResourceType.ID("information_button"),
         Opcode.CHECK_CAST(),
+    )
+}
+
+internal val BytecodePatchContext.createSearchSuggestionsMethodMatch by composingFirstMethod(
+    "ss_rds",
+) {
+    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+    returnType("V")
+    parameterTypes("L", "I")
+    instructions(
+        method("next"),
+        afterAtMost(30, 0L()),
+        afterAtMost(10, method("setVisibility")),
+        afterAtMost(10, 8L()),
+        afterAtMost(10, method("setVisibility")),
+        method("setImageDrawable"),
+        method("parse"),
+        afterAtMost(20, 0L()),
     )
 }
