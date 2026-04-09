@@ -699,6 +699,8 @@ Verify the package name is correct and the app is installed"</string>
             <string name="revanced_enable_livestream_seeking_title">Enable livestream seeking</string>
             <string name="revanced_enable_livestream_seeking_summary_on">Seeking is allowed on all livestreams</string>
             <string name="revanced_enable_livestream_seeking_summary_off">Seeking may not be available on livestreams</string>
+            <!-- 'Spoof video streams' should be the same translation used for 'revanced_spoof_video_streams_screen_title'. -->
+            <string name="revanced_enable_livestream_seeking_user_dialog_message">Enabling this may cause unexpected livestream seeking behavior if \'Spoof video streams\' is not enabled.</string>
         </patch>
         <patch id="interaction.seekbar.enableTapToSeekPatch">
             <string name="revanced_tap_to_seek_title">Enable tap to seek</string>
