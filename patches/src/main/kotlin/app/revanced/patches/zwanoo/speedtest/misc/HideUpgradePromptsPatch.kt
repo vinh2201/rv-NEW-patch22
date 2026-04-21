@@ -11,7 +11,6 @@ val hideUpgradePromptsPatch = bytecodePatch("Hide upgrade prompts") {
     apply {
         showUpgradeDialogMethod.returnEarly()
 
-        // Return null for the expiry date, indicating the subscription never expires
         subscriptionExpiryMethod.addInstructions(
             0,
             """

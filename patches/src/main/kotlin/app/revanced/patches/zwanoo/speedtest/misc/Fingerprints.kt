@@ -8,7 +8,6 @@ import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patcher.returnType
 import com.android.tools.smali.dexlib2.AccessFlags
 
-// useraccounts/StUserSubscription - public final String h()
 internal val BytecodePatchContext.subscriptionExpiryMethod by gettingFirstMethodDeclaratively {
     definingClass("Lcom/ookla/speedtest/useraccounts/W;")
     name("h")
@@ -16,7 +15,6 @@ internal val BytecodePatchContext.subscriptionExpiryMethod by gettingFirstMethod
     accessFlags(AccessFlags.PUBLIC)
 }
 
-// app/userprompt/C7835a - public void a()
 internal val BytecodePatchContext.showUpgradeDialogMethod by gettingFirstMethodDeclaratively {
     definingClass("Lcom/ookla/speedtest/app/userprompt/a;")
     name("a")
