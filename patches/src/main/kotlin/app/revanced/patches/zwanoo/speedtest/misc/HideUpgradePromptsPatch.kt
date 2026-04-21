@@ -1,6 +1,5 @@
 package app.revanced.patches.zwanoo.speedtest.misc
 
-import app.revanced.patcher.extensions.addInstructions
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.util.returnEarly
 
@@ -11,12 +10,6 @@ val hideUpgradePromptsPatch = bytecodePatch("Hide upgrade prompts") {
     apply {
         showUpgradeDialogMethod.returnEarly()
 
-        subscriptionExpiryMethod.addInstructions(
-            0,
-            """
-                const/4 v0, 0x0
-                return-object v0
-            """,
-        )
+        subscriptionExpiryMethod.returnEarly()
     }
 }
