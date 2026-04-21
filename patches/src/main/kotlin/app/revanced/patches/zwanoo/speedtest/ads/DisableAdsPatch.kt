@@ -8,16 +8,16 @@ val disableAdsPatch = bytecodePatch("Disable ads") {
     compatibleWith("org.zwanoo.android.speedtest"("7.0.0", "7.0.3"))
 
     apply {
-        // Prevent the banner ad controller from reporting ads as enabled
+        // Prevent the banner ad controller from reporting ads as enabled.
         bannerAdEnabledMethod.returnEarly(false)
 
-        // Prevent the native ad view from being constructed
+        // Prevent the native ad view from being constructed.
         nativeAdCreateMethod.returnEarly()
 
-        // Prevent all native ad sequences (including end-of-test interstitials) from starting
+        // Prevent all native ad sequences (including end-of-test interstitials) from starting.
         nativeAdExecuteMethod.returnEarly()
 
-        // Prevent the shadow banner ads from showing
+        // Prevent the shadow banner ads from showing.
         premiumStatusMethod.returnEarly(true)
     }
 }
