@@ -16,7 +16,7 @@ val hideAdsPatch = bytecodePatch(
     compatibleWith("com.jsepol.trainstatuspt")
 
     apply {
-        val loadAdRef = ImmutableMethodReference(
+        val loadAdMethodReference = ImmutableMethodReference(
             "Lcom/google/android/gms/ads/AdView;",
             "loadAd",
             listOf("Lcom/google/android/gms/ads/AdRequest;"),
@@ -25,8 +25,7 @@ val hideAdsPatch = bytecodePatch(
 
         forEachInstructionAsSequence(
             match = { _, _, instruction, index ->
-                val refInstruction = instruction as? ReferenceInstruction ?: return@forEachInstructionAsSequence null
-                val ref = refInstruction.reference as? MethodReference ?: return@forEachInstructionAsSequence null
+                val methodReference = instruction.getReference<MethodReference>() ?: return@forEachInstructionAsSequence null
 
                 if (MethodUtil.methodSignaturesMatch(ref, loadAdRef)) index else null
             },

@@ -37,12 +37,12 @@ val forceContributorPatch = bytecodePatch(
                     }
                 }
 
-                if (className.startsWith("Lcom/jsepol/trainstatuspt/TrainDetailsActivity")) {
+                if (className.endsWith("TrainDetailsActivity;")) {
                     val ref = (instruction as? ReferenceInstruction)?.reference
 
                     if (instruction.opcode == Opcode.IGET_OBJECT && (ref as? FieldReference)?.name == "contribuidor") {
                         val twoRegInstr = instruction as? TwoRegisterInstruction ?: return@forEachInstructionAsSequence null
-                        return@forEachInstructionAsSequence Triple(1, index, twoRegInstr.registerA)
+                        Triple(1, index, twoRegInstr.registerA)
                     }
 
                     if (instruction.opcode == Opcode.INVOKE_DIRECT && (ref as? MethodReference)?.name == "bloquearMenus") {
@@ -56,7 +56,7 @@ val forceContributorPatch = bytecodePatch(
                 when (type) {
                     0 -> mutableMethod.addInstruction(targetIndex, "const/4 v$register, 0x1")
                     1 -> mutableMethod.replaceInstruction(targetIndex, "sget-object v$register, Ljava/lang/Boolean;->TRUE:Ljava/lang/Boolean;")
-                    2 -> mutableMethod.replaceInstruction(targetIndex, "invoke-direct {v$register}, Lcom/jsepol/trainstatuspt/TrainDetailsActivity;->desbloquearMenus()V")
+                    2 -> mutableMethod.replaceInstruction(targetIndex, "invoke-direct { v$register }, Lcom/jsepol/trainstatuspt/TrainDetailsActivity;->desbloquearMenus()V")
                     3 -> mutableMethod.replaceInstruction(targetIndex, "const/4 v$register, 0x1")
                 }
             }
