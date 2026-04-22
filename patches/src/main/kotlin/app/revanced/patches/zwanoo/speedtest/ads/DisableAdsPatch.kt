@@ -19,5 +19,8 @@ val disableAdsPatch = bytecodePatch("Disable ads") {
 
         // Prevent the shadow banner ads from showing.
         premiumStatusMethod.returnEarly(true)
+
+        // Prevent ads from loading.
+        loadAd.returnEarly()
     }
 }
