@@ -5,7 +5,7 @@ import app.revanced.util.returnEarly
 
 @Suppress("unused")
 val disableAdsPatch = bytecodePatch("Disable ads") {
-    compatibleWith("org.zwanoo.android.speedtest"("7.0.0", "7.0.3"))
+    compatibleWith("org.zwanoo.android.speedtest")
 
     apply {
         // Prevent the banner ad controller from reporting ads as enabled.
