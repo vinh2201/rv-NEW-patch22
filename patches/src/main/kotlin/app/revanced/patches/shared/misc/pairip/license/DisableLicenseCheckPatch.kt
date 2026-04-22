@@ -9,7 +9,7 @@ import java.util.logging.Logger
 @Suppress("unused")
 val disablePairipLicenseCheckPatch = bytecodePatch(
     name = "Disable Pairip license check",
-    description = "Disables Play Integrity API (Pairip) client-side license check.",
+    description = "Disables Play Integrity API (Pairip) client-side license and VM check.",
     use = false,
 ) {
     val disableRepeatedChecks by booleanOption(
@@ -18,9 +18,19 @@ val disablePairipLicenseCheckPatch = bytecodePatch(
         default = true,
     )
 
+    val enableVmLogging by booleanOption(
+        name = "Enable VM logging",
+        description = "Enables detailed native library and VM logging for debugging PairIP.",
+        default = false,
+    )
+
     apply {
         val logger = Logger.getLogger(this::class.java.name)
-        fun logMissing(tag: String) = logger.warning("Could not find Pairip licensing method '$tag'.")
+        fun logMissing(tag: String) =
+            logger.warning("Could not find Pairip method '$tag'.")
+
+        verifyIntegrityMethod?.returnEarly()
+            ?: logMissing("verifyIntegrityMethod")
 
         // Set first parameter (responseCode) to 0 (success status).
         processLicenseResponseMethod?.addInstruction(0, "const/4 p1, 0x0")
@@ -30,7 +40,7 @@ val disablePairipLicenseCheckPatch = bytecodePatch(
         validateLicenseResponseMethod?.returnEarly()
             ?: logMissing("validateLicenseResponseMethod")
 
-        // Make sure the installer app is a system app (one of the pass methods).
+        // Always report a trusted local installer (passes the installer origin check).
         checkLocalInstallerMethod?.returnEarly(true)
             ?: logMissing("checkLocalInstallerMethod")
 
@@ -42,7 +52,13 @@ val disablePairipLicenseCheckPatch = bytecodePatch(
                 const/4 v0, 0x0
                 sput-boolean v0, Lcom/pairip/licensecheck/LicenseClient;->repeatedCheckEnabled:Z
                 """.trimIndent()
-            ) ?: logger.warning("Could not find LicenseClient static initializer to disable repeated checks.")
+            ) ?: logMissing("licenseClientClinit")
         }
+
+        launchVMMethod?.returnEarly()
+            ?: logMissing("launchVMMethod")
+
+        isDebuggingEnabledMethod?.returnEarly(enableVmLogging == true)
+            ?: logMissing("isDebuggingEnabledMethod")
     }
 }
