@@ -22,4 +22,11 @@ public class Settings extends BaseSettings {
      * Not to be confused with {@link BaseSettings#DEBUG}.
      */
     public static final BooleanSetting TWITCH_DEBUG_MODE = new BooleanSetting("revanced_twitch_debug_mode", FALSE, true);
+
+    /**
+     * enable {@link app.revanced.extension.twitch.patches.AdSuppressionMonitor}.
+     * strictly an observer, never modifies playback. default off.
+     */
+    public static final BooleanSetting AD_SUPPRESSION_MONITOR_ENABLED =
+            new BooleanSetting("revanced_ad_suppression_monitor", TRUE, true);
 }
