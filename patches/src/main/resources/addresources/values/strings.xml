@@ -1927,6 +1927,11 @@ Video playback with AV1 may stutter or drop frames."</string>
             <string name="revanced_twitch_debug_mode_summary_on">Twitch debug mode is enabled (not recommended)</string>
             <string name="revanced_twitch_debug_mode_summary_off">Twitch debug mode is disabled</string>
         </patch>
+        <patch id="ad.monitor.adSuppressionMonitorPatch">
+            <string name="revanced_ad_suppression_monitor_title">Ad-suppression runtime monitor</string>
+            <string name="revanced_ad_suppression_monitor_summary_on">Logs [AD_EVENT], [UI_AD_OVERLAY], [AD_NETWORK], and [AD_MONITOR_STATUS] every 60s. observer only; Never modifies playback.</string>
+            <string name="revanced_ad_suppression_monitor_summary_off">Run time ad-suppression monitor is disabled</string>
+        </patch>
         <patch id="misc.settings.settingsPatch">
             <string name="revanced_settings">ReVanced Settings</string>
             <string name="revanced_about_title">About</string>
