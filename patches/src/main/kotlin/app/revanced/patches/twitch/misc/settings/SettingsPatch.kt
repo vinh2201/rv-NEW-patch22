@@ -14,6 +14,7 @@ import app.revanced.patches.all.misc.resources.addResourcesPatch
 import app.revanced.patches.shared.misc.settings.preference.*
 import app.revanced.patches.shared.misc.settings.settingsPatch
 import app.revanced.patches.twitch.misc.extension.sharedExtensionPatch
+import app.revanced.patches.twitch.misc.fixupattrs.fixupMissingAttrsPatch
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.immutable.ImmutableField
 
@@ -43,10 +44,11 @@ val settingsPatch = bytecodePatch(
     dependsOn(
         sharedExtensionPatch,
         addResourcesPatch,
+        fixupMissingAttrsPatch,
         settingsPatch(preferences = preferences),
     )
 
-    compatibleWith("tv.twitch.android.app"("16.9.1"))
+    compatibleWith("tv.twitch.android.app")
 
     apply {
         addResources("twitch", "misc.settings.settingsPatch")
@@ -72,7 +74,7 @@ val settingsPatch = bytecodePatch(
         )
 
         // Hook onCreate to handle fragment creation.
-        settingsActivityOnCreateMethod.apply {
+        settingsActivityOnCreateMethod?.apply {
             val insertIndex = instructions.size - 2
             addInstructionsWithLabels(
                 insertIndex,
@@ -128,7 +130,7 @@ val settingsPatch = bytecodePatch(
             )
         }
 
-        settingsMenuItemEnumMethod.injectMenuItem(
+        settingsMenuItemEnumMethod?.injectMenuItem(
             REVANCED_SETTINGS_MENU_ITEM_NAME,
             REVANCED_SETTINGS_MENU_ITEM_ID,
             REVANCED_SETTINGS_MENU_ITEM_TITLE_RES,
@@ -136,7 +138,7 @@ val settingsPatch = bytecodePatch(
         )
 
         // Intercept settings menu creation and add new menu item.
-        menuGroupsUpdatedMethod.addInstructions(
+        menuGroupsUpdatedMethod?.addInstructions(
             0,
             """
                 sget-object v0, $MENU_ITEM_ENUM_CLASS_DESCRIPTOR->$REVANCED_SETTINGS_MENU_ITEM_NAME:$MENU_ITEM_ENUM_CLASS_DESCRIPTOR 
@@ -146,21 +148,23 @@ val settingsPatch = bytecodePatch(
         )
 
         // Intercept onclick events for the settings menu
-        menuGroupsOnClickMethod.addInstructionsWithLabels(
-            0,
-            """
-                invoke-static {p1}, $ACTIVITY_HOOKS_CLASS_DESCRIPTOR->handleSettingMenuOnClick(Ljava/lang/Enum;)Z
-                move-result p2
-                if-eqz p2, :no_rv_settings_onclick
-                sget-object p1, $MENU_DISMISS_EVENT_CLASS_DESCRIPTOR->INSTANCE:$MENU_DISMISS_EVENT_CLASS_DESCRIPTOR
-                invoke-virtual { p0, p1 }, Ltv/twitch/android/core/mvp/viewdelegate/RxViewDelegate;->pushEvent(Ltv/twitch/android/core/mvp/viewdelegate/ViewDelegateEvent;)V
-                return-void
-            """,
-            ExternalLabel(
-                "no_rv_settings_onclick",
-                menuGroupsOnClickMethod.getInstruction(0),
-            ),
-        )
+        menuGroupsOnClickMethod?.let { onClick ->
+            onClick.addInstructionsWithLabels(
+                0,
+                """
+                    invoke-static {p1}, $ACTIVITY_HOOKS_CLASS_DESCRIPTOR->handleSettingMenuOnClick(Ljava/lang/Enum;)Z
+                    move-result p2
+                    if-eqz p2, :no_rv_settings_onclick
+                    sget-object p1, $MENU_DISMISS_EVENT_CLASS_DESCRIPTOR->INSTANCE:$MENU_DISMISS_EVENT_CLASS_DESCRIPTOR
+                    invoke-virtual { p0, p1 }, Ltv/twitch/android/core/mvp/viewdelegate/RxViewDelegate;->pushEvent(Ltv/twitch/android/core/mvp/viewdelegate/ViewDelegateEvent;)V
+                    return-void
+                """,
+                ExternalLabel(
+                    "no_rv_settings_onclick",
+                    onClick.getInstruction(0),
+                ),
+            )
+        }
     }
 
     afterDependents {

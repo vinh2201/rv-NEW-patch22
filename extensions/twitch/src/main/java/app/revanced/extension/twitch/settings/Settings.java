@@ -12,6 +12,8 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting BLOCK_VIDEO_ADS = new BooleanSetting("revanced_block_video_ads", TRUE);
     public static final BooleanSetting BLOCK_AUDIO_ADS = new BooleanSetting("revanced_block_audio_ads", TRUE);
     public static final StringSetting BLOCK_EMBEDDED_ADS = new StringSetting("revanced_block_embedded_ads", "luminous");
+    public static final BooleanSetting BLOCK_PUBSUB_MIDROLL = new BooleanSetting("revanced_block_pubsub_midroll", TRUE);
+    public static final BooleanSetting HIDE_EXPANDABLE_ADS = new BooleanSetting("revanced_hide_expandable_ads", TRUE);
 
     /* Chat */
     public static final StringSetting SHOW_DELETED_MESSAGES = new StringSetting("revanced_show_deleted_messages", "cross-out");
