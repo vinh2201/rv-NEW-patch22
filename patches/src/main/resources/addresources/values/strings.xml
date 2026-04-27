@@ -1909,6 +1909,16 @@ Video playback with AV1 may stutter or drop frames."</string>
             <string name="revanced_block_video_ads_summary_on">Video ads are blocked</string>
             <string name="revanced_block_video_ads_summary_off">Video ads are unblocked</string>
         </patch>
+        <patch id="ad.expandable.expandableAdsPatch">
+            <string name="revanced_hide_expandable_ads_title">Hide expandable ads</string>
+            <string name="revanced_hide_expandable_ads_summary_on">Expandable ad activity is closed automatically</string>
+            <string name="revanced_hide_expandable_ads_summary_off">Expandable ads can open</string>
+        </patch>
+        <patch id="ad.pubsub.pubsubMidrollPatch">
+            <string name="revanced_block_pubsub_midroll_title">Block PubSub midroll requests</string>
+            <string name="revanced_block_pubsub_midroll_summary_on">Server pushed midroll triggers are dropped before scheduling</string>
+            <string name="revanced_block_pubsub_midroll_summary_off">Server pushed midroll triggers are processed normally</string>
+        </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
             <string name="revanced_deleted_msg">Message deleted</string>
             <string name="revanced_show_deleted_messages_title">Show deleted messages</string>
