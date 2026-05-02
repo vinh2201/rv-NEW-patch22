@@ -6,6 +6,7 @@ import android.view.ViewTreeObserver;
 
 import app.revanced.extension.shared.Logger;
 import app.revanced.extension.youtube.settings.Settings;
+import app.revanced.extension.youtube.shared.NavigationBar.NavigationButton;
 import app.revanced.extension.youtube.shared.PlayerType;
 
 @SuppressWarnings("unused")
@@ -57,13 +58,24 @@ public class DimShortsButtonsPatch {
      */
     public static void dimShortsToolbarButton(String enumString, View buttonView) {
         Logger.printDebug(() -> "DimShorts toolbar: enum=" + enumString);
+        addShortsAwareDimListener(buttonView);
+    }
 
-        buttonView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
+    /**
+     * Injection point.
+     */
+    public static void navigationTabCreated(NavigationButton button, View tabView) {
+        addShortsAwareDimListener(tabView);
+    }
+
+    private static void addShortsAwareDimListener(View view) {
+        View.OnAttachStateChangeListener listener = new View.OnAttachStateChangeListener() {
             private ViewTreeObserver registeredObserver;
             private ViewTreeObserver.OnPreDrawListener preDrawListener;
 
             @Override
             public void onViewAttachedToWindow(View v) {
+                if (preDrawListener != null) return;
                 preDrawListener = () -> {
                     final float targetAlpha;
                     if (PlayerType.getCurrent().isNoneOrHidden()) {
@@ -91,6 +103,12 @@ public class DimShortsButtonsPatch {
                 preDrawListener = null;
                 registeredObserver = null;
             }
-        });
+        };
+
+        view.addOnAttachStateChangeListener(listener);
+        // Nav bar tabs are already attached when this hook fires; manually trigger registration.
+        if (view.isAttachedToWindow()) {
+            listener.onViewAttachedToWindow(view);
+        }
     }
 }

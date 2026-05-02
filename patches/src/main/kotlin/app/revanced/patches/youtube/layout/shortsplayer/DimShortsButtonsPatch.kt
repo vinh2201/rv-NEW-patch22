@@ -10,6 +10,8 @@ import app.revanced.patches.shared.misc.settings.preference.InputType
 import app.revanced.patches.shared.misc.settings.preference.TextPreference
 import app.revanced.patches.youtube.layout.toolbar.hookToolbar
 import app.revanced.patches.youtube.layout.toolbar.toolbarHookPatch
+import app.revanced.patches.youtube.misc.navigation.hookNavigationButtonCreated
+import app.revanced.patches.youtube.misc.navigation.navigationBarHookPatch
 import app.revanced.patches.youtube.misc.playertype.reelWatchPagerMethodMatch
 import app.revanced.patches.youtube.misc.settings.PreferenceScreen
 import app.revanced.patches.youtube.misc.settings.settingsPatch
@@ -28,6 +30,7 @@ val dimShortsButtonsPatch = bytecodePatch(
         resourceMappingPatch,
         addResourcesPatch,
         toolbarHookPatch,
+        navigationBarHookPatch,
     )
 
     compatibleWith(
@@ -50,6 +53,9 @@ val dimShortsButtonsPatch = bytecodePatch(
 
         // Dim toolbar buttons (search, 3-dots) dynamically based on player state.
         hookToolbar("$EXTENSION_CLASS_DESCRIPTOR->dimShortsToolbarButton")
+
+        // Dim bottom navigation bar tabs when Shorts is active.
+        hookNavigationButtonCreated(EXTENSION_CLASS_DESCRIPTOR)
 
         reelWatchPagerMethodMatch.let {
             it.method.apply {
