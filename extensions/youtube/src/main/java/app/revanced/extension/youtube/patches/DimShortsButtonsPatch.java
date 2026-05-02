@@ -7,7 +7,7 @@ import android.view.ViewTreeObserver;
 import app.revanced.extension.shared.Logger;
 import app.revanced.extension.youtube.settings.Settings;
 import app.revanced.extension.youtube.shared.NavigationBar.NavigationButton;
-import app.revanced.extension.youtube.shared.PlayerType;
+import app.revanced.extension.youtube.shared.ShortsPlayerState;
 
 @SuppressWarnings("unused")
 public class DimShortsButtonsPatch {
@@ -78,7 +78,7 @@ public class DimShortsButtonsPatch {
                 if (preDrawListener != null) return;
                 preDrawListener = () -> {
                     final float targetAlpha;
-                    if (PlayerType.getCurrent().isNoneOrHidden()) {
+                    if (ShortsPlayerState.isOpen()) {
                         int opacity = Settings.SHORTS_BUTTONS_OPACITY.get();
                         if (opacity < 0 || opacity > 100) opacity = 100;
                         targetAlpha = opacity / 100.0f;
