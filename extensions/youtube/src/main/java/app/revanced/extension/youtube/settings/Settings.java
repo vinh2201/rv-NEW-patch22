@@ -198,6 +198,7 @@ public class Settings extends YouTubeAndMusicSettings {
     public static final BooleanSetting VIDEO_QUALITY_DIALOG_BUTTON = new BooleanSetting("revanced_video_quality_dialog_button", FALSE);
     public static final IntegerSetting PLAYER_OVERLAY_OPACITY = new IntegerSetting("revanced_player_overlay_opacity", 100, true);
     public static final IntegerSetting SHORTS_BUTTONS_OPACITY = new IntegerSetting("revanced_shorts_buttons_opacity", 100, false);
+    public static final BooleanSetting SHORTS_IMMERSIVE_MODE = new BooleanSetting("revanced_shorts_immersive_mode", FALSE);
 
     // Miniplayer
     public static final EnumSetting<MiniplayerType> MINIPLAYER_TYPE = new EnumSetting<>("revanced_miniplayer_type", MiniplayerType.DEFAULT, true);

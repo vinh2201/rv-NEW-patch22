@@ -1,8 +1,14 @@
 package app.revanced.extension.youtube.patches;
 
+import android.app.Activity;
+import android.content.Context;
+import android.content.ContextWrapper;
+import android.os.Build;
 import android.view.View;
 import android.view.ViewParent;
 import android.view.ViewTreeObserver;
+import android.view.Window;
+import android.view.WindowInsetsController;
 
 import app.revanced.extension.shared.Logger;
 import app.revanced.extension.youtube.settings.Settings;
@@ -19,6 +25,8 @@ public class DimShortsButtonsPatch {
         shortsOverlayView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
             private ViewTreeObserver registeredObserver;
             private ViewTreeObserver.OnPreDrawListener preDrawListener;
+            private Window window;
+            private boolean wasImmersive = false;
 
             @Override
             public void onViewAttachedToWindow(View v) {
@@ -28,6 +36,8 @@ public class DimShortsButtonsPatch {
 
                 Logger.printDebug(() -> "DimShorts overlay: target=" + target.getClass().getName());
 
+                window = getWindow(target);
+
                 preDrawListener = () -> {
                     int opacity = Settings.SHORTS_BUTTONS_OPACITY.get();
                     if (opacity < 0 || opacity > 100) opacity = 100;
@@ -35,6 +45,14 @@ public class DimShortsButtonsPatch {
                     if (target.getAlpha() != alpha) {
                         target.setAlpha(alpha);
                     }
+
+                    // Only call hide/show when the desired state changes to avoid per-frame calls.
+                    boolean shouldBeImmersive = Settings.SHORTS_IMMERSIVE_MODE.get();
+                    if (window != null && shouldBeImmersive != wasImmersive) {
+                        wasImmersive = shouldBeImmersive;
+                        setStatusBarHidden(window, shouldBeImmersive);
+                    }
+
                     return true;
                 };
                 registeredObserver = target.getViewTreeObserver();
@@ -47,10 +65,49 @@ public class DimShortsButtonsPatch {
                         && registeredObserver.isAlive()) {
                     registeredObserver.removeOnPreDrawListener(preDrawListener);
                 }
+                if (window != null) {
+                    setStatusBarHidden(window, false);
+                    wasImmersive = false;
+                }
                 preDrawListener = null;
                 registeredObserver = null;
+                window = null;
             }
         });
+    }
+
+    private static Window getWindow(View view) {
+        Context ctx = view.getContext();
+        while (ctx instanceof ContextWrapper) {
+            if (ctx instanceof Activity) {
+                return ((Activity) ctx).getWindow();
+            }
+            ctx = ((ContextWrapper) ctx).getBaseContext();
+        }
+        return null;
+    }
+
+    private static void setStatusBarHidden(Window window, boolean hide) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            WindowInsetsController controller = window.getInsetsController();
+            if (controller == null) return;
+            if (hide) {
+                controller.hide(android.view.WindowInsets.Type.statusBars());
+                controller.setSystemBarsBehavior(
+                        WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+            } else {
+                controller.show(android.view.WindowInsets.Type.statusBars());
+            }
+        } else {
+            View decorView = window.getDecorView();
+            int flags = decorView.getSystemUiVisibility();
+            if (hide) {
+                flags |= View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+            } else {
+                flags &= ~(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+            }
+            decorView.setSystemUiVisibility(flags);
+        }
     }
 
     /**

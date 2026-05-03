@@ -7,6 +7,7 @@ import app.revanced.patches.all.misc.resources.addResources
 import app.revanced.patches.all.misc.resources.addResourcesPatch
 import app.revanced.patches.shared.misc.mapping.resourceMappingPatch
 import app.revanced.patches.shared.misc.settings.preference.InputType
+import app.revanced.patches.shared.misc.settings.preference.SwitchPreference
 import app.revanced.patches.shared.misc.settings.preference.TextPreference
 import app.revanced.patches.youtube.layout.toolbar.hookToolbar
 import app.revanced.patches.youtube.layout.toolbar.toolbarHookPatch
@@ -49,6 +50,7 @@ val dimShortsButtonsPatch = bytecodePatch(
 
         PreferenceScreen.SHORTS.addPreferences(
             TextPreference("revanced_shorts_buttons_opacity", inputType = InputType.NUMBER),
+            SwitchPreference("revanced_shorts_immersive_mode"),
         )
 
         // Dim toolbar buttons (search, 3-dots) dynamically based on player state.
