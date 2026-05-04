@@ -8,17 +8,24 @@ import java.io.InputStream
 object StreamUtils {
     @Throws(IOException::class)
     fun toString(inputStream: InputStream): String {
-        ByteArrayOutputStream().use { result ->
-            val buffer = ByteArray(1024)
-            var length: Int
-            while (inputStream.read(buffer).also { length = it } != -1) {
+        val result = ByteArrayOutputStream()
+        val buffer = ByteArray(1024)
+        try {
+            while (true) {
+                val length = inputStream.read(buffer)
+                if (length == -1) break
                 result.write(buffer, 0, length)
             }
-            return result.toString()
+            return result.toString("UTF-8")
+        } finally {
+            try {
+                result.close()
+            } catch (ignored: IOException) { }
         }
     }
 
     fun fromString(string: String): InputStream {
-        return ByteArrayInputStream(string.toByteArray())
+        val bytes = (string as java.lang.String).getBytes("UTF-8")
+        return ByteArrayInputStream(bytes)
     }
 }

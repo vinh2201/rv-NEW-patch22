@@ -5,18 +5,26 @@ import org.json.JSONObject
 
 internal object TwiFuckerUtils {
     inline fun JSONArray.forEach(action: (JSONObject) -> Unit) {
-        (0 until this.length()).forEach { i ->
-            if (this[i] is JSONObject) {
-                action(this[i] as JSONObject)
+        var i = 0
+        val len = this.length()
+        while (i < len) {
+            val item = this.opt(i)
+            if (item is JSONObject) {
+                action(item)
             }
+            i++
         }
     }
 
     inline fun JSONArray.forEachIndexed(action: (index: Int, JSONObject) -> Unit) {
-        (0 until this.length()).forEach { i ->
-            if (this[i] is JSONObject) {
-                action(i, this[i] as JSONObject)
+        var i = 0
+        val len = this.length()
+        while (i < len) {
+            val item = this.opt(i)
+            if (item is JSONObject) {
+                action(i, item)
             }
+            i++
         }
     }
 }

@@ -9,7 +9,7 @@ import java.io.InputStream
 
 object JsonHookPatch {
     // Additional hooks added by corresponding patch.
-    private val hooks = buildList<JsonHook> {
+    private val hooks: MutableList<JsonHook> = ArrayList<JsonHook>().apply {
         add(DummyHook)
     }
 

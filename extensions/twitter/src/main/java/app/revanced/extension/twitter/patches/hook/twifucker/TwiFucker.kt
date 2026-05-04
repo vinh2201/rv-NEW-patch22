@@ -94,8 +94,8 @@ internal object TwiFucker {
                 trendRemoveIndex.add(trendIndex)
             }
         }
-        for (i in trendRemoveIndex.asReversed()) {
-            remove(i)
+        for (i in trendRemoveIndex.indices.reversed()) {
+            remove(trendRemoveIndex[i])
         }
     }
 
@@ -104,7 +104,7 @@ internal object TwiFucker {
 
     private fun JSONObject.instructionGetAddEntries(): JSONArray? = optJSONObject("addEntries")?.optJSONArray("entries")
 
-    private fun JSONObject.instructionCheckAndRemove(action: (JSONArray) -> Unit) {
+    private inline fun JSONObject.instructionCheckAndRemove(action: (JSONArray) -> Unit) {
         instructionTimelineAddEntries()?.let(action)
         instructionGetAddEntries()?.let(action)
     }
@@ -133,12 +133,12 @@ internal object TwiFucker {
                     return@inner
                 }
             }
-            for (i in innerRemoveIndex.asReversed()) {
-                contentItems?.remove(i)
+            for (i in innerRemoveIndex.indices.reversed()) {
+                contentItems?.remove(innerRemoveIndex[i])
             }
         }
-        for (i in removeIndex.reversed()) {
-            remove(i)
+        for (i in removeIndex.indices.reversed()) {
+            remove(removeIndex[i])
         }
     }
 
@@ -151,8 +151,8 @@ internal object TwiFucker {
                 removeIndex.add(entryIndex)
             }
         }
-        for (i in removeIndex.reversed()) {
-            remove(i)
+        for (i in removeIndex.indices.reversed()) {
+            remove(removeIndex[i])
         }
     }
 
@@ -191,12 +191,12 @@ internal object TwiFucker {
                     }
                 }
             }
-            for (i in userRemoveIndex.reversed()) {
-                items?.remove(i)
+            for (i in userRemoveIndex.indices.reversed()) {
+                items?.remove(userRemoveIndex[i])
             }
         }
-        for (i in entryRemoveIndex.reversed()) {
-            remove(i)
+        for (i in entryRemoveIndex.indices.reversed()) {
+            remove(entryRemoveIndex[i])
         }
     }
 
