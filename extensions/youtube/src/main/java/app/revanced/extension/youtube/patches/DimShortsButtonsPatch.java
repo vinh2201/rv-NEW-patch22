@@ -18,6 +18,9 @@ import app.revanced.extension.youtube.shared.ShortsPlayerState;
 @SuppressWarnings("unused")
 public class DimShortsButtonsPatch {
 
+    // Cached resource ID for the Shorts time bar — a top-level window overlay containing the SeekBar.
+    private static int reelTimeBarId = 0;
+
     /**
      * Injection point.
      */
@@ -27,6 +30,7 @@ public class DimShortsButtonsPatch {
             private ViewTreeObserver.OnPreDrawListener preDrawListener;
             private Window window;
             private boolean wasImmersive = false;
+            private boolean reelTimeBarListenerAdded = false;
 
             @Override
             public void onViewAttachedToWindow(View v) {
@@ -44,6 +48,22 @@ public class DimShortsButtonsPatch {
                     final float alpha = opacity / 100.0f;
                     if (target.getAlpha() != alpha) {
                         target.setAlpha(alpha);
+                    }
+
+                    // reel_time_bar is added dynamically to the window; poll until found then
+                    // attach a dedicated dim listener so it dims with the rest of the overlay.
+                    if (!reelTimeBarListenerAdded && window != null) {
+                        if (reelTimeBarId == 0) {
+                            reelTimeBarId = v.getContext().getResources()
+                                    .getIdentifier("reel_time_bar", "id", v.getContext().getPackageName());
+                        }
+                        if (reelTimeBarId != 0) {
+                            View rtb = window.getDecorView().findViewById(reelTimeBarId);
+                            if (rtb != null) {
+                                addShortsAwareDimListener(rtb);
+                                reelTimeBarListenerAdded = true;
+                            }
+                        }
                     }
 
                     // Only call hide/show when the desired state changes to avoid per-frame calls.
@@ -69,6 +89,7 @@ public class DimShortsButtonsPatch {
                     setStatusBarHidden(window, false);
                     wasImmersive = false;
                 }
+                reelTimeBarListenerAdded = false;
                 preDrawListener = null;
                 registeredObserver = null;
                 window = null;
