@@ -11,7 +11,9 @@ internal val BytecodePatchContext.sanitizeSharingLinksMethod by gettingFirstMeth
 ) { returnType == "Ljava/lang/String;" }
 
 // Returns a shareable link string based on a tweet ID and a username.
-internal val BytecodePatchContext.linkBuilderMethod by gettingFirstMethod($$"/%1$s/status/%2$d")
+internal val BytecodePatchContext.linkBuilderMethod by gettingFirstMethodDeclaratively {
+    instructions($$"/%1$s/status/%2$d"(String::contains))
+}
 
 // TODO remove this once changeLinkSharingDomainResourcePatch is restored
 // Returns a shareable link for the "Share via..." dialog.
