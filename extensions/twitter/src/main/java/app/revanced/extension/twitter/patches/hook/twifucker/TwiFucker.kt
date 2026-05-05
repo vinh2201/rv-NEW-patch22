@@ -105,8 +105,20 @@ internal object TwiFucker {
     private fun JSONObject.instructionGetAddEntries(): JSONArray? = optJSONObject("addEntries")?.optJSONArray("entries")
 
     private inline fun JSONObject.instructionCheckAndRemove(action: (JSONArray) -> Unit) {
+        /*
         instructionTimelineAddEntries()?.let(action)
         instructionGetAddEntries()?.let(action)
+
+         */
+        val timelineEntries = instructionTimelineAddEntries()
+        if (timelineEntries != null) {
+            action(timelineEntries)
+        }
+
+        val addEntries = instructionGetAddEntries()
+        if (addEntries != null) {
+            action(addEntries)
+        }
     }
 
     // entries
@@ -210,9 +222,17 @@ internal object TwiFucker {
         json.jsonGetData()?.dataCheckAndRemove()
     }
 
-    private fun JSONObject.filterInstructions(action: (JSONArray) -> Unit) {
-        jsonGetInstructions()?.forEach { instruction ->
-            instruction.instructionCheckAndRemove(action)
+    private inline fun JSONObject.filterInstructions(action: (JSONArray) -> Unit) {
+        val instructions = jsonGetInstructions() ?: return
+
+        var i = 0
+        val length = instructions.length()
+        while (i < length) {
+            val instruction = instructions.optJSONObject(i)
+            if (instruction != null) {
+                instruction.instructionCheckAndRemove(action)
+            }
+            i++
         }
     }
 }
