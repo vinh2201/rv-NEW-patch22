@@ -1,6 +1,5 @@
 package app.revanced.patches.instagram.hide.navigation
 
-import app.revanced.patcher.extensions.fieldReference
 import app.revanced.patcher.extensions.getInstruction
 import app.revanced.patcher.firstMethodDeclaratively
 import app.revanced.patcher.immutableClassDef
@@ -9,11 +8,14 @@ import app.revanced.patcher.patch.booleanOption
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patches.instagram.misc.extension.sharedExtensionPatch
 import app.revanced.util.addInstructionsAtControlFlowLabel
-import app.revanced.util.findFreeRegister
+import app.revanced.util.cloneMutableAndPreserveParameters
+import app.revanced.util.getReference
 import app.revanced.util.indexOfFirstInstructionOrThrow
+import app.revanced.util.p0Register
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import java.util.logging.Logger
 
 private const val EXTENSION_CLASS_DESCRIPTOR =
@@ -81,20 +83,21 @@ val hideNavigationButtonsPatch = bytecodePatch(
                 opcode == Opcode.IPUT_OBJECT &&
                     (this as TwoRegisterInstruction).registerA == 2 // p2 register.
             }.let {
-                method.getInstruction(it).fieldReference!!.name
+                method.getInstruction(it).getReference<FieldReference>()!!.name
             }
         }
 
-        initializeNavigationButtonsListMethod.apply {
+        val scratchRegister = initializeNavigationButtonsListMethod.p0Register
+        val scratchRegister2 = scratchRegister + 1
+
+        initializeNavigationButtonsListMethod.cloneMutableAndPreserveParameters().apply {
             val returnIndex = indexOfFirstInstructionOrThrow(Opcode.RETURN_OBJECT)
             val buttonsListRegister = getInstruction<OneRegisterInstruction>(returnIndex).registerA
-            val freeRegister = findFreeRegister(returnIndex)
-            val freeRegister2 = findFreeRegister(returnIndex, freeRegister)
 
             fun instructionsRemoveButtonByName(buttonEnumName: String): String = """
-                    const-string v$freeRegister, "$buttonEnumName"
-                    const-string v$freeRegister2, "$enumNameField"
-                    invoke-static { v$buttonsListRegister, v$freeRegister, v$freeRegister2 }, $EXTENSION_CLASS_DESCRIPTOR->removeNavigationButtonByName(Ljava/util/List;Ljava/lang/String;Ljava/lang/String;)Ljava/util/List;
+                    const-string v$scratchRegister, "$buttonEnumName"
+                    const-string v$scratchRegister2, "$enumNameField"
+                    invoke-static { v$buttonsListRegister, v$scratchRegister, v$scratchRegister2 }, $EXTENSION_CLASS_DESCRIPTOR->removeNavigationButtonByName(Ljava/util/List;Ljava/lang/String;Ljava/lang/String;)Ljava/util/List;
                     move-result-object v$buttonsListRegister
                 """
 
