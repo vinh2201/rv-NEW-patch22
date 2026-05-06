@@ -8,5 +8,8 @@ import app.revanced.patcher.patch.BytecodePatchContext
 
 internal val BytecodePatchContext.exploreResponseJsonParserMethodMatch by composingFirstMethod("clusters") {
     name("unsafeParseFromJson")
-    instructions("sectional_items"())
+    instructions(
+        "next_max_id"(),
+        "interests"(),
+    )
 }

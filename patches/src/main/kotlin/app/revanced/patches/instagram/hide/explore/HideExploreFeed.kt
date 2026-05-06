@@ -3,6 +3,9 @@ package app.revanced.patches.instagram.hide.explore
 import app.revanced.patcher.extensions.getInstruction
 import app.revanced.patcher.extensions.replaceInstruction
 import app.revanced.patcher.patch.bytecodePatch
+import app.revanced.util.indexOfFirstInstructionOrThrow
+import app.revanced.util.indexOfFirstLiteralInstructionOrThrow
+import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 
 @Suppress("unused")
@@ -15,7 +18,11 @@ val hideExploreFeedPatch = bytecodePatch(
 
     apply {
         exploreResponseJsonParserMethodMatch.method.apply {
-            val targetStringIndex = exploreResponseJsonParserMethodMatch[0]
+            val obfuscatedExploreFeedKeyLiteralIndex = indexOfFirstLiteralInstructionOrThrow(3151)
+            val targetStringIndex = indexOfFirstInstructionOrThrow(
+                obfuscatedExploreFeedKeyLiteralIndex + 1,
+                Opcode.MOVE_RESULT_OBJECT,
+            )
             val targetStringRegister = getInstruction<OneRegisterInstruction>(targetStringIndex).registerA
 
             replaceInstruction(targetStringIndex, "const-string v$targetStringRegister, \"BOGUS\"")
