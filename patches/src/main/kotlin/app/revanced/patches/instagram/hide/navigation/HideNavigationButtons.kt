@@ -86,6 +86,7 @@ val hideNavigationButtonsPatch = bytecodePatch(
             }
         }
 
+        val initializeNavigationButtonsListMethod = initializeNavigationButtonsListMethod()
         val scratchRegister = initializeNavigationButtonsListMethod.p0Register
         val scratchRegister2 = scratchRegister + 1
 
