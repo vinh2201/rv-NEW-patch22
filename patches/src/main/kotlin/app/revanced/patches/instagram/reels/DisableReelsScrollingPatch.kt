@@ -31,7 +31,6 @@ val disableReelsScrollingPatch = bytecodePatch(
 
         // Newer builds re-enable horizontal swipe input through the shared swipe
         // direction controller and a helper on ClipsViewPagerImpl. Neutralize both.
-        clipsSwipeDirectionControllerInterceptMethod.returnEarly(false)
         clipsSwipeDirectionControllerResetMethod.returnEarly()
         clipsViewPagerImplGetViewAtIndexMethod.classDef.getClipsViewPagerImplReEnableScrollingMethod().returnEarly()
 
