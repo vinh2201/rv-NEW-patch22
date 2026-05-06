@@ -28,5 +28,8 @@ context(_: BytecodePatchContext)
 internal fun ClassDef.getClipsViewPagerImplReEnableScrollingMethod() = firstMethodDeclaratively {
     parameterTypes()
     returnType("V")
-    instructions(1L(), method("setUserInputEnabled"))
+    instructions(
+        1L(),
+        method("setUserInputEnabled")
+    )
 }
