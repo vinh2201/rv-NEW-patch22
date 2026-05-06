@@ -1,8 +1,10 @@
 package app.revanced.patches.twitter.misc.links
 
 import app.revanced.patcher.extensions.addInstructions
+import app.revanced.patcher.extensions.fieldReference
 import app.revanced.patcher.extensions.getInstruction
 import app.revanced.patcher.extensions.replaceInstruction
+import app.revanced.patcher.extensions.stringReference
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patcher.patch.stringOption
 import app.revanced.patches.twitter.misc.extension.sharedExtensionPatch
@@ -10,6 +12,8 @@ import app.revanced.util.indexOfFirstInstructionOrThrow
 import app.revanced.util.returnEarly
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import java.net.InetAddress
 import java.net.UnknownHostException
 import java.util.logging.Logger
@@ -72,6 +76,7 @@ val changeLinkSharingDomainPatch = bytecodePatch(
         "com.twitter.android"(
             "10.60.0-release.0",
             "10.86.0-release.0",
+            "11.80.0-release.0",
         ),
     )
 
@@ -107,5 +112,53 @@ val changeLinkSharingDomainPatch = bytecodePatch(
                     "formatResourceLink([Ljava/lang/Object;)Ljava/lang/String;",
             )
         }
+
+        // For above 11.xx.xx
+        // Dunno specific version that starts to use this.
+        try {
+            // Formats share link such as sharing by dm.
+            linkInternalShareSheetMethod.apply {
+                val strIndex = indexOfFirstInstructionOrThrow {
+                    stringReference?.string == "https://x.com/i/status/"
+                }
+
+                val strRegister = getInstruction<OneRegisterInstruction>(strIndex).registerA
+
+                val contextualPostIndex = indexOfFirstInstructionOrThrow {
+                    fieldReference?.type == "Lcom/x/models/ContextualPost;"
+                }
+
+                val contextualPostRegister = getInstruction<TwoRegisterInstruction>(contextualPostIndex).registerA
+
+                addInstructions(
+                    contextualPostIndex + 1,
+                    """
+                    invoke-static { v$contextualPostRegister }, $EXTENSION_CLASS_DESCRIPTOR->formatInternalShareSheetLink(Ljava/lang/Object;)Ljava/lang/String;
+                    move-result-object v$strRegister
+                """
+                )
+            }
+
+            // Formats share link such as "Copy link" or "Share via..." etc.
+            linkExternalShareSheetMethod.apply {
+                val rootContextualPostIndex = indexOfFirstInstructionOrThrow {
+                    opcode == Opcode.IF_EQZ
+                }
+                val rootContextualPostRegister = getInstruction<OneRegisterInstruction>(rootContextualPostIndex).registerA
+
+                val strIndex = indexOfFirstInstructionOrThrow {
+                    stringReference?.string == "https://x.com/i/status/"
+                }
+                val strRegister = getInstruction<OneRegisterInstruction>(strIndex).registerA
+
+                addInstructions(
+                    strIndex + 1,
+                    """
+                    invoke-static { v$rootContextualPostRegister }, $EXTENSION_CLASS_DESCRIPTOR->formatExternalShareSheetLink(Ljava/lang/Object;)Ljava/lang/String;
+                    move-result-object v$strRegister
+                    """
+                )
+            }
+        } catch (e: Exception) { }
     }
 }

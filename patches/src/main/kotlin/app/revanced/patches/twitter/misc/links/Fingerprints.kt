@@ -29,3 +29,18 @@ internal val BytecodePatchContext.linkSharingDomainHelperMethod by gettingFirstM
     name("getShareDomain")
     definingClass(EXTENSION_CLASS_DESCRIPTOR)
 }
+
+internal val BytecodePatchContext.linkInternalShareSheetMethod by gettingFirstMethodDeclaratively {
+    strings(
+        "tweet-",
+        "https://x.com/i/status/"
+    )
+}
+
+internal val BytecodePatchContext.linkExternalShareSheetMethod by gettingFirstMethodDeclaratively {
+    strings(
+        "https://x.com/i/status/",
+        "https://x.com/i/trending/",
+        "https://x.com/i/lists/",
+    )
+}
