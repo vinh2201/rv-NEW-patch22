@@ -8,7 +8,7 @@ val removeBuildExpiredPopupPatch = bytecodePatch(
     name = "Remove build expired popup",
     description = "Removes the popup that appears after a while, when the app version ages.",
 ) {
-    compatibleWith("com.instagram.android"("422.0.0.0.35"))
+    compatibleWith("com.instagram.android")
 
     apply {
         // Newer builds route the stale-build warning through a dedicated

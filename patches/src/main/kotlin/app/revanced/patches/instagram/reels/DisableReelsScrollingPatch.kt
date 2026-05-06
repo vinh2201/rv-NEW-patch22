@@ -3,9 +3,7 @@ package app.revanced.patches.instagram.reels
 import app.revanced.patcher.classDef
 import app.revanced.patcher.extensions.addInstructions
 import app.revanced.patcher.patch.bytecodePatch
-import app.revanced.util.getReference
 import app.revanced.util.returnEarly
-import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 @Suppress("unused")
 val disableReelsScrollingPatch = bytecodePatch(
@@ -32,19 +30,10 @@ val disableReelsScrollingPatch = bytecodePatch(
         )
 
         // Newer builds re-enable horizontal swipe input through the shared swipe
-        // direction controller and helper methods on ClipsViewPagerImpl. Neutralize both.
+        // direction controller and a helper on ClipsViewPagerImpl. Neutralize both.
         clipsSwipeDirectionControllerInterceptMethod.returnEarly(false)
         clipsSwipeDirectionControllerResetMethod.returnEarly()
-        clipsViewPagerImplGetViewAtIndexMethod.classDef.methods
-            .filter { method ->
-                method.parameterTypes.isEmpty() &&
-                    method.returnType == "V" &&
-                    method.implementation?.instructions?.any { instruction ->
-                        instruction.getReference<MethodReference>()?.definingClass == "Landroidx/viewpager2/widget/ViewPager2;" &&
-                            instruction.getReference<MethodReference>()?.name == "setUserInputEnabled"
-                    } == true
-            }
-            .forEach { it.returnEarly() }
+        clipsViewPagerImplGetViewAtIndexMethod.classDef.getClipsViewPagerImplReEnableScrollingMethod().returnEarly()
 
         // Return false in onInterceptTouchEvent to disable pull-to-refresh.
         clipsSwipeRefreshLayoutOnInterceptTouchEventMethod.returnEarly(false)

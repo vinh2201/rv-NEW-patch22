@@ -87,10 +87,10 @@ val hideNavigationButtonsPatch = bytecodePatch(
             }
         }
 
-        val scratchRegister = initializeNavigationButtonsListMethod.p0Register
+        val scratchRegister = initializeNavigationButtonsListMethod.method.p0Register
         val scratchRegister2 = scratchRegister + 1
 
-        initializeNavigationButtonsListMethod.cloneMutableAndPreserveParameters().apply {
+        initializeNavigationButtonsListMethod.method.cloneMutableAndPreserveParameters().apply {
             val returnIndex = indexOfFirstInstructionOrThrow(Opcode.RETURN_OBJECT)
             val buttonsListRegister = getInstruction<OneRegisterInstruction>(returnIndex).registerA
 
