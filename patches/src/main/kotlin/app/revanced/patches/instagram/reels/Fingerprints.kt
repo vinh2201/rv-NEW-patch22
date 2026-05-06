@@ -27,13 +27,13 @@ internal val BytecodePatchContext.clipsSwipeDirectionControllerInterceptMethod b
 internal val BytecodePatchContext.clipsSwipeDirectionControllerResetMethod by gettingFirstMethodDeclaratively {
     parameterTypes("Z")
     returnType("V")
-    instructions(method { toString() == "Landroidx/viewpager2/widget/ViewPager2;->setUserInputEnabled(Z)V" })
+    instructions(method("setUserInputEnabled"))
 }
 
 context(_: BytecodePatchContext)
 internal fun ClassDef.getClipsViewPagerImplReEnableScrollingMethod() = firstMethodDeclaratively {
     parameterTypes()
     returnType("V")
-    instructions(method { toString() == "Landroidx/viewpager2/widget/ViewPager2;->setUserInputEnabled(Z)V" })
+    instructions(method("setUserInputEnabled"))
     literal { 1L }
 }
