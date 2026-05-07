@@ -8,6 +8,8 @@ import app.revanced.util.indexOfFirstLiteralInstructionOrThrow
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 
+private const val SECTIONAL_ITEMS_KEY = 3151L
+
 @Suppress("unused")
 val hideExploreFeedPatch = bytecodePatch(
     name = "Hide explore feed",
@@ -18,9 +20,9 @@ val hideExploreFeedPatch = bytecodePatch(
 
     apply {
         exploreResponseJsonParserMethodMatch.method.apply {
-            val obfuscatedExploreFeedKeyLiteralIndex = indexOfFirstLiteralInstructionOrThrow(3151)
+            val sectionalItemsKeyIndex = indexOfFirstLiteralInstructionOrThrow(SECTIONAL_ITEMS_KEY)
             val targetStringIndex = indexOfFirstInstructionOrThrow(
-                obfuscatedExploreFeedKeyLiteralIndex + 1,
+                sectionalItemsKeyIndex + 1,
                 Opcode.MOVE_RESULT_OBJECT,
             )
             val targetStringRegister = getInstruction<OneRegisterInstruction>(targetStringIndex).registerA
