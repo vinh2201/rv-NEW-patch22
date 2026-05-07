@@ -23,7 +23,7 @@ private const val EXTENSION_CLASS_DESCRIPTOR =
 
 @Suppress("unused")
 val dimShortsButtonsPatch = bytecodePatch(
-    name = "Dim Shorts player buttons",
+    name = "Dim Shorts buttons",
     description = "Adds an option to reduce the brightness of the Shorts player overlay to prevent OLED burn-in.",
 ) {
     dependsOn(

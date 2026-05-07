@@ -18,7 +18,6 @@ import app.revanced.extension.youtube.shared.ShortsPlayerState;
 @SuppressWarnings("unused")
 public class DimShortsButtonsPatch {
 
-    // Cached resource ID for the Shorts time bar — a top-level window overlay containing the SeekBar.
     private static int reelTimeBarId = 0;
 
     /**
@@ -42,6 +41,11 @@ public class DimShortsButtonsPatch {
 
                 window = getWindow(target);
 
+                if (reelTimeBarId == 0) {
+                    reelTimeBarId = v.getContext().getResources()
+                            .getIdentifier("reel_time_bar", "id", v.getContext().getPackageName());
+                }
+
                 preDrawListener = () -> {
                     int opacity = Settings.SHORTS_BUTTONS_OPACITY.get();
                     if (opacity < 0 || opacity > 100) opacity = 100;
@@ -52,17 +56,11 @@ public class DimShortsButtonsPatch {
 
                     // reel_time_bar is added dynamically to the window; poll until found then
                     // attach a dedicated dim listener so it dims with the rest of the overlay.
-                    if (!reelTimeBarListenerAdded && window != null) {
-                        if (reelTimeBarId == 0) {
-                            reelTimeBarId = v.getContext().getResources()
-                                    .getIdentifier("reel_time_bar", "id", v.getContext().getPackageName());
-                        }
-                        if (reelTimeBarId != 0) {
-                            View rtb = window.getDecorView().findViewById(reelTimeBarId);
-                            if (rtb != null) {
-                                addShortsAwareDimListener(rtb);
-                                reelTimeBarListenerAdded = true;
-                            }
+                    if (!reelTimeBarListenerAdded && window != null && reelTimeBarId != 0) {
+                        View rtb = window.getDecorView().findViewById(reelTimeBarId);
+                        if (rtb != null) {
+                            addShortsAwareDimListener(rtb);
+                            reelTimeBarListenerAdded = true;
                         }
                     }
 
