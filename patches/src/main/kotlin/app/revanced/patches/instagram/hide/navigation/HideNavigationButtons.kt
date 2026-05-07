@@ -87,17 +87,19 @@ val hideNavigationButtonsPatch = bytecodePatch(
         }
 
         val initializeNavigationButtonsListMethod = initializeNavigationButtonsListMethod()
-        val scratchRegister = initializeNavigationButtonsListMethod.p0Register
-        val scratchRegister2 = scratchRegister + 1
+        // cloneMutableAndPreserveParameters() moves the live pX values, so the original p0/p1
+        // slots can be reused for the injected string arguments here.
+        val buttonNameRegister = initializeNavigationButtonsListMethod.p0Register
+        val enumFieldNameRegister = buttonNameRegister + 1
 
         initializeNavigationButtonsListMethod.cloneMutableAndPreserveParameters().apply {
             val returnIndex = indexOfFirstInstructionOrThrow(Opcode.RETURN_OBJECT)
             val buttonsListRegister = getInstruction<OneRegisterInstruction>(returnIndex).registerA
 
             fun instructionsRemoveButtonByName(buttonEnumName: String): String = """
-                    const-string v$scratchRegister, "$buttonEnumName"
-                    const-string v$scratchRegister2, "$enumNameField"
-                    invoke-static { v$buttonsListRegister, v$scratchRegister, v$scratchRegister2 }, $EXTENSION_CLASS_DESCRIPTOR->removeNavigationButtonByName(Ljava/util/List;Ljava/lang/String;Ljava/lang/String;)Ljava/util/List;
+                    const-string v$buttonNameRegister, "$buttonEnumName"
+                    const-string v$enumFieldNameRegister, "$enumNameField"
+                    invoke-static { v$buttonsListRegister, v$buttonNameRegister, v$enumFieldNameRegister }, $EXTENSION_CLASS_DESCRIPTOR->removeNavigationButtonByName(Ljava/util/List;Ljava/lang/String;Ljava/lang/String;)Ljava/util/List;
                     move-result-object v$buttonsListRegister
                 """
 
