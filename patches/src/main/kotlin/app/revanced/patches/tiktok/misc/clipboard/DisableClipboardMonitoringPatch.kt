@@ -1,7 +1,7 @@
 package app.revanced.patches.tiktok.misc.clipboard
 
-import app.revanced.patcher.extensions.addInstructions
 import app.revanced.patcher.patch.bytecodePatch
+import app.revanced.util.returnEarly
 
 @Suppress("unused")
 val disableClipboardMonitoringPatch = bytecodePatch(
@@ -15,25 +15,7 @@ val disableClipboardMonitoringPatch = bytecodePatch(
     )
 
     apply {
-        // getText() -> return null
-        // TikTok's wrapper reads clipboard via getPrimaryClip().
-        // Returning null means no data is ever read.
-        clipboardGetTextMethod.addInstructions(
-            0,
-            """
-                const/4 v0, 0x0
-                return-object v0
-            """,
-        )
-
-        // hasText() -> return false
-        // Makes the clipboard appear empty so TikTok never attempts to read it.
-        clipboardHasTextMethod.addInstructions(
-            0,
-            """
-                const/4 v0, 0x0
-                return v0
-            """,
-        )
+        clipboardGetTextMethod.returnEarly()
+        clipboardHasTextMethod.returnEarly()
     }
 }
