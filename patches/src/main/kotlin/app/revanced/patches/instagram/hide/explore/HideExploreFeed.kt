@@ -14,9 +14,9 @@ val hideExploreFeedPatch = bytecodePatch(
     compatibleWith("com.instagram.android")
 
     apply {
-        exploreResponseJsonParserMethodMatch.method.apply {
-            // indices[1] is the MOVE_RESULT_OBJECT matched after the sectional_items key literal.
-            val moveResultIndex = exploreResponseJsonParserMethodMatch.indices[1].single()
+        val match = exploreResponseJsonParserMethodMatch
+        exploreResponseJsonParserMethod.apply {
+            val moveResultIndex = match[2]
             val targetStringRegister = getInstruction<OneRegisterInstruction>(moveResultIndex).registerA
 
             replaceInstruction(moveResultIndex, "const-string v$targetStringRegister, \"BOGUS\"")
