@@ -1,7 +1,6 @@
 package app.revanced.patches.instagram.hide.explore
 
 import app.revanced.patcher.after
-import app.revanced.patcher.afterAtMost
 import app.revanced.patcher.allOf
 import app.revanced.patcher.composingFirstMethod
 import app.revanced.patcher.gettingFirstMethodDeclaratively
@@ -24,7 +23,7 @@ internal val BytecodePatchContext.exploreResponseJsonParserMethodMatch by compos
     name("unsafeParseFromJson")
     instructions(
         "clusters"(),
-        afterAtMost(60, allOf(Opcode.INVOKE_STATIC(), method { returnType == "Ljava/lang/String;" })),
+        allOf(Opcode.INVOKE_STATIC(), method { returnType == "Ljava/lang/String;" }),
         after(Opcode.MOVE_RESULT_OBJECT()),
         "next_max_id"(),
         "interests"(),
