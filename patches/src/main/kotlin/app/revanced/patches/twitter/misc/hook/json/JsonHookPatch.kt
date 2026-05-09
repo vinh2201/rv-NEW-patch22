@@ -24,7 +24,7 @@ fun BytecodePatchContext.addJsonHook(
     val insertIndex = jsonHookPatchMethodMatch[-1]
 
     jsonHookPatchMethodMatch.method.addInstructions(
-        insertIndex,
+        insertIndex + 1,
         """
             sget-object v1, ${jsonHook.descriptor}->INSTANCE:${jsonHook.descriptor}
             invoke-interface {v0, v1}, Ljava/util/List;->add(Ljava/lang/Object;)Z
@@ -68,7 +68,7 @@ val jsonHookPatch = bytecodePatch(
 
     afterDependents {
         // Remove hooks.add(dummyHook).
-        val addDummyHookIndex = jsonHookPatchMethodMatch[-1]
+        val addDummyHookIndex = jsonHookPatchMethodMatch[0]
 
         jsonHookPatchMethodMatch.method.removeInstructions(addDummyHookIndex, 2)
     }

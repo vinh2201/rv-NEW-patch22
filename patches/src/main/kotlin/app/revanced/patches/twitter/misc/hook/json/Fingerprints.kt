@@ -11,9 +11,9 @@ internal val BytecodePatchContext.jsonHookPatchMethodMatch by ReadOnlyProperty {
     context.firstImmutableClassDef(JSON_HOOK_PATCH_CLASS_DESCRIPTOR).firstMethodComposite {
         name("<clinit>")
         opcodes(
-            Opcode.INVOKE_INTERFACE, // Add dummy hook to hooks list.
+            Opcode.SGET_OBJECT, // DummyHook
             // Add hooks to the hooks list.
-            Opcode.INVOKE_STATIC, // Call buildList.
+            Opcode.INVOKE_INTERFACE, // add
         )
     }
 }
