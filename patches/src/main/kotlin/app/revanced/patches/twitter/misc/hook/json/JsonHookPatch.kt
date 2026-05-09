@@ -7,8 +7,6 @@ import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patcher.patch.PatchException
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patches.twitter.misc.extension.sharedExtensionPatch
-import app.revanced.util.indexOfFirstInstructionReversed
-import com.android.tools.smali.dexlib2.Opcode
 import java.io.InvalidClassException
 
 /**
@@ -23,9 +21,7 @@ fun BytecodePatchContext.addJsonHook(
     if (jsonHook.added) return
 
     // Insert hooks right before calling buildList.
-    val insertIndex = jsonHookPatchMethodMatch.method.indexOfFirstInstructionReversed {
-        opcode == Opcode.SPUT_OBJECT
-    }
+    val insertIndex = jsonHookPatchMethodMatch[-1]
 
     jsonHookPatchMethodMatch.method.addInstructions(
         insertIndex,
@@ -72,7 +68,7 @@ val jsonHookPatch = bytecodePatch(
 
     afterDependents {
         // Remove hooks.add(dummyHook).
-        val addDummyHookIndex = jsonHookPatchMethodMatch[0]
+        val addDummyHookIndex = jsonHookPatchMethodMatch[-1]
 
         jsonHookPatchMethodMatch.method.removeInstructions(addDummyHookIndex, 2)
     }
