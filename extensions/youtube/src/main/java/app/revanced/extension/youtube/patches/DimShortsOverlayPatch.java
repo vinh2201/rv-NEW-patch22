@@ -16,7 +16,7 @@ import app.revanced.extension.youtube.shared.NavigationBar.NavigationButton;
 import app.revanced.extension.youtube.shared.ShortsPlayerState;
 
 @SuppressWarnings("unused")
-public class DimShortsButtonsPatch {
+public class DimShortsOverlayPatch {
 
     private static int reelTimeBarId = 0;
 
@@ -47,7 +47,7 @@ public class DimShortsButtonsPatch {
                 }
 
                 preDrawListener = () -> {
-                    int opacity = Settings.SHORTS_BUTTONS_OPACITY.get();
+                    int opacity = Settings.SHORTS_OVERLAY_OPACITY.get();
                     if (opacity < 0 || opacity > 100) opacity = 100;
                     final float alpha = opacity / 100.0f;
                     if (target.getAlpha() != alpha) {
@@ -155,7 +155,7 @@ public class DimShortsButtonsPatch {
                 preDrawListener = () -> {
                     final float targetAlpha;
                     if (ShortsPlayerState.isOpen()) {
-                        int opacity = Settings.SHORTS_BUTTONS_OPACITY.get();
+                        int opacity = Settings.SHORTS_OVERLAY_OPACITY.get();
                         if (opacity < 0 || opacity > 100) opacity = 100;
                         targetAlpha = opacity / 100.0f;
                     } else {

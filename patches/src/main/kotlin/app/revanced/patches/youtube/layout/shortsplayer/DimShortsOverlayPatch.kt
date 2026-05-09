@@ -19,12 +19,12 @@ import app.revanced.patches.youtube.misc.settings.settingsPatch
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 
 private const val EXTENSION_CLASS_DESCRIPTOR =
-    "Lapp/revanced/extension/youtube/patches/DimShortsButtonsPatch;"
+    "Lapp/revanced/extension/youtube/patches/DimShortsOverlayPatch;"
 
 @Suppress("unused")
-val dimShortsButtonsPatch = bytecodePatch(
-    name = "Dim Shorts buttons",
-    description = "Adds an option to reduce the brightness of the Shorts player overlay to prevent OLED burn-in.",
+val dimShortsOverlayPatch = bytecodePatch(
+    name = "Dim Shorts overlay",
+    description = "Adds an option to reduce the brightness of the Shorts overlay to prevent OLED burn-in.",
 ) {
     dependsOn(
         settingsPatch,
@@ -46,10 +46,10 @@ val dimShortsButtonsPatch = bytecodePatch(
     )
 
     apply {
-        addResources("youtube", "layout.shortsplayer.dimShortsButtonsPatch")
+        addResources("youtube", "layout.shortsplayer.dimShortsOverlayPatch")
 
         PreferenceScreen.SHORTS.addPreferences(
-            TextPreference("revanced_shorts_buttons_opacity", inputType = InputType.NUMBER),
+            TextPreference("revanced_shorts_overlay_opacity", inputType = InputType.NUMBER),
             SwitchPreference("revanced_shorts_immersive_mode"),
         )
 
