@@ -7,14 +7,14 @@ import app.revanced.util.returnEarly
 import java.util.logging.Logger
 
 @Suppress("unused")
-val disablePairipLicenseCheckPatch = bytecodePatch(
-    name = "Disable Pairip license check",
-    description = "Disables Play Integrity API (Pairip) client-side license and VM check.",
+val disablePairIPLicenseCheckPatch = bytecodePatch(
+    name = "Disable PairIP license check",
+    description = "Disable PairIP license and VM checks.",
     use = false,
 ) {
     val disableRepeatedChecks by booleanOption(
         name = "Disable background repeated checks",
-        description = "Disables background Play Integrity re-verification to save battery and prevent crashes.",
+        description = "Disables background PairIP re-verification to save battery and prevent crashes.",
         default = true,
     )
 
@@ -27,7 +27,7 @@ val disablePairipLicenseCheckPatch = bytecodePatch(
     apply {
         val logger = Logger.getLogger(this::class.java.name)
         fun logMissing(tag: String) =
-            logger.warning("Could not find Pairip method '$tag'.")
+            logger.warning("Could not find PairIP method '$tag'.")
 
         verifyIntegrityMethod?.returnEarly()
             ?: logMissing("verifyIntegrityMethod")
