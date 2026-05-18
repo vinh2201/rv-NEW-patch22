@@ -62,7 +62,7 @@ public final class AddRouteExportPatch {
                     if (activity.isDestroyed() || activity.isFinishing()) return;
                     
                     new AlertDialog.Builder(activity)
-                        .setTitle("Share Options")
+                        .setTitle("Share options")
                         .setMessage("Do you want to export this route or use the share menu?")
                         .setPositiveButton("Export GPX", (dialog, which) -> {
                             Utils.openLink(finalUrl + "/export_gpx");
