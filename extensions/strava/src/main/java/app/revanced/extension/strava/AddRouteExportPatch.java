@@ -62,8 +62,8 @@ public final class AddRouteExportPatch {
                     if (activity.isDestroyed() || activity.isFinishing()) return;
                     
                     new AlertDialog.Builder(activity)
-                        .setTitle("Options de partage")
-                        .setMessage("Voulez-vous exporter cet itinéraire ou utiliser le menu de partage ?")
+                        .setTitle("Share Options")
+                        .setMessage("Do you want to export this route or use the share menu?")
                         .setPositiveButton("Export GPX", (dialog, which) -> {
                             Utils.openLink(finalUrl + "/export_gpx");
                             activity.finish();
@@ -72,7 +72,7 @@ public final class AddRouteExportPatch {
                             Utils.openLink(finalUrl + "/export_tcx");
                             activity.finish();
                         })
-                        .setNegativeButton("Partager", (dialog, which) -> {
+                        .setNegativeButton("Share", (dialog, which) -> {
                             // On ferme juste le popup, le menu de partage Strava est déjà affiché en dessous !
                         })
                         .show();
