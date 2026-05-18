@@ -22,11 +22,13 @@ public final class AddRouteExportPatch {
             
             String routeId = null;
             
+            // Scan all Intent extras to find the Route ID
             for (String key : extras.keySet()) {
                 Object val = extras.get(key);
                 if (val != null) {
                     String strVal = val.toString();
                     
+                    // Check if we have a "SavedRoute" or "SuggestedRoute" object
                     if (val.getClass().getName().contains("SavedRoute")) {
                         try {
                             for (java.lang.reflect.Field field : val.getClass().getDeclaredFields()) {
@@ -44,6 +46,7 @@ public final class AddRouteExportPatch {
                     
                     if (routeId != null) break;
                     
+                    // Fallback: regex search in the text content
                     Matcher m = Pattern.compile("routes/([0-9]+)").matcher(strVal);
                     if (m.find()) {
                         routeId = m.group(1);
@@ -56,8 +59,8 @@ public final class AddRouteExportPatch {
                 final String finalRouteId = routeId;
                 final String finalUrl = "https://www.strava.com/routes/" + finalRouteId;
                 
-                // On attend 500ms pour laisser le BottomSheet de Strava s'ouvrir,
-                // puis on affiche notre popup PAR-DESSUS !
+                // Wait 500ms to allow Strava's BottomSheet to open,
+                // then display our popup ON TOP of it!
                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
                     if (activity.isDestroyed() || activity.isFinishing()) return;
                     
@@ -73,13 +76,13 @@ public final class AddRouteExportPatch {
                             activity.finish();
                         })
                         .setNegativeButton("Share", (dialog, which) -> {
-                            // On ferme juste le popup, le menu de partage Strava est déjà affiché en dessous !
+                            // Just close the popup, Strava's share menu is already displayed underneath!
                         })
                         .show();
                 }, 500);
             }
         } catch (Exception e) {
-            // Ignorer les erreurs silencieusement pour éviter les crashs sur d'autres types de partages
+            // Silently ignore errors to avoid crashes on other types of shares
         }
     }
 }
