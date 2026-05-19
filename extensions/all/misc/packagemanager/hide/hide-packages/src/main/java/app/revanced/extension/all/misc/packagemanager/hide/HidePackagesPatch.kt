@@ -356,6 +356,8 @@ object HidePackagesPatch {
         @Suppress("UNCHECKED_CAST")
         val list = try {
             installedPackagesAsUserMethod?.invoke(pm, flags, userId) as? MutableList<PackageInfo>
+        } catch (e: InvocationTargetException) {
+            throw e.cause ?: e
         } catch (_: Exception) { null } ?: return ArrayList(0)
         return list.stripByPackage()
     }
@@ -365,6 +367,8 @@ object HidePackagesPatch {
         @Suppress("UNCHECKED_CAST")
         val list = try {
             installedApplicationsAsUserMethod?.invoke(pm, flags, userId) as? MutableList<ApplicationInfo>
+        } catch (e: InvocationTargetException) {
+            throw e.cause ?: e
         } catch (_: Exception) { null } ?: return ArrayList(0)
         return list.stripByApplication()
     }
