@@ -67,10 +67,10 @@ val jsonHookPatch = bytecodePatch(
     }
 
     afterDependents {
-        // Remove hooks.add(dummyHook).
-        val addDummyHookIndex = jsonHookPatchMethodMatch[0]
+        val getDummyHookIndex = jsonHookPatchMethodMatch[0]
 
-        jsonHookPatchMethodMatch.method.removeInstructions(addDummyHookIndex, 2)
+        // Remove 2 instructions that add DummyHook.
+        jsonHookPatchMethodMatch.method.removeInstructions(getDummyHookIndex, 2)
     }
 }
 

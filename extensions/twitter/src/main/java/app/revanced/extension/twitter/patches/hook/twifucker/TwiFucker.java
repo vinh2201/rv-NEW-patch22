@@ -231,7 +231,7 @@ public final class TwiFucker {
                         .orElse(false);
     }
 
-    public void entriesRemoveWhoToFollow(@NotNull JSONArray jsonArray) {
+    private void entriesRemoveWhoToFollow(@NotNull JSONArray jsonArray) {
         List<Integer> entryRemoveIndex = new ArrayList<>();
         TwiFuckerUtils.INSTANCE.forEachIndexed(jsonArray, (entryIndex, entry) -> {
             if (!entryIsWhoToFollow(entry)) return;

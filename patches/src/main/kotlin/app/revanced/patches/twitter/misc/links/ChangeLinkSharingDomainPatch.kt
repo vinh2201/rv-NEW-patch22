@@ -74,8 +74,6 @@ val changeLinkSharingDomainPatch = bytecodePatch(
 
     compatibleWith(
         "com.twitter.android"(
-            "10.60.0-release.0",
-            "10.86.0-release.0",
             "11.80.0-release.0",
         ),
     )
@@ -113,20 +111,14 @@ val changeLinkSharingDomainPatch = bytecodePatch(
             )
         }
 
-        // For above 11.xx.xx
-        // Dunno specific version that starts to use this.
-        try {
-            // Formats share link such as sharing by dm.
-            linkInternalShareSheetMethod.apply {
-                val strIndex = indexOfFirstInstructionOrThrow {
-                    stringReference?.string == "https://x.com/i/status/"
-                }
+        // Formats share link such as sharing through XChat.
+        linkInternalShareSheetMethodMatch.let {
+            it.method.apply {
+                val statusStringIndex = it[-2]
 
-                val strRegister = getInstruction<OneRegisterInstruction>(strIndex).registerA
+                val statusStringRegister = getInstruction<OneRegisterInstruction>(statusStringIndex).registerA
 
-                val contextualPostIndex = indexOfFirstInstructionOrThrow {
-                    fieldReference?.type == "Lcom/x/models/ContextualPost;"
-                }
+                val contextualPostIndex = it[-1]
 
                 val contextualPostRegister = getInstruction<TwoRegisterInstruction>(contextualPostIndex).registerA
 
@@ -134,31 +126,29 @@ val changeLinkSharingDomainPatch = bytecodePatch(
                     contextualPostIndex + 1,
                     """
                     invoke-static { v$contextualPostRegister }, $EXTENSION_CLASS_DESCRIPTOR->formatInternalShareSheetLink(Ljava/lang/Object;)Ljava/lang/String;
-                    move-result-object v$strRegister
+                    move-result-object v$statusStringRegister
                 """
                 )
             }
+        }
 
-            // Formats share link such as "Copy link" or "Share via..." etc.
-            linkExternalShareSheetMethod.apply {
-                val rootContextualPostIndex = indexOfFirstInstructionOrThrow {
-                    opcode == Opcode.IF_EQZ
-                }
+        // Formats share link such as "Copy link" or "Share via..." etc.
+        linkExternalShareSheetMethodMatch.let {
+            it.method.apply {
+                val rootContextualPostIndex = it[0]
                 val rootContextualPostRegister = getInstruction<OneRegisterInstruction>(rootContextualPostIndex).registerA
 
-                val strIndex = indexOfFirstInstructionOrThrow {
-                    stringReference?.string == "https://x.com/i/status/"
-                }
-                val strRegister = getInstruction<OneRegisterInstruction>(strIndex).registerA
+                val statusStringIndex = it[-1]
+                val statusStringRegister = getInstruction<OneRegisterInstruction>(statusStringIndex).registerA
 
                 addInstructions(
-                    strIndex + 1,
+                    statusStringIndex + 1,
                     """
                     invoke-static { v$rootContextualPostRegister }, $EXTENSION_CLASS_DESCRIPTOR->formatExternalShareSheetLink(Ljava/lang/Object;)Ljava/lang/String;
-                    move-result-object v$strRegister
+                    move-result-object v$statusStringRegister
                     """
                 )
             }
-        } catch (e: Exception) { }
+        }
     }
 }

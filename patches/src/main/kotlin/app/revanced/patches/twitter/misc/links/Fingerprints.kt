@@ -3,6 +3,7 @@ package app.revanced.patches.twitter.misc.links
 import app.revanced.patcher.*
 import app.revanced.patcher.patch.BytecodePatchContext
 import com.android.tools.smali.dexlib2.AccessFlags
+import com.android.tools.smali.dexlib2.Opcode
 
 internal val BytecodePatchContext.sanitizeSharingLinksMethod by gettingFirstMethod(
     "<this>",
@@ -30,17 +31,19 @@ internal val BytecodePatchContext.linkSharingDomainHelperMethod by gettingFirstM
     definingClass(EXTENSION_CLASS_DESCRIPTOR)
 }
 
-internal val BytecodePatchContext.linkInternalShareSheetMethod by gettingFirstMethodDeclaratively {
-    strings(
-        "tweet-",
-        "https://x.com/i/status/"
+internal val BytecodePatchContext.linkInternalShareSheetMethodMatch by composingFirstMethod {
+    instructions(
+        "tweet-"(),
+        "https://x.com/i/status/"(),
+        reference("Lcom/x/models/ContextualPost;", String::contains)
     )
 }
 
-internal val BytecodePatchContext.linkExternalShareSheetMethod by gettingFirstMethodDeclaratively {
-    strings(
-        "https://x.com/i/status/",
-        "https://x.com/i/trending/",
-        "https://x.com/i/lists/",
+internal val BytecodePatchContext.linkExternalShareSheetMethodMatch by composingFirstMethod {
+    instructions(
+        Opcode.IF_EQZ(),
+        "https://x.com/i/lists/"(),
+        "https://x.com/i/trending/"(),
+        "https://x.com/i/status/"(),
     )
 }
