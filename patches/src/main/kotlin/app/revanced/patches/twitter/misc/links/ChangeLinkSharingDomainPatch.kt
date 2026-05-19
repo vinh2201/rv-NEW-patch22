@@ -1,10 +1,8 @@
 package app.revanced.patches.twitter.misc.links
 
 import app.revanced.patcher.extensions.addInstructions
-import app.revanced.patcher.extensions.fieldReference
 import app.revanced.patcher.extensions.getInstruction
 import app.revanced.patcher.extensions.replaceInstruction
-import app.revanced.patcher.extensions.stringReference
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patcher.patch.stringOption
 import app.revanced.patches.twitter.misc.extension.sharedExtensionPatch
@@ -115,11 +113,9 @@ val changeLinkSharingDomainPatch = bytecodePatch(
         linkInternalShareSheetMethodMatch.let {
             it.method.apply {
                 val statusStringIndex = it[-2]
-
                 val statusStringRegister = getInstruction<OneRegisterInstruction>(statusStringIndex).registerA
 
                 val contextualPostIndex = it[-1]
-
                 val contextualPostRegister = getInstruction<TwoRegisterInstruction>(contextualPostIndex).registerA
 
                 addInstructions(
