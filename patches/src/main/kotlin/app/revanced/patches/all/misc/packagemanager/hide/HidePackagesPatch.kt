@@ -2,6 +2,7 @@ package app.revanced.patches.all.misc.packagemanager.hide
 
 import app.revanced.com.android.tools.smali.dexlib2.iface.value.MutableStringEncodedValue
 import app.revanced.patcher.firstClassDef
+import app.revanced.patcher.patch.PatchException
 import app.revanced.patcher.patch.booleanOption
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patcher.patch.stringsOption
@@ -181,6 +182,8 @@ val hidePackagesPatch = bytecodePatch(
             .filter { it.isNotEmpty() }
             .toSet()
             .joinToString(separator = "\n")
+
+        if (csv.isEmpty()) throw PatchException("No packages to hide")
 
         firstClassDef { type == EXTENSION_CLASS_DESCRIPTOR }.apply {
             staticFields.first { it.name == HIDDEN_PACKAGES_FIELD_NAME }.initialValue =
