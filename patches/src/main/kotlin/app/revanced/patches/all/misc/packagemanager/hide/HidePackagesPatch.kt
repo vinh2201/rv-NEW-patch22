@@ -18,6 +18,11 @@ private const val EXTENSION_CLASS_DESCRIPTOR = "$EXTENSION_CLASS_DESCRIPTOR_PREF
 
 private const val HIDDEN_PACKAGES_FIELD_NAME = "HIDDEN_PACKAGES_CSV"
 
+private val PACKAGE_NAME_REGEX = Regex("^[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z][a-zA-Z0-9_]*)+$")
+
+private fun List<String?>?.validatePackageNames(): Boolean =
+    this == null || all { it.isNullOrBlank() || PACKAGE_NAME_REGEX.matches(it.trim()) }
+
 @Suppress("unused")
 val hidePackagesPatch = bytecodePatch(
     name = "Hide packages",
@@ -31,6 +36,7 @@ val hidePackagesPatch = bytecodePatch(
         description = "List of package names to hide from the patched app.",
         default = emptyList(),
         required = true,
+        validator = { it.validatePackageNames() },
     )
 
     val includeUnsafePackages by booleanOption(
@@ -71,6 +77,7 @@ val hidePackagesPatch = bytecodePatch(
             "com.saurik.substrate",  // Cydia Substrate
         ),
         required = false,
+        validator = { it.validatePackageNames() },
     )
 
     val shizukuPackages by stringsOption(
@@ -82,6 +89,7 @@ val hidePackagesPatch = bytecodePatch(
             "rikka.sui",  // Sui
         ),
         required = false,
+        validator = { it.validatePackageNames() },
     )
 
     val xposedPackages by stringsOption(
@@ -98,6 +106,7 @@ val hidePackagesPatch = bytecodePatch(
             "com.solohsu.android.edxp.manager",  // Solohsu's EdXposed Manager
         ),
         required = false,
+        validator = { it.validatePackageNames() },
     )
 
     val moduleManagerPackages by stringsOption(
@@ -109,6 +118,7 @@ val hidePackagesPatch = bytecodePatch(
             "io.github.sanmer.mrepo",  // MRepo
         ),
         required = false,
+        validator = { it.validatePackageNames() },
     )
 
     val rootCheckerPackages by stringsOption(
@@ -130,6 +140,7 @@ val hidePackagesPatch = bytecodePatch(
             "com.formyhm.hideapkinstall",  // Hide APK Install
         ),
         required = false,
+        validator = { it.validatePackageNames() },
     )
 
     val playIntegrityPackages by stringsOption(
@@ -147,6 +158,7 @@ val hidePackagesPatch = bytecodePatch(
             "com.draco.hidemyapps",  // Hide MyApps
         ),
         required = false,
+        validator = { it.validatePackageNames() },
     )
 
     dependsOn(
