@@ -68,6 +68,7 @@ val hidePackagesPatch = bytecodePatch(
             "com.qihoo.permmgr",  // 360 Root
             "com.shuame.rootgenius",  // Root Genius
             "com.baidusu.superuser",  // Baidu SuperUser
+            "com.saurik.substrate",  // Cydia Substrate
         ),
         required = false,
     )
@@ -78,6 +79,7 @@ val hidePackagesPatch = bytecodePatch(
             "moe.shizuku.privileged.api",  // Shizuku
             "com.rosan.dhizuku",  // Dhizuku
             "af.shizuku.manager",  // ShizukuPlus
+            "rikka.sui",  // Sui
         ),
         required = false,
     )
@@ -93,6 +95,7 @@ val hidePackagesPatch = bytecodePatch(
             "org.meowcat.edxposed.manager",  // EdXposed Manager
             "me.weishu.exp",  // TaiChi
             "top.canyie.dreamland.manager",  // Dreamland
+            "com.solohsu.android.edxp.manager",  // Solohsu's EdXposed Manager
         ),
         required = false,
     )
@@ -103,6 +106,7 @@ val hidePackagesPatch = bytecodePatch(
             "com.fox2code.mmm",  // Androidacy Module Manager
             "com.fox2code.mmm.fdroid",
             "com.dergoogler.mmrl",  // Magisk Module Repo Loader
+            "io.github.sanmer.mrepo",  // MRepo
         ),
         required = false,
     )
@@ -122,6 +126,8 @@ val hidePackagesPatch = bytecodePatch(
             "com.kimchangyoun.rootbeerFresh.sample",  // RootBeer Fresh Sample
             "com.devadvance.rootcloak",  // RootCloak
             "com.devadvance.rootcloakplus",  // RootCloak Plus
+            "com.amphoras.hidemyroot",  // HideRoot
+            "com.formyhm.hideapkinstall",  // Hide APK Install
         ),
         required = false,
     )
@@ -132,6 +138,7 @@ val hidePackagesPatch = bytecodePatch(
             "io.github.chiteroman.playintegrityfix",  // PlayIntegrityFix
             "io.github.osipxd.playintegrityfix",
             "app.zygisk.inject",  // ZygiskNext
+            "io.github.vvb2060.keyattestation",  // KeyAttestation
             "io.github.vvb2060.zygisk",  // Zygisk
             "com.tsng.hidemyapplist",  // Hide My Applist / HMA
             "io.github.xiaotong6666.keydetector",  // KeyDetector
