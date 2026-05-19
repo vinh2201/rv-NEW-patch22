@@ -70,6 +70,7 @@ object HidePackagesPatch {
     }
 
     @JvmStatic
+    @RequiresApi(Build.VERSION_CODES.N)
     @Throws(NameNotFoundException::class)
     fun getPackageUid(pm: PackageManager, packageName: String?, flags: Int): Int {
         if (isHidden(packageName)) throw NameNotFoundException(packageName)
@@ -408,7 +409,7 @@ object HidePackagesPatch {
         if (hidden.isEmpty()) return list
         val it = list.iterator()
         while (it.hasNext()) {
-            val name = it.next()?.packageName
+            val name = it.next().packageName
             if (name != null && name in hidden) it.remove()
         }
         return list
