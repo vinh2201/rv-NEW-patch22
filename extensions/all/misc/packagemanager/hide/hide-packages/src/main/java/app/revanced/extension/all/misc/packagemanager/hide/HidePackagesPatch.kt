@@ -231,8 +231,10 @@ object HidePackagesPatch {
     ): ResolveInfo? = pm.resolveService(intent, flags).scrubResolveInfo()
 
     @JvmStatic
-    fun resolveContentProvider(pm: PackageManager, authority: String?, flags: Int): ProviderInfo? =
-        pm.resolveContentProvider(authority!!, flags).scrubProviderInfo()
+    fun resolveContentProvider(pm: PackageManager, authority: String?, flags: Int): ProviderInfo? {
+        if (authority == null) return null
+        return pm.resolveContentProvider(authority, flags).scrubProviderInfo()
+    }
 
     @JvmStatic
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -240,7 +242,10 @@ object HidePackagesPatch {
         pm: PackageManager,
         authority: String?,
         flags: PackageManager.ComponentInfoFlags,
-    ): ProviderInfo? = pm.resolveContentProvider(authority!!, flags).scrubProviderInfo()
+    ): ProviderInfo? {
+        if (authority == null) return null
+        return pm.resolveContentProvider(authority, flags).scrubProviderInfo()
+    }
 
     @JvmStatic
     fun getLaunchIntentForPackage(pm: PackageManager, packageName: String?): Intent? {
