@@ -187,7 +187,7 @@ val hidePackagesPatch = bytecodePatch(
             .plus(presetPackages)
             .map { it.trim() }
             .filter { it.isNotEmpty() }
-            .toSet()
+            .toSortedSet()
             .joinToString(separator = "\n")
 
         if (csv.isEmpty()) throw PatchException("No packages to hide")

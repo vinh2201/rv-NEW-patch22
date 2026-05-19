@@ -90,6 +90,7 @@ object HidePackagesPatch {
     }
 
     @JvmStatic
+    @RequiresApi(Build.VERSION_CODES.N)
     @Throws(NameNotFoundException::class)
     fun getPackageGids(pm: PackageManager, packageName: String?, flags: Int): IntArray {
         if (isHidden(packageName)) throw NameNotFoundException(packageName)
