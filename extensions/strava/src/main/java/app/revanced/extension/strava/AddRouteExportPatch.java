@@ -76,13 +76,13 @@ public final class AddRouteExportPatch {
                             activity.finish();
                         })
                         .setNegativeButton("Share", (dialog, which) -> {
-                            // Just close the popup, Strava's share menu is already displayed underneath!
+                            // Close the popup, Strava's share menu is already displayed underneath.
                         })
                         .show();
                 }, 500);
             }
         } catch (Exception e) {
-            // Silently ignore errors to avoid crashes on other types of shares
+            // Silently ignore errors to avoid crashes on other types of shares.
         }
     }
 }

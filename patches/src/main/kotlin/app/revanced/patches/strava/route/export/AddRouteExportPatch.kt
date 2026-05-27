@@ -13,18 +13,14 @@ val addRouteExportPatch = bytecodePatch(
 ) {
     compatibleWith("com.strava")
 
-    dependsOn(
-        sharedExtensionPatch,
-    )
+    dependsOn(sharedExtensionPatch)
 
     apply {
-        // Intercept onCreate to display our Dialog on top!
+        // Intercept onCreate to display the export dialog over.
         shareSheetActivityOnCreateMethod.apply {
             addInstructions(
                 0,
-                """
-                    invoke-static {p0}, $ROUTE_EXPORT_CLASS_DESCRIPTOR->showExportDialog(Landroid/app/Activity;)V
-                """
+                "invoke-static {p0}, $ROUTE_EXPORT_CLASS_DESCRIPTOR->showExportDialog(Landroid/app/Activity;)V"
             )
         }
     }
