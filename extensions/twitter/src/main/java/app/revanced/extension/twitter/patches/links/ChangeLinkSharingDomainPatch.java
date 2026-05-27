@@ -42,9 +42,9 @@ public final class ChangeLinkSharingDomainPatch {
             if (contextualPost == null) {
                 return "https://x.com/i/status/";
             }
-            Object canonicalPost = ReflectHelper.invoke(contextualPost, "getCanonicalPost");
-            Object userResult = ReflectHelper.invoke(canonicalPost, "getAuthor");
-            String username = (String) ReflectHelper.invoke(userResult, "getScreenName");
+            Object canonicalPost = ReflectionHelper.invoke(contextualPost, "getCanonicalPost");
+            Object userResult = ReflectionHelper.invoke(canonicalPost, "getAuthor");
+            String username = (String) ReflectionHelper.invoke(userResult, "getScreenName");
 
             if (username == null || username.isEmpty()) username = "i";
 
@@ -61,7 +61,7 @@ public final class ChangeLinkSharingDomainPatch {
      * @return A formatted link if successful; Unmodified otherwise.
      */
     public static String formatExternalShareSheetLink(Object object) {
-        Object contextualPost = ReflectHelper.getFieldValueByType(object, "ContextualPost");
+        Object contextualPost = ReflectionHelper.getFieldValueByType(object, "ContextualPost");
 
         return formatInternalShareSheetLink(contextualPost);
     }
@@ -70,7 +70,7 @@ public final class ChangeLinkSharingDomainPatch {
      * Simplifies Reflection API usage by locating and invoking members based on their types.
      * Internally handles accessibility and reduces boilerplate code.
      */
-    public static class ReflectHelper {
+    public static class ReflectionHelper {
         /**
          * Invokes a method by name, searching the entire class hierarchy including interfaces.
          *
