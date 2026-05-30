@@ -13,7 +13,7 @@ internal val BytecodePatchContext.sanitizeSharingLinksMethod by gettingFirstMeth
 
 // Returns a shareable link string based on a tweet ID and a username.
 internal val BytecodePatchContext.linkBuilderMethod by gettingFirstMethodDeclaratively {
-    instructions($$"/%1$s/status/%2$d"(String::contains))
+    strings($$"https://x.com/%1$s/status/%2$d")
 }
 
 // TODO remove this once changeLinkSharingDomainResourcePatch is restored
@@ -35,7 +35,7 @@ internal val BytecodePatchContext.linkInternalShareSheetMethodMatch by composing
     instructions(
         "tweet-"(),
         "https://x.com/i/status/"(),
-        reference("Lcom/x/models/ContextualPost;", String::contains)
+        field { type == "Lcom/x/models/ContextualPost;" }
     )
 }
 
