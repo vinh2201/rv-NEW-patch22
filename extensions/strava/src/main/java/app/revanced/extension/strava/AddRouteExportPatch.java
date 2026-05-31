@@ -22,13 +22,13 @@ public final class AddRouteExportPatch {
             
             String routeId = null;
             
-            // Scan all Intent extras to find the Route ID
+            // Scan all Intent extras to find the Route ID.
             for (String key : extras.keySet()) {
                 Object val = extras.get(key);
                 if (val != null) {
                     String strVal = val.toString();
                     
-                    // Check if we have a "SavedRoute" or "SuggestedRoute" object
+                    // Check if we have a "SavedRoute" or "SuggestedRoute" object.
                     if (val.getClass().getName().contains("SavedRoute")) {
                         try {
                             for (java.lang.reflect.Field field : val.getClass().getDeclaredFields()) {
@@ -46,7 +46,7 @@ public final class AddRouteExportPatch {
                     
                     if (routeId != null) break;
                     
-                    // Fallback: regex search in the text content
+                    // Fallback: regex search in the text content.
                     Matcher m = Pattern.compile("routes/([0-9]+)").matcher(strVal);
                     if (m.find()) {
                         routeId = m.group(1);
@@ -60,7 +60,7 @@ public final class AddRouteExportPatch {
                 final String finalUrl = "https://www.strava.com/routes/" + finalRouteId;
                 
                 // Wait 500ms to allow Strava's BottomSheet to open,
-                // then display our popup ON TOP of it!
+                // then display the popup on top of it.
                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
                     if (activity.isDestroyed() || activity.isFinishing()) return;
                     

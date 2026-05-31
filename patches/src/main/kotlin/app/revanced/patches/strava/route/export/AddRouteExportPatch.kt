@@ -17,11 +17,9 @@ val addRouteExportPatch = bytecodePatch(
 
     apply {
         // Intercept onCreate to display the export dialog over.
-        shareSheetActivityOnCreateMethod.apply {
-            addInstructions(
-                0,
-                "invoke-static {p0}, $ROUTE_EXPORT_CLASS_DESCRIPTOR->showExportDialog(Landroid/app/Activity;)V"
-            )
-        }
+        shareSheetActivityOnCreateMethod.addInstructions(
+            0,
+            "invoke-static {p0}, $ROUTE_EXPORT_CLASS_DESCRIPTOR->showExportDialog(Landroid/app/Activity;)V"
+        )
     }
 }
