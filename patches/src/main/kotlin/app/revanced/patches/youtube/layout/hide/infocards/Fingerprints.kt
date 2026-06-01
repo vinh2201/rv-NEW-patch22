@@ -2,28 +2,30 @@ package app.revanced.patches.youtube.layout.hide.infocards
 
 import app.revanced.patcher.*
 import app.revanced.patcher.patch.BytecodePatchContext
+import app.revanced.util.getting
+import app.revanced.util.using
 import app.revanced.util.literal
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.ClassDef
 
-context(_: BytecodePatchContext)
-internal fun ClassDef.getInfocardsIncognitoMethod() = firstMethodDeclaratively {
+internal val BytecodePatchContext.infoCardsIncognitoMethod by getting {
+    firstMethodDeclaratively {
     accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
     returnType("Ljava/lang/Boolean;")
     parameterTypes("L", "J")
     instructions("vibrator"())
+    }
+} using {
+    firstImmutableMethodDeclaratively {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("Ljava/lang/String;")
+        instructions(
+            "player_overlay_info_card_teaser"(),
+        )
+    }
 }
 
-internal val BytecodePatchContext.infocardsIncognitoParentMethod by gettingFirstImmutableMethodDeclaratively {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    returnType("Ljava/lang/String;")
-    instructions(
-        "player_overlay_info_card_teaser"(),
-    )
-}
-
-internal val BytecodePatchContext.infocardsMethodCallMethodMatch by
+internal val BytecodePatchContext.infoCardsMethodCallMethodMatch by
     composingFirstMethod("Missing ControlsOverlayPresenter for InfoCards to work.") {
         opcodes(
             Opcode.INVOKE_VIRTUAL,

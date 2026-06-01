@@ -29,6 +29,8 @@ val hideMusicVideoAdsPatch = bytecodePatch(
             "8.10.52",
             "8.37.56",
             "8.40.54",
+            "8.44.54",
+            "9.13.50"
         ),
     )
 
@@ -39,8 +41,8 @@ val hideMusicVideoAdsPatch = bytecodePatch(
             SwitchPreference("revanced_music_hide_video_ads"),
         )
 
-        navigate(showVideoAdsParentMethodMatch.immutableMethod)
-            .to(showVideoAdsParentMethodMatch[0] + 1)
+        navigate(showVideoAdsMethodMatch.immutableMethod)
+            .to(showVideoAdsMethodMatch[0] + 1)
             .stop()
             .addInstructions(
                 0,

@@ -54,21 +54,22 @@ import app.revanced.extension.shared.ui.Dim;
  */
 @SuppressWarnings("deprecation")
 public abstract class BaseSearchViewController {
-    protected SearchView searchView;
-    protected FrameLayout searchContainer;
-    protected FrameLayout overlayContainer;
-    protected final Toolbar toolbar;
+    protected BaseSearchResultsAdapter searchResultsAdapter;
+    protected boolean isSearchActive;
+    protected boolean isShowingSearchHistory;
     protected final Activity activity;
     protected final BasePreferenceFragment fragment;
     protected final CharSequence originalTitle;
-    protected BaseSearchResultsAdapter searchResultsAdapter;
+    protected final InputMethodManager inputMethodManager;
     protected final List<BaseSearchResultItem> allSearchItems;
     protected final List<BaseSearchResultItem> filteredSearchItems;
     protected final Map<String, BaseSearchResultItem> keyToSearchItem;
-    protected final InputMethodManager inputMethodManager;
+    protected final Toolbar toolbar;
+    protected FrameLayout overlayContainer;
+    protected FrameLayout searchContainer;
+    protected Object nativeBackCallback;
     protected SearchHistoryManager searchHistoryManager;
-    protected boolean isSearchActive;
-    protected boolean isShowingSearchHistory;
+    protected SearchView searchView;
 
     protected static final int MAX_SEARCH_RESULTS = 50; // Maximum number of search results displayed.
 
@@ -559,6 +560,11 @@ public abstract class BaseSearchViewController {
      */
     protected void openSearch() {
         isSearchActive = true;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && nativeBackCallback == null) {
+            nativeBackCallback = PredictiveBackHandler.register(activity, this::handleBackPress);
+        }
+
         toolbar.getMenu().findItem(ID_ACTION_SEARCH).setVisible(false);
         toolbar.setTitle("");
         searchContainer.setVisibility(View.VISIBLE);
@@ -578,6 +584,11 @@ public abstract class BaseSearchViewController {
     public void closeSearch() {
         isSearchActive = false;
         isShowingSearchHistory = false;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && nativeBackCallback != null) {
+            PredictiveBackHandler.unregister(activity, nativeBackCallback);
+            nativeBackCallback = null;
+        }
 
         searchHistoryManager.hideSearchHistoryContainer();
         overlayContainer.setVisibility(View.GONE);
@@ -696,9 +707,52 @@ public abstract class BaseSearchViewController {
     }
 
     /**
+     * Handles the back press logic intelligently.
+     * If the keyboard is open, it hides the keyboard. Otherwise, it closes the search.
+     *
+     * @return true if the back press was handled.
+     */
+    public boolean handleBackPress() {
+        if (!isSearchActive) return false;
+
+        boolean isKeyboardVisible = false;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            android.view.WindowInsets insets = activity.getWindow().getDecorView().getRootWindowInsets();
+            if (insets != null) {
+                isKeyboardVisible = insets.isVisible(android.view.WindowInsets.Type.ime());
+            }
+        }
+
+        if (isKeyboardVisible) {
+            inputMethodManager.hideSoftInputFromWindow(searchView.getWindowToken(), 0);
+        } else {
+            closeSearch();
+        }
+        return true;
+    }
+
+    /**
      * Return if a search is currently active.
      */
     public boolean isSearchActive() {
         return isSearchActive;
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    private static class PredictiveBackHandler {
+        static Object register(Activity activity, Runnable onBackAction) {
+            android.window.OnBackInvokedCallback callback = onBackAction::run;
+            activity.getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                    android.window.OnBackInvokedDispatcher.PRIORITY_OVERLAY,
+                    callback
+            );
+            return callback;
+        }
+
+        static void unregister(Activity activity, Object callbackObj) {
+            if (callbackObj instanceof android.window.OnBackInvokedCallback callback) {
+                activity.getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(callback);
+            }
+        }
     }
 }

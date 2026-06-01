@@ -1,15 +1,10 @@
 package app.revanced.patches.youtube.misc.litho.filter
 
-import app.revanced.patcher.*
+import app.revanced.patcher.composingFirstMethod
+import app.revanced.patcher.instructions
+import app.revanced.patcher.invoke
 import app.revanced.patcher.patch.BytecodePatchContext
-import com.android.tools.smali.dexlib2.AccessFlags
-
-internal val BytecodePatchContext.lithoComponentNameUpbFeatureFlagMethod by gettingFirstMethodDeclaratively {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    returnType("Z")
-    parameterTypes()
-    instructions(45631264L())
-}
+import app.revanced.patcher.returnType
 
 internal val BytecodePatchContext.lithoConverterBufferUpbFeatureFlagMethodMatch by composingFirstMethod {
     returnType("L")

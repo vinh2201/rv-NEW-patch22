@@ -20,7 +20,7 @@ val enableDebugMenuPatch = bytecodePatch(
         debugCategoryAllowOnReleaseBuildsMethod.returnEarly(true)
 
         // Change build config debug build flag.
-        buildConfigProviderToStringMethod.immutableClassDef.buildConfigProviderConstructorMethodMatch.let {
+        buildConfigProviderConstructorMethodMatch.let {
             val index = it[0]
 
             val register = it.method.getInstruction<OneRegisterInstruction>(index).registerA

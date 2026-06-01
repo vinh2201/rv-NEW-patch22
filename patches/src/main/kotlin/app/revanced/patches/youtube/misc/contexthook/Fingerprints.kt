@@ -1,6 +1,6 @@
 package app.revanced.patches.youtube.misc.contexthook
 
-import app.revanced.patcher.ClassDefComposing
+import app.revanced.patcher.CompositeMatch
 import app.revanced.patcher.accessFlags
 import app.revanced.patcher.after
 import app.revanced.patcher.afterAtMost
@@ -9,8 +9,12 @@ import app.revanced.patcher.composingFirstMethod
 import app.revanced.patcher.custom
 import app.revanced.patcher.extensions.methodReference
 import app.revanced.patcher.field
+import app.revanced.patcher.firstImmutableMethodDeclaratively
+import app.revanced.patcher.firstMethodComposite
+import app.revanced.patcher.firstMethodDeclaratively
 import app.revanced.patcher.gettingFirstImmutableMethodDeclaratively
 import app.revanced.patcher.gettingFirstMethodDeclaratively
+import app.revanced.patcher.immutableClassDef
 import app.revanced.patcher.instructions
 import app.revanced.patcher.invoke
 import app.revanced.patcher.method
@@ -18,11 +22,12 @@ import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patcher.returnType
 import app.revanced.util.indexOfFirstInstruction
+import app.revanced.util.getting
+import app.revanced.util.using
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
-import com.google.common.io.ByteArrayDataOutput
 
 internal const val CLIENT_INFO_CLASS_DESCRIPTOR =
     $$"Lcom/google/protos/youtube/api/innertube/InnertubeContext$ClientInfo;"
@@ -42,30 +47,32 @@ internal fun indexOfMessageLiteBuilderReference(method: Method, type: String = "
                 reference?.parameterTypes?.isEmpty() == true && reference.returnType.startsWith(type)
     }
 
-internal val BytecodePatchContext.buildClientContextBodyConstructorMethod by gettingFirstMethodDeclaratively {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
-    returnType("V")
-    instructions(
-        "Android Wear"(),
-        Opcode.IF_EQZ(),
-        after("Android Automotive"()),
-        "Android"(),
-        after(allOf(Opcode.IPUT_OBJECT(), field()))
-    )
-}
-
-internal val ClassDef.buildClientContextBodyMethodMatch by ClassDefComposing.composingFirstMethod {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    returnType("L")
-    parameterTypes()
-    instructions(
-        allOf(Opcode.SGET(), field("SDK_INT")),
-        allOf(
-            Opcode.IPUT_OBJECT(),
-            field { definingClass == CLIENT_INFO_CLASS_DESCRIPTOR && type == "Ljava/lang/String;" }
-        ),
-        Opcode.OR_INT_LIT16()
-    )
+internal val BytecodePatchContext.buildClientContextBodyMethodMatch by getting {
+    firstMethodComposite {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("L")
+        parameterTypes()
+        instructions(
+            allOf(Opcode.SGET(), field("SDK_INT")),
+            allOf(
+                Opcode.IPUT_OBJECT(),
+                field { definingClass == CLIENT_INFO_CLASS_DESCRIPTOR && type == "Ljava/lang/String;" }
+            ),
+            Opcode.OR_INT_LIT16()
+        )
+    }
+} using {
+    firstImmutableMethodDeclaratively {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
+        returnType("V")
+        instructions(
+            "Android Wear"(),
+            Opcode.IF_EQZ(),
+            after("Android Automotive"()),
+            "Android"(),
+            after(allOf(Opcode.IPUT_OBJECT(), field()))
+        )
+    }
 }
 
 internal val BytecodePatchContext.buildDummyClientContextBodyMethodMatch by composingFirstMethod {
@@ -86,25 +93,33 @@ internal val BytecodePatchContext.buildDummyClientContextBodyMethodMatch by comp
     )
 }
 
-internal val ClassDef.browseEndpointConstructorMethodMatch by ClassDefComposing.composingFirstMethod {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
-    returnType("V")
 
-    var methodDefiningClass = ""
-    custom {
-        methodDefiningClass = this.definingClass
-        true
+
+
+internal fun BytecodePatchContext.getSetClientFormFactorMethodMatch(): CompositeMatch {
+    val clientFormFactorEnumConstructorMethod = firstImmutableMethodDeclaratively(
+        "UNKNOWN_FORM_FACTOR",
+        "SMALL_FORM_FACTOR",
+        "LARGE_FORM_FACTOR",
+        "AUTOMOTIVE_FORM_FACTOR",
+        "WEARABLE_FORM_FACTOR",
+    ) {
+        accessFlags(AccessFlags.STATIC, AccessFlags.CONSTRUCTOR)
+    }.immutableClassDef.firstMethodDeclaratively {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.STATIC)
+        returnType("L")
+        parameterTypes("I")
     }
 
-    instructions(
-        ""(),
-        after(
-            allOf(
-                Opcode.IPUT_OBJECT(),
-                field { definingClass == methodDefiningClass && type == "Ljava/lang/String;" }
-            )
-        ),
-    )
+    return firstMethodComposite {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("V")
+        parameterTypes("L")
+        instructions(
+            allOf(Opcode.IGET(), field { type == "I" && definingClass == CLIENT_INFO_CLASS_DESCRIPTOR }),
+            method { this == clientFormFactorEnumConstructorMethod }
+        )
+    }
 }
 
 internal val BytecodePatchContext.browseEndpointParentMethod by gettingFirstImmutableMethodDeclaratively(
@@ -113,11 +128,39 @@ internal val BytecodePatchContext.browseEndpointParentMethod by gettingFirstImmu
     returnType("Ljava/lang/String;")
 }
 
+internal val BytecodePatchContext.getWatchEndpointConstructorPrimaryMethod by gettingFirstMethodDeclaratively(
+    "get_watch"
+) {
+    accessFlags(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
+    returnType("V")
+    custom { immutableClassDef.fields.any { it.type == "Ljava/util/function/Consumer;" } }
+}
+
+internal val BytecodePatchContext.getWatchEndpointConstructorSecondaryMethod by gettingFirstMethodDeclaratively(
+    "get_watch"
+) {
+    accessFlags(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
+    returnType("V")
+    custom { immutableClassDef.fields.none { it.type == "Ljava/util/function/Consumer;" } }
+}
+
 internal val BytecodePatchContext.guideEndpointConstructorMethod by gettingFirstImmutableMethodDeclaratively(
     "guide"
 ) {
     accessFlags(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
     returnType("V")
+}
+
+internal val BytecodePatchContext.nextEndpointParentMethod by gettingFirstImmutableMethodDeclaratively(
+    "watchNextType"
+) {
+    returnType("Ljava/lang/String;")
+}
+
+internal val BytecodePatchContext.playerEndpointParentMethod by gettingFirstImmutableMethodDeclaratively(
+    "dataExpiredForSeconds"
+) {
+    returnType("Ljava/lang/String;")
 }
 
 internal val BytecodePatchContext.reelCreateItemsEndpointConstructorMethod by gettingFirstImmutableMethodDeclaratively(

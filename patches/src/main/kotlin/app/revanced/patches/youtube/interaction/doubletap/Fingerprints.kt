@@ -17,11 +17,11 @@ internal val BytecodePatchContext.seekTypeEnumMethod by gettingFirstImmutableMet
 
 context(_: BytecodePatchContext)
 internal fun ClassDef.getDoubleTapInfoCtorMethod() = firstMethodDeclaratively {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
-    parameterTypes(
-        "Landroid/view/MotionEvent;",
-        "I",
-        "Z",
-        "Lj$/time/Duration;",
-    )
-}
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR)
+        parameterTypes(
+            "Landroid/view/MotionEvent;",
+            "I",
+            "Z",
+            "Lj$/time/Duration;",
+        )
+    }

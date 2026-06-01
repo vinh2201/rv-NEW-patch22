@@ -1,14 +1,21 @@
 package app.revanced.patches.youtube.layout.formfactor
 
-import app.revanced.patcher.*
+import app.revanced.patcher.accessFlags
 import app.revanced.patcher.extensions.addInstructions
 import app.revanced.patcher.extensions.getInstruction
+import app.revanced.patcher.field
+import app.revanced.patcher.firstMethodComposite
+import app.revanced.patcher.instructions
+import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.bytecodePatch
+import app.revanced.patcher.returnType
 import app.revanced.patches.all.misc.resources.addResources
 import app.revanced.patches.all.misc.resources.addResourcesPatch
 import app.revanced.patches.shared.misc.settings.preference.ListPreference
+import app.revanced.patches.youtube.misc.contexthook.Endpoint
+import app.revanced.patches.youtube.misc.contexthook.addClientFormFactorHook
+import app.revanced.patches.youtube.misc.contexthook.hookClientContextPatch
 import app.revanced.patches.youtube.misc.extension.sharedExtensionPatch
-import app.revanced.patches.youtube.misc.navigation.hookNavigationButtonCreated
 import app.revanced.patches.youtube.misc.navigation.navigationBarHookPatch
 import app.revanced.patches.youtube.misc.settings.PreferenceScreen
 import app.revanced.patches.youtube.misc.settings.settingsPatch
@@ -27,6 +34,7 @@ val changeFormFactorPatch = bytecodePatch(
         sharedExtensionPatch,
         settingsPatch,
         addResourcesPatch,
+        hookClientContextPatch,
         navigationBarHookPatch
     )
 
@@ -37,7 +45,8 @@ val changeFormFactorPatch = bytecodePatch(
             "20.26.46",
             "20.31.42",
             "20.37.48",
-            "20.40.45"
+            "20.40.45",
+            "20.45.36"
         ),
     )
 
@@ -47,8 +56,6 @@ val changeFormFactorPatch = bytecodePatch(
         PreferenceScreen.GENERAL.addPreferences(
             ListPreference("revanced_change_form_factor"),
         )
-
-        hookNavigationButtonCreated(EXTENSION_CLASS_DESCRIPTOR)
 
         val formFactorEnumConstructorClass = formFactorEnumConstructorMethod.definingClass
 
@@ -70,11 +77,23 @@ val changeFormFactorPatch = bytecodePatch(
                 addInstructions(
                     index + 1,
                     """
-                        invoke-static { v$register }, $EXTENSION_CLASS_DESCRIPTOR->getFormFactor(I)I
+                        invoke-static { v$register }, $EXTENSION_CLASS_DESCRIPTOR->getUniversalFormFactor(I)I
                         move-result v$register
                     """,
                 )
             }
+        }
+
+        setOf(
+            Endpoint.GET_WATCH,
+            Endpoint.NEXT,
+            Endpoint.GUIDE,
+            Endpoint.REEL,
+        ).forEach { endpoint ->
+            addClientFormFactorHook(
+                endpoint,
+                "$EXTENSION_CLASS_DESCRIPTOR->replaceBrokenFormFactor(I)I",
+            )
         }
     }
 }

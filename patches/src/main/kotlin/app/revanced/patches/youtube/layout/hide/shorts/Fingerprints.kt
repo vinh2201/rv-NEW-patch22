@@ -1,26 +1,26 @@
 package app.revanced.patches.youtube.layout.hide.shorts
 
-import app.revanced.patcher.*
+import app.revanced.patcher.accessFlags
+import app.revanced.patcher.after
+import app.revanced.patcher.composingFirstMethod
+import app.revanced.patcher.firstImmutableMethodDeclaratively
+import app.revanced.patcher.firstMethodComposite
+import app.revanced.patcher.firstMethodDeclaratively
+import app.revanced.patcher.gettingFirstImmutableMethodDeclaratively
+import app.revanced.patcher.gettingFirstMethodDeclaratively
+import app.revanced.patcher.instructions
+import app.revanced.patcher.invoke
+import app.revanced.patcher.method
+import app.revanced.patcher.opcodes
+import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.BytecodePatchContext
+import app.revanced.patcher.returnType
 import app.revanced.patches.shared.misc.mapping.ResourceType
+import app.revanced.util.getting
+import app.revanced.util.using
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
-
-internal val BytecodePatchContext.componentContextParserMethod by gettingFirstImmutableMethodDeclaratively {
-    returnType("L")
-    instructions(
-        "Failed to parse Element proto."(),
-        "Cannot read theme key from model."()
-    )
-}
-
-context(_: BytecodePatchContext)
-internal fun ClassDef.getTreeNodeResultListMethod() = firstMethodDeclaratively  {
-    accessFlags(AccessFlags.PRIVATE, AccessFlags.FINAL)
-    returnType("Ljava/util/List;")
-    instructions(allOf(Opcode.INVOKE_STATIC(), method("nCopies")))
-}
 
 internal val BytecodePatchContext.shortsBottomBarContainerMethodMatch by composingFirstMethod {
     accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
@@ -50,23 +50,6 @@ internal fun ClassDef.getRenderBottomNavigationBarMethodMatch() = firstMethodDec
         Opcode.MOVE_EXCEPTION(),
         Opcode.MONITOR_EXIT(),
         Opcode.THROW()
-    )
-}
-
-/**
- * Less than 19.41.
- */
-internal val BytecodePatchContext.legacyRenderBottomNavigationBarLegacyParentMethod by gettingFirstImmutableMethodDeclaratively {
-    parameterTypes(
-        "I",
-        "I",
-        "L",
-        "L",
-        "J",
-        "L",
-    )
-    instructions(
-        "aa"(),
     )
 }
 
@@ -105,21 +88,23 @@ internal val BytecodePatchContext.renderBottomNavigationBarParentMethod by getti
     )
 }
 
-internal val ClassDef.setPivotBarVisibilityMethodMatch by ClassDefComposing.composingFirstMethod {
-    accessFlags(AccessFlags.PRIVATE, AccessFlags.FINAL)
-    returnType("V")
-    parameterTypes("Z")
-    opcodes(
-        Opcode.CHECK_CAST,
-        Opcode.IF_EQZ,
-    )
-}
-
-internal val BytecodePatchContext.setPivotBarVisibilityParentMethod by gettingFirstImmutableMethodDeclaratively {
-    parameterTypes("Z")
-    instructions(
-        "FEnotifications_inbox"(),
-    )
+internal val BytecodePatchContext.setPivotBarVisibilityMethodMatch by getting {
+    firstMethodComposite {
+        accessFlags(AccessFlags.PRIVATE, AccessFlags.FINAL)
+        returnType("V")
+        parameterTypes("Z")
+        opcodes(
+            Opcode.CHECK_CAST,
+            Opcode.IF_EQZ,
+        )
+    }
+} using {
+    firstImmutableMethodDeclaratively {
+        parameterTypes("Z")
+        instructions(
+            "FEnotifications_inbox"(),
+        )
+    }
 }
 
 internal val BytecodePatchContext.shortsExperimentalPlayerFeatureFlagMethod by gettingFirstMethodDeclaratively {

@@ -1,21 +1,24 @@
 package app.revanced.patches.reddit.customclients.sync.syncforreddit.api
 
-import app.revanced.patcher.ClassDefComposing
 import app.revanced.patcher.composingFirstMethod
+import app.revanced.patcher.firstMethodDeclaratively
 import app.revanced.patcher.gettingFirstMethodDeclaratively
 import app.revanced.patcher.instructions
 import app.revanced.patcher.invoke
 import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patcher.string
-import com.android.tools.smali.dexlib2.iface.ClassDef
+import app.revanced.util.getting
+import app.revanced.util.using
 
 internal val BytecodePatchContext.getAuthorizationStringMethodMatch by composingFirstMethod {
     instructions(string { contains("authorize.compact?client_id") })
 }
 
-internal val ClassDef.getBearerTokenMethodMatch by ClassDefComposing.composingFirstMethod {
-    instructions(string { contains("Basic") })
-}
+internal val BytecodePatchContext.bearerTokenMethod by getting {
+    firstMethodDeclaratively {
+        instructions(string { contains("Basic") })
+    }
+} using { getAuthorizationStringMethodMatch.immutableMethod }
 
 internal val BytecodePatchContext.getRedirectUriMethod by gettingFirstMethodDeclaratively(
     "http://redditsync/auth"

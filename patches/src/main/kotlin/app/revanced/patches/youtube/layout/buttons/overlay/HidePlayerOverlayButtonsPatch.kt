@@ -1,6 +1,11 @@
 package app.revanced.patches.youtube.layout.buttons.overlay
 
-import app.revanced.patcher.extensions.*
+import app.revanced.patcher.extensions.ExternalLabel
+import app.revanced.patcher.extensions.addInstruction
+import app.revanced.patcher.extensions.addInstructions
+import app.revanced.patcher.extensions.addInstructionsWithLabels
+import app.revanced.patcher.extensions.getInstruction
+import app.revanced.patcher.extensions.methodReference
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patches.all.misc.resources.addResources
 import app.revanced.patches.all.misc.resources.addResourcesPatch
@@ -13,7 +18,11 @@ import app.revanced.patches.youtube.misc.settings.PreferenceScreen
 import app.revanced.patches.youtube.misc.settings.settingsPatch
 import app.revanced.patches.youtube.shared.getLayoutConstructorMethodMatch
 import app.revanced.patches.youtube.shared.subtitleButtonControllerMethod
-import app.revanced.util.*
+import app.revanced.util.findFreeRegister
+import app.revanced.util.getReference
+import app.revanced.util.indexOfFirstInstructionOrThrow
+import app.revanced.util.indexOfFirstResourceIdOrThrow
+import app.revanced.util.insertLiteralOverride
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
@@ -42,7 +51,8 @@ val hidePlayerOverlayButtonsPatch = bytecodePatch(
             "20.26.46",
             "20.31.42",
             "20.37.48",
-            "20.40.45"
+            "20.40.45",
+            "20.45.36"
         ),
     )
 
@@ -145,7 +155,8 @@ val hidePlayerOverlayButtonsPatch = bytecodePatch(
         titleAnchorMethodMatch.let {
             it.method.apply {
                 val titleAnchorIndex = it[-1]
-                val titleAnchorRegister = getInstruction<OneRegisterInstruction>(titleAnchorIndex).registerA
+                val titleAnchorRegister =
+                    getInstruction<OneRegisterInstruction>(titleAnchorIndex).registerA
 
                 addInstruction(
                     titleAnchorIndex + 1,
@@ -153,7 +164,8 @@ val hidePlayerOverlayButtonsPatch = bytecodePatch(
                 )
 
                 val playerCollapseButtonIndex = it[1]
-                val playerCollapseButtonRegister = getInstruction<OneRegisterInstruction>(playerCollapseButtonIndex).registerA
+                val playerCollapseButtonRegister =
+                    getInstruction<OneRegisterInstruction>(playerCollapseButtonIndex).registerA
 
                 addInstruction(
                     playerCollapseButtonIndex + 1,
@@ -172,7 +184,8 @@ val hidePlayerOverlayButtonsPatch = bytecodePatch(
                 // so match on move-result-object after findViewById instead of check-cast.
                 val moveResultIndex = it[2]
                 val insertIndex = moveResultIndex + 1
-                val insertRegister = getInstruction<OneRegisterInstruction>(moveResultIndex).registerA
+                val insertRegister =
+                    getInstruction<OneRegisterInstruction>(moveResultIndex).registerA
 
                 addInstructionsWithLabels(
                     insertIndex,

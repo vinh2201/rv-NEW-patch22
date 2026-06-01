@@ -1,5 +1,6 @@
 package app.revanced.extension.youtube.patches.litho;
 
+import app.revanced.extension.shared.ConversionContext.ContextInterface;
 import app.revanced.extension.shared.patches.litho.Filter;
 import app.revanced.extension.shared.patches.litho.FilterGroup.ByteArrayFilterGroup;
 import app.revanced.extension.shared.patches.litho.FilterGroup.StringFilterGroup;
@@ -7,14 +8,13 @@ import app.revanced.extension.shared.patches.litho.FilterGroupList.ByteArrayFilt
 import app.revanced.extension.shared.settings.BaseSettings;
 import app.revanced.extension.shared.settings.Setting;
 import app.revanced.extension.shared.spoof.SpoofVideoStreamsPatch;
-import app.revanced.extension.youtube.patches.VersionCheckPatch;
 import app.revanced.extension.youtube.settings.Settings;
 import app.revanced.extension.youtube.shared.ShortsPlayerState;
 
 import java.util.List;
 
 @SuppressWarnings("unused")
-public final class PlayerFlyoutMenuItemsFilter extends Filter {
+public final class PlayerFlyoutMenuComponentsFilter extends Filter {
 
     public static final class HideAudioFlyoutMenuAvailability implements Setting.Availability {
         @Override
@@ -31,7 +31,7 @@ public final class PlayerFlyoutMenuItemsFilter extends Filter {
     private final ByteArrayFilterGroupList flyoutFilterGroupList = new ByteArrayFilterGroupList();
     private final StringFilterGroup videoQualityMenuFooter;
 
-    public PlayerFlyoutMenuItemsFilter() {
+    public PlayerFlyoutMenuComponentsFilter() {
         videoQualityMenuFooter = new StringFilterGroup(
                 Settings.HIDE_PLAYER_FLYOUT_VIDEO_QUALITY_FOOTER,
                 "quality_sheet_footer"
@@ -70,8 +70,8 @@ public final class PlayerFlyoutMenuItemsFilter extends Filter {
                 ),
                 new ByteArrayFilterGroup(
                         Settings.HIDE_PLAYER_FLYOUT_AUDIO_TRACK,
-                        "yt_outline_person_radar_",
-                        "yt_outline_experimental_person_radar_"
+                        "yt_outline_person_",
+                        "yt_outline_experimental_person_"
                 ),
                 new ByteArrayFilterGroup(
                         Settings.HIDE_PLAYER_FLYOUT_ADDITIONAL_SETTINGS,
@@ -87,10 +87,12 @@ public final class PlayerFlyoutMenuItemsFilter extends Filter {
                         Settings.HIDE_PLAYER_FLYOUT_LOOP_VIDEO,
                         "yt_outline_arrow_repeat_1_",
                         "yt_outline_experimental_repeat1_"
+                        // "yt_outline_experimental_play_circle"
                 ),
                 new ByteArrayFilterGroup(
                         Settings.HIDE_PLAYER_FLYOUT_STABLE_VOLUME,
                         "volume_stable_",
+                        "yt_fill_experimental_stable_volume_",
                         "yt_outline_experimental_stable_volume_"
                 ),
                 new ByteArrayFilterGroup(
@@ -112,8 +114,14 @@ public final class PlayerFlyoutMenuItemsFilter extends Filter {
     }
 
     @Override
-    public boolean isFiltered(String identifier, String accessibility, String path, byte[] buffer,
-                       StringFilterGroup matchedGroup, FilterContentType contentType, int contentIndex) {
+    public boolean isFiltered(ContextInterface contextInterface,
+                              String identifier,
+                              String accessibility,
+                              String path,
+                              byte[] buffer,
+                              StringFilterGroup matchedGroup,
+                              FilterContentType contentType,
+                              int contentIndex) {
         if (matchedGroup == videoQualityMenuFooter) {
             return true;
         }
@@ -126,6 +134,9 @@ public final class PlayerFlyoutMenuItemsFilter extends Filter {
         if (ShortsPlayerState.isOpen()) {
             return false;
         }
+
+        // 21.x+ fix.
+        if (path.contains("bottom_sheet_list_option.e")) return false;
 
         return flyoutFilterGroupList.check(buffer).isFiltered();
     }

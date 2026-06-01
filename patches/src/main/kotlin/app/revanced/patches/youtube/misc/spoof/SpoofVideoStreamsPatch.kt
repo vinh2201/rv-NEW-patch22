@@ -7,10 +7,6 @@ import app.revanced.patches.shared.misc.settings.preference.NonInteractivePrefer
 import app.revanced.patches.shared.misc.settings.preference.PreferenceScreenPreference
 import app.revanced.patches.shared.misc.settings.preference.SwitchPreference
 import app.revanced.patches.shared.misc.spoof.spoofVideoStreamsPatch
-import app.revanced.patches.youtube.misc.playservice.is_19_34_or_greater
-import app.revanced.patches.youtube.misc.playservice.is_20_03_or_greater
-import app.revanced.patches.youtube.misc.playservice.is_20_10_or_greater
-import app.revanced.patches.youtube.misc.playservice.is_20_14_or_greater
 import app.revanced.patches.youtube.misc.playservice.versionCheckPatch
 import app.revanced.patches.youtube.misc.settings.PreferenceScreen
 import app.revanced.patches.youtube.misc.settings.settingsPatch
@@ -19,17 +15,12 @@ import app.revanced.patches.youtube.shared.mainActivityOnCreateMethod
 val spoofVideoStreamsPatch = spoofVideoStreamsPatch(
     extensionClassDescriptor = "Lapp/revanced/extension/youtube/patches/spoof/SpoofVideoStreamsPatch;",
     getMainActivityOnCreateMethod = BytecodePatchContext::mainActivityOnCreateMethod::get,
-    fixMediaFetchHotConfig = {
-        is_19_34_or_greater
-    },
+    fixMediaFetchHotConfig = { true },
     fixMediaFetchHotConfigAlternative = {
         // In 20.14 the flag was merged with 20.03 start playback flag.
-        is_20_10_or_greater && !is_20_14_or_greater
+        false
     },
-    fixParsePlaybackResponseFeatureFlag = {
-        is_20_03_or_greater
-    },
-
+    fixParsePlaybackResponseFeatureFlag = { true },
     block = {
         compatibleWith(
             "com.google.android.youtube"(
@@ -38,7 +29,8 @@ val spoofVideoStreamsPatch = spoofVideoStreamsPatch(
                 "20.26.46",
                 "20.31.42",
                 "20.37.48",
-                "20.40.45"
+                "20.40.45",
+                "20.45.36"
             ),
         )
 

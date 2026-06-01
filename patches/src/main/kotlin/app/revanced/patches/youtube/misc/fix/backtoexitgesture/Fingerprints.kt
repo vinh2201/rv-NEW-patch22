@@ -1,7 +1,18 @@
 package app.revanced.patches.youtube.misc.fix.backtoexitgesture
 
-import app.revanced.patcher.*
+import app.revanced.patcher.accessFlags
+import app.revanced.patcher.after
+import app.revanced.patcher.allOf
+import app.revanced.patcher.composingFirstMethod
+import app.revanced.patcher.gettingFirstMethodDeclaratively
+import app.revanced.patcher.instructions
+import app.revanced.patcher.invoke
+import app.revanced.patcher.method
+import app.revanced.patcher.opcodes
+import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.BytecodePatchContext
+import app.revanced.patcher.returnType
+import app.revanced.patcher.type
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 
@@ -28,4 +39,10 @@ internal val BytecodePatchContext.recyclerViewTopScrollingMethodMatch by composi
         after(method { definingClass == "Landroid/support/v7/widget/RecyclerView;" }),
         after(Opcode.GOTO()),
     )
+}
+
+internal val BytecodePatchContext.backToRefreshFeatureFlagMethodMatch by composingFirstMethod {
+    returnType("Z")
+    parameterTypes()
+    instructions(45359221L())
 }

@@ -7,13 +7,15 @@ val seekbarPatch = bytecodePatch(
     name = "Seekbar",
     description = "Adds options to disable precise seeking when swiping up on the seekbar, " +
             "slide to seek instead of playing at 2x speed when pressing and holding, " +
-            "tapping the player seekbar to seek, and hiding the video player seekbar.",
+            "tapping the player seekbar to seek, hiding the video player seekbar " +
+            "and enabling seeking and expanding seeking duration of livestreams.",
 ) {
     dependsOn(
         disablePreciseSeekingGesturePatch,
         enableSlideToSeekPatch,
         enableTapToSeekPatch,
         hideSeekbarPatch,
+        enableLivestreamSeekingPatch
     )
 
     compatibleWith(
@@ -23,7 +25,8 @@ val seekbarPatch = bytecodePatch(
             "20.26.46",
             "20.31.42",
             "20.37.48",
-            "20.40.45"
+            "20.40.45",
+            "20.45.36"
         ),
     )
 }

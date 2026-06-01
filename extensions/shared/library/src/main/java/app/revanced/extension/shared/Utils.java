@@ -58,6 +58,7 @@ import java.util.regex.Pattern;
 import app.revanced.extension.shared.settings.AppLanguage;
 import app.revanced.extension.shared.settings.BaseSettings;
 import app.revanced.extension.shared.settings.BooleanSetting;
+import app.revanced.extension.shared.settings.StringSetting;
 import app.revanced.extension.shared.settings.preference.ReVancedAboutPreference;
 import app.revanced.extension.shared.ui.Dim;
 
@@ -139,11 +140,13 @@ public class Utils {
         if (applicationLabel == null) {
             try {
                 ApplicationInfo applicationInfo = getPackageInfo().applicationInfo;
-                applicationLabel = (String) applicationInfo.loadLabel(context.getPackageManager());
+                if (applicationInfo != null) {
+                    return applicationLabel = (String) applicationInfo.loadLabel(context.getPackageManager());
+                }
             } catch (Exception ex) {
                 Logger.printException(() -> "Failed to get application name", ex);
-                applicationLabel = "Unknown";
             }
+            applicationLabel = "Unknown";
         }
 
         return applicationLabel;
@@ -358,6 +361,41 @@ public class Utils {
         return getContext().getResources().getStringArray(getResourceIdentifierOrThrow(ResourceType.ARRAY, resourceIdentifierName));
     }
 
+    /**
+     * Checks if a specific app package is installed and enabled on the device.
+     *
+     * @param packageName The application package name to check (e.g., "app.revanced.android.apps.youtube.music").
+     * @return True if the package is installed and enabled, false otherwise.
+     */
+    public static boolean isPackageEnabled(String packageName) {
+        Context context = getContext();
+        if (context == null || !isNotEmpty(packageName)) {
+            return false;
+        }
+
+        try {
+            PackageManager pm = context.getPackageManager();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                return pm.getApplicationInfo(packageName, PackageManager.ApplicationInfoFlags.of(0)).enabled;
+            } else {
+                return pm.getApplicationInfo(packageName, 0).enabled;
+            }
+        } catch (PackageManager.NameNotFoundException e) {
+            return false;
+        }
+    }
+
+    public static boolean startsWithAny(String value, String...targets) {
+        if (isNotEmpty(value)) {
+            for (String string : targets) {
+                if (isNotEmpty(string) && value.startsWith(string)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public interface MatchFilter<T> {
         boolean matches(T object);
     }
@@ -413,6 +451,18 @@ public class Utils {
         Logger.printDebug(() -> "Could not find parent view of depth: " + nthParent
                 + " and instead found at: " + currentDepthLog + " view: " + view);
         return null;
+    }
+
+    public static List<String> getFilterStrings(StringSetting setting) {
+        String[] filterArray = setting.get().split("\\n");
+        List<String> filters = new ArrayList<>(filterArray.length);
+
+        for (String line : filterArray) {
+            String trimmed = line.trim();
+            if (!trimmed.isEmpty()) filters.add(trimmed);
+        }
+
+        return filters;
     }
 
     public static void restartApp(Context context) {
@@ -728,6 +778,20 @@ public class Utils {
         if (isCurrentlyOnMainThread()) {
             throw new IllegalStateException("Must call _off_ the main thread");
         }
+    }
+
+    private static volatile long lastClickTime;
+
+    /**
+     * @return true if the action occurred within 500ms of the last recorded action.
+     */
+    public static boolean isFastClick() {
+        long now = android.os.SystemClock.elapsedRealtime();
+        if (now - lastClickTime < 500) {
+            return true; // Ignore fast double click.
+        }
+        lastClickTime = now;
+        return false;
     }
 
     public static void openLink(String url) {

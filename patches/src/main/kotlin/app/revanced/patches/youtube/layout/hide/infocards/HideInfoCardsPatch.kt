@@ -4,15 +4,14 @@ import app.revanced.patcher.extensions.ExternalLabel
 import app.revanced.patcher.extensions.addInstruction
 import app.revanced.patcher.extensions.addInstructionsWithLabels
 import app.revanced.patcher.extensions.getInstruction
-import app.revanced.patcher.immutableClassDef
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patcher.patch.resourcePatch
 import app.revanced.patches.all.misc.resources.addResources
 import app.revanced.patches.all.misc.resources.addResourcesPatch
+import app.revanced.patches.shared.misc.litho.filter.addLithoFilter
 import app.revanced.patches.shared.misc.mapping.ResourceType
 import app.revanced.patches.shared.misc.mapping.resourceMappingPatch
 import app.revanced.patches.shared.misc.settings.preference.SwitchPreference
-import app.revanced.patches.shared.misc.litho.filter.addLithoFilter
 import app.revanced.patches.youtube.misc.extension.sharedExtensionPatch
 import app.revanced.patches.youtube.misc.litho.filter.lithoFilterPatch
 import app.revanced.patches.youtube.misc.settings.PreferenceScreen
@@ -24,7 +23,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 internal var drawerResourceId = -1L
     private set
 
-private val hideInfocardsResourcePatch = resourcePatch {
+private val hideInfoCardsResourcePatch = resourcePatch {
     dependsOn(resourceMappingPatch)
 
     apply {
@@ -40,7 +39,7 @@ val hideInfoCardsPatch = bytecodePatch(
     dependsOn(
         sharedExtensionPatch,
         lithoFilterPatch,
-        hideInfocardsResourcePatch,
+        hideInfoCardsResourcePatch,
         settingsPatch,
         addResourcesPatch,
     )
@@ -52,19 +51,20 @@ val hideInfoCardsPatch = bytecodePatch(
             "20.26.46",
             "20.31.42",
             "20.37.48",
-            "20.40.45"
+            "20.40.45",
+            "20.45.36"
         ),
     )
 
     apply {
-        addResources("youtube", "layout.hide.infocards.hideInfocardsResourcePatch")
+        addResources("youtube", "layout.hide.infocards.hideInfoCardsResourcePatch")
 
         PreferenceScreen.PLAYER.addPreferences(
             SwitchPreference("revanced_hide_info_cards"),
         )
 
         // Edit: This old non-litho code may be obsolete and no longer used by any supported versions.
-        infocardsIncognitoParentMethod.immutableClassDef.getInfocardsIncognitoMethod().apply {
+        infoCardsIncognitoMethod.apply {
             val invokeInstructionIndex = implementation!!.instructions.indexOfFirst {
                 it.opcode.ordinal == Opcode.INVOKE_VIRTUAL.ordinal &&
                         ((it as ReferenceInstruction).reference.toString() == "Landroid/view/View;->setVisibility(I)V")
@@ -78,7 +78,7 @@ val hideInfoCardsPatch = bytecodePatch(
         }
 
         // Edit: This old non-litho code may be obsolete and no longer used by any supported versions.
-        infocardsMethodCallMethodMatch.let {
+        infoCardsMethodCallMethodMatch.let {
             val invokeInterfaceIndex = it[-1]
             it.method.apply {
                 val register = implementation!!.registerCount - 1
@@ -100,7 +100,7 @@ val hideInfoCardsPatch = bytecodePatch(
 
         // Info cards can also appear as Litho components.
         val filterClassDescriptor =
-            "Lapp/revanced/extension/youtube/patches/litho/HideInfoCardsFilter;"
+            "Lapp/revanced/extension/youtube/patches/litho/InfoCardsFilter;"
         addLithoFilter(filterClassDescriptor)
     }
 }

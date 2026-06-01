@@ -21,9 +21,10 @@ import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patcher.returnType
 import app.revanced.patches.shared.misc.mapping.ResourceType
+import app.revanced.util.getting
+import app.revanced.util.using
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.ClassDef
 
 internal const val YOUTUBE_MAIN_ACTIVITY_CLASS_TYPE =
     "Lcom/google/android/apps/youtube/app/watchwhile/MainActivity;"
@@ -48,7 +49,6 @@ internal val BytecodePatchContext.backgroundPlaybackManagerShortsMethod by getti
 }
 
 internal fun BytecodePatchContext.getEngagementPanelControllerMethodMatch() = firstMethodComposite {
-    accessFlags(AccessFlags.PRIVATE, AccessFlags.FINAL)
     returnType("L")
     parameterTypes("L", "L", "Z", "Z")
     instructions(
@@ -136,13 +136,15 @@ internal val BytecodePatchContext.seekbarMethod by gettingFirstImmutableMethodDe
     instructions("timed_markers_width"())
 }
 
-internal fun ClassDef.getSeekbarOnDrawMethodMatch() = firstMethodComposite {
-    name("onDraw")
-    instructions(
-        method { toString() == "Ljava/lang/Math;->round(F)I" },
-        after(Opcode.MOVE_RESULT()),
-    )
-}
+internal fun BytecodePatchContext.getSeekbarOnDrawMethodMatch() =
+    seekbarMethod.immutableClassDef.firstMethodComposite {
+        name("onDraw")
+        instructions(
+            method { toString() == "Ljava/lang/Math;->round(F)I" },
+            after(Opcode.MOVE_RESULT()),
+        )
+    }
+
 
 internal val BytecodePatchContext.subtitleButtonControllerMethod by gettingFirstMethodDeclaratively {
     accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
@@ -154,6 +156,20 @@ internal val BytecodePatchContext.subtitleButtonControllerMethod by gettingFirst
     )
 }
 
+internal val BytecodePatchContext.playbackSpeedOnItemClickParentMethodMatch by composingFirstMethod {
+    accessFlags(AccessFlags.PUBLIC, AccessFlags.STATIC)
+    returnType("L")
+    parameterTypes("L", "Ljava/lang/String;")
+    instructions(
+        method { name == "getSupportFragmentManager" },
+        after(Opcode.MOVE_RESULT_OBJECT()),
+        after(method { returnType.startsWith("L") && parameterTypes == listOf("Ljava/lang/String;") }),
+        after(Opcode.MOVE_RESULT_OBJECT()),
+        after(Opcode.IF_EQZ()),
+        after(Opcode.CHECK_CAST()),
+    )
+    custom { immutableClassDef.methods.count() == 8 }
+}
 internal val BytecodePatchContext.videoQualityChangedMethodMatch by composingFirstMethod {
     accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
     returnType("L")

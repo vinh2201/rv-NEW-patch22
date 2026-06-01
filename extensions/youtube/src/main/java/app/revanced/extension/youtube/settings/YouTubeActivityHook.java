@@ -16,7 +16,7 @@ import app.revanced.extension.youtube.settings.preference.YouTubePreferenceFragm
 import app.revanced.extension.youtube.settings.search.YouTubeSearchViewController;
 
 /**
- * Hooks LicenseActivity to inject a custom {@link YouTubePreferenceFragment}
+ * Hooks {@link GoogleApiActivity} to inject a custom {@link YouTubePreferenceFragment}
  * with a toolbar and search functionality.
  */
 @SuppressWarnings("deprecation")
@@ -90,7 +90,13 @@ public class YouTubeActivityHook extends BaseActivityHook {
      */
     @Override
     protected View.OnClickListener getNavigationClickListener(Activity activity) {
-        return null;
+        return view -> {
+            if (searchViewController != null && searchViewController.isSearchActive()) {
+                searchViewController.handleBackPress();
+            } else {
+                activity.finish();
+            }
+        };
     }
 
     /**
@@ -121,10 +127,6 @@ public class YouTubeActivityHook extends BaseActivityHook {
      */
     @SuppressWarnings("unused")
     public static boolean useCairoSettingsFragment(boolean original) {
-        // Early targets have layout issues and it's better to always force off.
-        if (!VersionCheckPatch.IS_19_34_OR_GREATER) {
-            return false;
-        }
         if (Settings.RESTORE_OLD_SETTINGS_MENUS.get()) {
             return false;
         }
@@ -133,9 +135,9 @@ public class YouTubeActivityHook extends BaseActivityHook {
             return false;
         }
 
-        // On the first launch of a clean install, forcing the cairo menu can give a
+        // On the first launch of a clean install, forcing the Cairo menu can give a
         // half broken appearance because all the preference icons may not be available yet.
-        // 19.34+ cairo settings are always on, so it doesn't need to be forced anyway.
+        // 19.34+ Cairo settings are always on, so it doesn't need to be forced anyway.
         // Cairo setting will show on the next launch of the app.
         return original;
     }
@@ -164,7 +166,10 @@ public class YouTubeActivityHook extends BaseActivityHook {
      */
     @SuppressWarnings("unused")
     public static boolean handleBackPress() {
-        return YouTubeSearchViewController.handleFinish(searchViewController);
+        if (searchViewController != null && searchViewController.isSearchActive()) {
+            return searchViewController.handleBackPress();
+        }
+        return false;
     }
 
     /**

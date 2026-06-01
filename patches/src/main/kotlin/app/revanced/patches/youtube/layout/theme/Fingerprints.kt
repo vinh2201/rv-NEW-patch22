@@ -1,7 +1,18 @@
 package app.revanced.patches.youtube.layout.theme
 
-import app.revanced.patcher.*
+import app.revanced.patcher.after
+import app.revanced.patcher.afterAtMost
+import app.revanced.patcher.allOf
+import app.revanced.patcher.anyOf
+import app.revanced.patcher.composingFirstMethod
+import app.revanced.patcher.definingClass
+import app.revanced.patcher.instructions
+import app.revanced.patcher.invoke
+import app.revanced.patcher.method
+import app.revanced.patcher.name
+import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.BytecodePatchContext
+import app.revanced.patcher.returnType
 import app.revanced.patches.youtube.shared.YOUTUBE_MAIN_ACTIVITY_CLASS_TYPE
 import com.android.tools.smali.dexlib2.Opcode
 
@@ -9,6 +20,9 @@ internal val BytecodePatchContext.useGradientLoadingScreenMethodMatch by composi
     instructions(45412406L())
 }
 
+internal val BytecodePatchContext.carbonColorThemeFeatureFlagMethodMatch by composingFirstMethod {
+    instructions(45760313L())
+}
 internal val BytecodePatchContext.splashScreenStyleMethodMatch by composingFirstMethod {
     definingClass(YOUTUBE_MAIN_ACTIVITY_CLASS_TYPE)
     name("onCreate")
@@ -57,9 +71,6 @@ internal val BytecodePatchContext.showSplashScreen1MethodMatch by composingFirst
     )
 }
 
-/**
- * Matches to the same method as [splashScreenStyleMethodMatch].
- */
 internal val BytecodePatchContext.showSplashScreen2MethodMatch by composingFirstMethod {
     name("onCreate")
     definingClass(YOUTUBE_MAIN_ACTIVITY_CLASS_TYPE)

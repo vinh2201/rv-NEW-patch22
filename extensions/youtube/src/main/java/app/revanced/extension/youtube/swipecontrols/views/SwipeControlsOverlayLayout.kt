@@ -62,6 +62,7 @@ class SwipeControlsOverlayLayout(
     }
 
     // Initialize progress bars.
+    @Suppress("JoinDeclarationAndAssignment")
     private val circularProgressView: CircularProgressView
     private val horizontalProgressView: HorizontalProgressView
     private val verticalBrightnessProgressView: VerticalProgressView

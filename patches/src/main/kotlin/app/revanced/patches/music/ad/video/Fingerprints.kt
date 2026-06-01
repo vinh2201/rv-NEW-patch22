@@ -5,7 +5,7 @@ import app.revanced.patcher.opcodes
 import app.revanced.patcher.patch.BytecodePatchContext
 import com.android.tools.smali.dexlib2.Opcode
 
-internal val BytecodePatchContext.showVideoAdsParentMethodMatch by composingFirstMethod(
+internal val BytecodePatchContext.showVideoAdsMethodMatch by composingFirstMethod(
     "maybeRegenerateCpnAndStatsClient called unexpectedly, but no error.",
 ) {
     opcodes(

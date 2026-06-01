@@ -12,20 +12,26 @@ import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patcher.patch.resourcePatch
 import app.revanced.patches.all.misc.resources.addResources
 import app.revanced.patches.all.misc.resources.addResourcesPatch
-import app.revanced.patches.music.shared.conversionContextToStringMethod
+import app.revanced.patches.shared.misc.litho.filter.addLithoFilter
 import app.revanced.patches.shared.misc.mapping.ResourceType
 import app.revanced.patches.shared.misc.mapping.resourceMappingPatch
 import app.revanced.patches.shared.misc.settings.preference.PreferenceScreenPreference
 import app.revanced.patches.shared.misc.settings.preference.SwitchPreference
-import app.revanced.patches.shared.misc.litho.filter.addLithoFilter
 import app.revanced.patches.youtube.misc.engagement.engagementPanelHookPatch
 import app.revanced.patches.youtube.misc.extension.sharedExtensionPatch
 import app.revanced.patches.youtube.misc.litho.filter.lithoFilterPatch
+import app.revanced.patches.youtube.misc.litho.observer.layoutReloadObserverPatch
 import app.revanced.patches.youtube.misc.navigation.navigationBarHookPatch
-import app.revanced.patches.youtube.misc.playservice.*
+import app.revanced.patches.youtube.misc.playservice.is_20_45_or_greater
+import app.revanced.patches.youtube.misc.playservice.is_21_05_or_greater
+import app.revanced.patches.youtube.misc.playservice.versionCheckPatch
 import app.revanced.patches.youtube.misc.settings.PreferenceScreen
 import app.revanced.patches.youtube.misc.settings.settingsPatch
-import app.revanced.util.*
+import app.revanced.util.findElementByAttributeValueOrThrow
+import app.revanced.util.forEachInstructionAsSequence
+import app.revanced.util.indexOfFirstInstructionOrThrow
+import app.revanced.util.removeFromParent
+import app.revanced.util.returnLate
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 
 internal val hideShortsAppShortcutOption = booleanOption(
@@ -146,11 +152,11 @@ private const val FILTER_CLASS_DESCRIPTOR =
 @Suppress("unused")
 val hideShortsComponentsPatch = bytecodePatch(
     name = "Hide Shorts components",
-    description = "Adds options to hide components related to Shorts. " +
-            "Patching version 20.21.37 or lower can hide more Shorts player button types."
+    description = "Adds options to hide components related to Shorts."
 ) {
     dependsOn(
         sharedExtensionPatch,
+        layoutReloadObserverPatch,
         lithoFilterPatch,
         hideShortsComponentsResourcePatch,
         resourceMappingPatch,
@@ -166,7 +172,8 @@ val hideShortsComponentsPatch = bytecodePatch(
             "20.26.46",
             "20.31.42",
             "20.37.48",
-            "20.40.45"
+            "20.40.45",
+            "20.45.36"
         ),
     )
 
@@ -188,7 +195,8 @@ val hideShortsComponentsPatch = bytecodePatch(
                     methodReference?.name == "getDimensionPixelSize"
                 } + 1
 
-                val sizeRegister = method.getInstruction<OneRegisterInstruction>(targetIndex).registerA
+                val sizeRegister =
+                    method.getInstruction<OneRegisterInstruction>(targetIndex).registerA
 
                 return@forEachInstructionAsSequence targetIndex to sizeRegister
             }) { method, (targetIndex, sizeRegister) ->
@@ -204,46 +212,10 @@ val hideShortsComponentsPatch = bytecodePatch(
 
         // endregion
 
-        // region Hide action buttons.
-
-        if (is_20_22_or_greater) {
-            componentContextParserMethod.immutableClassDef.getTreeNodeResultListMethod().apply {
-                val conversionContextPathBuilderField =
-                    conversionContextToStringMethod.immutableClassDef
-                        .fields.single { field -> field.type == "Ljava/lang/StringBuilder;" }
-
-                val insertIndex = implementation!!.instructions.lastIndex
-                val listRegister = getInstruction<OneRegisterInstruction>(insertIndex).registerA
-
-                val registerProvider = getFreeRegisterProvider(insertIndex, 2)
-                val freeRegister = registerProvider.getFreeRegister()
-                val pathRegister = registerProvider.getFreeRegister()
-
-                addInstructionsAtControlFlowLabel(
-                    insertIndex,
-                    """
-                        move-object/from16 v$freeRegister, p2
-                        
-                        # In YouTube 20.41 field is the abstract superclass.
-                        # Verify it's the expected subclass just in case.
-                        instance-of v$pathRegister, v$freeRegister, ${conversionContextToStringMethod.immutableClassDef}
-                        if-eqz v$pathRegister, :ignore
-                        
-                        iget-object v$pathRegister, v$freeRegister, $conversionContextPathBuilderField
-                        invoke-static { v$pathRegister, v$listRegister }, ${FILTER_CLASS_DESCRIPTOR}->hideActionButtons(Ljava/lang/StringBuilder;Ljava/util/List;)V
-                        :ignore
-                        nop
-                    """
-                )
-            }
-        }
-
-        // endregion
-
         // region Hide the navigation bar.
 
         // Hook to get the pivotBar view.
-        setPivotBarVisibilityParentMethod.immutableClassDef.setPivotBarVisibilityMethodMatch.let { match ->
+        setPivotBarVisibilityMethodMatch.let { match ->
             match.method.apply {
                 val insertIndex = match[-1]
                 val viewRegister = getInstruction<OneRegisterInstruction>(insertIndex - 1).registerA
@@ -256,18 +228,15 @@ val hideShortsComponentsPatch = bytecodePatch(
         }
 
         // Hook to hide the shared navigation bar when the Shorts player is opened.
-        (
-                if (is_20_45_or_greater) {
-                    renderBottomNavigationBarParentMethod
-                } else if (is_19_41_or_greater) {
-                    renderBottomNavigationBarLegacy1941ParentMethod
-                } else {
-                    legacyRenderBottomNavigationBarLegacyParentMethod
-                }
-                ).immutableClassDef.getRenderBottomNavigationBarMethodMatch().addInstruction(
-                0,
-                "invoke-static { p1 }, $FILTER_CLASS_DESCRIPTOR->hideNavigationBar(Ljava/lang/String;)V",
-            )
+
+        if (is_20_45_or_greater) {
+            renderBottomNavigationBarParentMethod
+        } else {
+            renderBottomNavigationBarLegacy1941ParentMethod
+        }.immutableClassDef.getRenderBottomNavigationBarMethodMatch().addInstruction(
+            0,
+            "invoke-static { p1 }, $FILTER_CLASS_DESCRIPTOR->hideNavigationBar(Ljava/lang/String;)V",
+        )
 
         // Hide the bottom bar container of the Shorts player.
         shortsBottomBarContainerMethodMatch.let {
@@ -292,20 +261,19 @@ val hideShortsComponentsPatch = bytecodePatch(
         // Flags might be present in earlier targets, but they are not found in 19.47.53.
         // If these flags are forced on, the experimental layout is still not used, and
         // it appears the features requires additional server side data to fully use.
-        if (is_20_07_or_greater) {
-            // Experimental Shorts player uses Android native buttons and not Litho,
-            // and the layout is provided by the server.
-            //
-            // Since the buttons are native components and not Litho, it should be possible to
-            // fix the RYD Shorts loading delay by asynchronously loading RYD and updating
-            // the button text after RYD has loaded.
-            shortsExperimentalPlayerFeatureFlagMethod.returnLate(false)
+        //
+        // Experimental Shorts player uses Android native buttons and not Litho,
+        // and the layout is provided by the server.
+        //
+        // Since the buttons are native components and not Litho, it should be possible to
+        // fix the RYD Shorts loading delay by asynchronously loading RYD and updating
+        // the button text after RYD has loaded.
+        shortsExperimentalPlayerFeatureFlagMethod.returnLate(false)
 
-            // Experimental UI renderer must also be disabled since it requires the
-            // experimental Shorts player. If this is enabled but Shorts player
-            // is disabled then the app crashes when the Shorts player is opened.
-            renderNextUIFeatureFlagMethod.returnLate(false)
-        }
+        // Experimental UI renderer must also be disabled since it requires the
+        // experimental Shorts player. If this is enabled but Shorts player
+        // is disabled then the app crashes when the Shorts player is opened.
+        renderNextUIFeatureFlagMethod.returnLate(false)
 
         // endregion
     }

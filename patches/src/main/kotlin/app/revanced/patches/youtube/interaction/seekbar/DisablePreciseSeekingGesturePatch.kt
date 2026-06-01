@@ -31,7 +31,7 @@ val disablePreciseSeekingGesturePatch = bytecodePatch(
             SwitchPreference("revanced_disable_precise_seeking_gesture"),
         )
 
-        swipingUpGestureParentMethod.immutableClassDef.getAllowSwipingUpGestureMethod().apply {
+        allowSwipingUpGestureMethod.apply {
             addInstructionsWithLabels(
                 0,
                 """
@@ -44,7 +44,7 @@ val disablePreciseSeekingGesturePatch = bytecodePatch(
             )
         }
 
-        swipingUpGestureParentMethod.immutableClassDef.getShowSwipingUpGuideMethod().apply {
+        showSwipingUpGuideMethod.apply {
             addInstructionsWithLabels(
                 0,
                 """

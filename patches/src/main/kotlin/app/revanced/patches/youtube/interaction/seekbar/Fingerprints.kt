@@ -1,49 +1,59 @@
 package app.revanced.patches.youtube.interaction.seekbar
 
-import app.revanced.patcher.*
+import app.revanced.patcher.accessFlags
+import app.revanced.patcher.after
+import app.revanced.patcher.afterAtMost
+import app.revanced.patcher.allOf
+import app.revanced.patcher.composingFirstMethod
+import app.revanced.patcher.custom
+import app.revanced.patcher.definingClass
 import app.revanced.patcher.extensions.instructions
+import app.revanced.patcher.field
+import app.revanced.patcher.firstImmutableMethodDeclaratively
+import app.revanced.patcher.firstMethodComposite
+import app.revanced.patcher.firstMethodDeclaratively
+import app.revanced.patcher.gettingFirstImmutableMethodDeclaratively
+import app.revanced.patcher.instructions
+import app.revanced.patcher.invoke
+import app.revanced.patcher.method
+import app.revanced.patcher.name
+import app.revanced.patcher.opcodes
+import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.BytecodePatchContext
+import app.revanced.patcher.returnType
+import app.revanced.patcher.type
+import app.revanced.util.getting
 import app.revanced.util.literal
+import app.revanced.util.using
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.ClassDef
 
-internal val BytecodePatchContext.swipingUpGestureParentMethod by gettingFirstImmutableMethodDeclaratively {
+private val BytecodePatchContext.swipingUpGestureParentMethod by gettingFirstImmutableMethodDeclaratively {
     returnType("Z")
     parameterTypes()
     instructions(
-        45379021L(), // Swipe up fullscreen feature flag
+        45379021L(), // Swipe up fullscreen feature flag.
     )
 }
 
-/**
- * Resolves using the class found in [swipingUpGestureParentMethod].
- */
-context(_: BytecodePatchContext)
-internal fun ClassDef.getShowSwipingUpGuideMethod() = firstMethodDeclaratively {
-    accessFlags(AccessFlags.FINAL)
-    returnType("Z")
-    parameterTypes()
-    instructions(1L())
-}
 
-/**
- * Resolves using the class found in [swipingUpGestureParentMethod].
- */
-context(_: BytecodePatchContext)
-internal fun ClassDef.getAllowSwipingUpGestureMethod() = firstMethodDeclaratively {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    returnType("V")
-    parameterTypes("L")
-}
+internal val BytecodePatchContext.showSwipingUpGuideMethod by getting {
+    firstMethodDeclaratively {
+        accessFlags(AccessFlags.FINAL)
+        returnType("Z")
+        parameterTypes()
+        instructions(1L())
+    }
+} using { swipingUpGestureParentMethod }
 
-internal val BytecodePatchContext.disableFastForwardLegacyMethodMatch by composingFirstMethod {
-    returnType("Z")
-    parameterTypes()
-    opcodes(Opcode.MOVE_RESULT)
-    // Intent start flag only used in the subscription activity
-    literal { 45411330 }
-}
+
+internal val BytecodePatchContext.allowSwipingUpGestureMethod by getting {
+    firstMethodDeclaratively {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("V")
+        parameterTypes("L")
+    }
+} using { swipingUpGestureParentMethod }
 
 internal val BytecodePatchContext.disableFastForwardGestureMethodMatch by composingFirstMethod {
     definingClass("/NextGenWatchLayout;")
@@ -115,4 +125,41 @@ internal val BytecodePatchContext.fullscreenLargeSeekbarFeatureFlagMethodMatch b
     returnType("Z")
     parameterTypes()
     instructions(45691569L())
+}
+
+internal val BytecodePatchContext.videoStreamingDataAllowSeekingMethod by getting {
+    firstMethodDeclaratively {
+        returnType("Z")
+        parameterTypes()
+        instructions(
+            8L(),
+            after(Opcode.IF_EQ()),
+            after(1L()) // Another method in the same class almost matches this but uses 0 here.
+        )
+    }
+} using {
+    firstImmutableMethodDeclaratively {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("Ljava/lang/String;")
+        name("toString")
+        instructions("VideoStreamingData(itags="())
+    }
+}
+
+internal val BytecodePatchContext.formatStreamModelMaxDvrDurationMethodMatch by getting {
+    firstMethodComposite {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("D")
+        parameterTypes()
+        instructions(
+            Opcode.IGET_OBJECT(),
+            after(allOf(Opcode.IGET_WIDE(), field { type == "D" })),
+            after(Opcode.RETURN_WIDE()),
+        )
+    }
+} using {
+    firstImmutableMethodDeclaratively {
+        returnType("Ljava/lang/String;")
+        instructions("FormatStream(itag="())
+    }
 }

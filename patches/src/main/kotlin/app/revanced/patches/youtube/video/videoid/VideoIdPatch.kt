@@ -92,7 +92,7 @@ val videoIdPatch = bytecodePatch(
     )
 
     apply {
-        videoIdParentMethodMatch.immutableClassDef.getVideoIdMethodMatch().let {
+        videoIdMethodMatch.let {
             videoIdMethod = it.method
 
             val index = it[1]

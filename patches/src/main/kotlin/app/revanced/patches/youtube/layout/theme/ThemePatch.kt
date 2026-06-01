@@ -24,9 +24,8 @@ import app.revanced.patches.shared.misc.settings.preference.SwitchPreference
 import app.revanced.patches.shared.misc.settings.preference.TextPreference
 import app.revanced.patches.youtube.layout.seekbar.seekbarColorPatch
 import app.revanced.patches.youtube.misc.extension.sharedExtensionPatch
-import app.revanced.patches.youtube.misc.playservice.is_19_47_or_greater
-import app.revanced.patches.youtube.misc.playservice.is_20_02_or_greater
 import app.revanced.patches.youtube.misc.playservice.is_21_06_or_greater
+import app.revanced.patches.youtube.misc.playservice.is_21_08_or_greater
 import app.revanced.patches.youtube.misc.playservice.versionCheckPatch
 import app.revanced.patches.youtube.misc.settings.PreferenceScreen
 import app.revanced.patches.youtube.misc.settings.settingsPatch
@@ -48,7 +47,10 @@ val themePatch = baseThemePatch(
             default = "@android:color/white",
             values = mapOf(
                 "White" to "@android:color/white",
-                "Material You" to "@android:color/system_neutral1_50",
+                "Material You (Neutral)" to "@android:color/system_neutral1_100",
+                "Material You - Primary" to "@android:color/system_accent1_200",
+                "Material You - Secondary" to "@android:color/system_accent2_200",
+                "Material You - Tertiary" to "@android:color/system_accent3_200",
                 "Catppuccin (Latte)" to "#E6E9EF",
                 "Light pink" to "#FCCFF3",
                 "Light blue" to "#D1E0FF",
@@ -195,7 +197,8 @@ val themePatch = baseThemePatch(
                 "20.26.46",
                 "20.31.42",
                 "20.37.48",
-                "20.40.45"
+                "20.40.45",
+                "20.45.36"
             ),
         )
     },
@@ -230,24 +233,27 @@ val themePatch = baseThemePatch(
             ),
         )
 
-        if (is_19_47_or_greater) {
-            PreferenceScreen.GENERAL.addPreferences(
-                ListPreference("revanced_splash_screen_animation_style"),
-            )
-        }
+        PreferenceScreen.GENERAL.addPreferences(
+            ListPreference("revanced_splash_screen_animation_style"),
+        )
 
         useGradientLoadingScreenMethodMatch.method.insertLiteralOverride(
             useGradientLoadingScreenMethodMatch[0],
             "$EXTENSION_CLASS_DESCRIPTOR->gradientLoadingScreenEnabled(Z)Z",
         )
 
-        if (is_19_47_or_greater) {
-            // Lottie splash screen exists in earlier versions, but it may not be always on.
-            splashScreenStyleMethodMatch.method.insertLiteralOverride(
-                splashScreenStyleMethodMatch[0],
-                "$EXTENSION_CLASS_DESCRIPTOR->getLoadingScreenType(I)I",
+        if (is_21_08_or_greater) {
+            carbonColorThemeFeatureFlagMethodMatch.method.insertLiteralOverride(
+                carbonColorThemeFeatureFlagMethodMatch[0],
+                false
             )
         }
+
+        // Lottie splash screen exists in earlier versions, but it may not be always on.
+        splashScreenStyleMethodMatch.method.insertLiteralOverride(
+            splashScreenStyleMethodMatch[0],
+            "$EXTENSION_CLASS_DESCRIPTOR->getLoadingScreenType(I)I",
+        )
 
         showSplashScreen1MethodMatch.let {
             it.method.apply {
@@ -264,22 +270,20 @@ val themePatch = baseThemePatch(
             }
         }
 
-        if (is_20_02_or_greater) {
-            showSplashScreen2MethodMatch.let {
-                val insertIndex = it[1]
-                it.method.apply {
-                    val insertInstruction = getInstruction<TwoRegisterInstruction>(insertIndex)
-                    val registerA = insertInstruction.registerA
-                    val registerB = insertInstruction.registerB
+        showSplashScreen2MethodMatch.let {
+            val insertIndex = it[1]
+            it.method.apply {
+                val insertInstruction = getInstruction<TwoRegisterInstruction>(insertIndex)
+                val registerA = insertInstruction.registerA
+                val registerB = insertInstruction.registerB
 
-                    addInstructions(
-                        insertIndex,
-                        """
-                            invoke-static { v$registerA, v$registerB }, ${EXTENSION_CLASS_DESCRIPTOR}->showSplashScreen(II)I
-                            move-result v$registerA
-                        """
-                    )
-                }
+                addInstructions(
+                    insertIndex,
+                    """
+                        invoke-static { v$registerA, v$registerB }, ${EXTENSION_CLASS_DESCRIPTOR}->showSplashScreen(II)I
+                        move-result v$registerA
+                    """
+                )
             }
         }
     },

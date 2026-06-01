@@ -5,7 +5,6 @@ import app.revanced.patcher.extensions.addInstructions
 import app.revanced.patcher.extensions.fieldReference
 import app.revanced.patcher.extensions.getInstruction
 import app.revanced.patcher.extensions.methodReference
-import app.revanced.patcher.immutableClassDef
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patcher.patch.resourcePatch
 import app.revanced.patches.all.misc.resources.addResources
@@ -22,15 +21,16 @@ import app.revanced.patches.youtube.misc.playercontrols.playerControlsPatch
 import app.revanced.patches.youtube.misc.playertype.playerTypeHookPatch
 import app.revanced.patches.youtube.misc.settings.PreferenceScreen
 import app.revanced.patches.youtube.misc.settings.settingsPatch
-import app.revanced.patches.youtube.shared.getLayoutConstructorMethodMatch
-import app.revanced.patches.youtube.shared.seekbarMethod
 import app.revanced.patches.youtube.shared.getSeekbarOnDrawMethodMatch
 import app.revanced.patches.youtube.video.information.onCreateHook
 import app.revanced.patches.youtube.video.information.videoInformationPatch
 import app.revanced.patches.youtube.video.information.videoTimeHook
 import app.revanced.patches.youtube.video.videoid.hookBackgroundPlayVideoId
 import app.revanced.patches.youtube.video.videoid.videoIdPatch
-import app.revanced.util.*
+import app.revanced.util.ResourceGroup
+import app.revanced.util.addInstructionsAtControlFlowLabel
+import app.revanced.util.copyResources
+import app.revanced.util.indexOfFirstInstructionReversedOrThrow
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
@@ -135,7 +135,8 @@ val sponsorBlockPatch = bytecodePatch(
             "20.26.46",
             "20.31.42",
             "20.37.48",
-            "20.40.45"
+            "20.40.45",
+            "20.45.36"
         ),
     )
 
@@ -153,7 +154,7 @@ val sponsorBlockPatch = bytecodePatch(
 
         // Set seekbar draw rectangle.
         val rectangleFieldName: FieldReference
-        seekbarMethod.immutableClassDef.rectangleFieldInvalidatorMethodMatch.let {
+        rectangleFieldInvalidatorMethodMatch.let {
             it.method.apply {
                 val rectangleIndex = indexOfFirstInstructionReversedOrThrow(
                     it[0],
@@ -169,7 +170,7 @@ val sponsorBlockPatch = bytecodePatch(
 
         // Cannot match using original immutable class because
         // class may have been modified by other patches
-        seekbarMethod.immutableClassDef.getSeekbarOnDrawMethodMatch().let {
+        getSeekbarOnDrawMethodMatch().let {
             it.method.apply {
                 // Set seekbar thickness.
                 val thicknessIndex = it[-1]
@@ -235,10 +236,9 @@ val sponsorBlockPatch = bytecodePatch(
         onCreateHook(EXTENSION_SEGMENT_PLAYBACK_CONTROLLER_CLASS_DESCRIPTOR, "initialize")
 
         // Initialize the SponsorBlock view.
-        getLayoutConstructorMethodMatch().immutableClassDef.controlsOverlayMethodMatch.let {
-            val checkCastIndex = it[-1]
-
+        controlsOverlayMethodMatch.let {
             it.method.apply {
+                val checkCastIndex = it[-1]
                 val frameLayoutRegister =
                     getInstruction<OneRegisterInstruction>(checkCastIndex).registerA
                 addInstruction(

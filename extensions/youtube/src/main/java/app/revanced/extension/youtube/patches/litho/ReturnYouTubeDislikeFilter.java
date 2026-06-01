@@ -7,6 +7,8 @@ import androidx.annotation.Nullable;
 import java.util.LinkedHashSet;
 import java.util.Map;
 
+import app.revanced.extension.shared.ConversionContext;
+import app.revanced.extension.shared.ConversionContext.ContextInterface;
 import app.revanced.extension.shared.Logger;
 import app.revanced.extension.shared.TrieSearch;
 import app.revanced.extension.shared.Utils;
@@ -19,14 +21,14 @@ import app.revanced.extension.youtube.settings.Settings;
 
 /**
  * Searches for video IDs in the proto buffer of Shorts dislike.
- *
+ * <p>
  * Because multiple litho dislike spans are created in the background
  * (and also anytime litho refreshes the components, which is somewhat arbitrary),
  * that makes the value of {@link VideoInformation#getVideoId()} and {@link VideoInformation#getPlayerResponseVideoId()}
  * unreliable to determine which video ID a Shorts litho span belongs to.
- *
+ * <p>
  * But the correct video ID does appear in the protobuffer just before a Shorts litho span is created.
- *
+ * <p>
  * Once a way to asynchronously update litho text is found, this strategy will no longer be needed.
  */
 public final class ReturnYouTubeDislikeFilter extends Filter {
@@ -88,8 +90,14 @@ public final class ReturnYouTubeDislikeFilter extends Filter {
     }
 
     @Override
-    public boolean isFiltered(String identifier, String accessibility, String path, byte[] buffer,
-                              StringFilterGroup matchedGroup, FilterContentType contentType, int contentIndex) {
+    public boolean isFiltered(ContextInterface contextInterface,
+                              String identifier,
+                              String accessibility,
+                              String path,
+                              byte[] buffer,
+                              StringFilterGroup matchedGroup,
+                              FilterContentType contentType,
+                              int contentIndex) {
         if (!Settings.RYD_ENABLED.get() || !Settings.RYD_SHORTS.get()) {
             return false;
         }
@@ -124,18 +132,16 @@ public final class ReturnYouTubeDislikeFilter extends Filter {
      * This could use {@link TrieSearch}, but since the patterns are constantly changing
      * the overhead of updating the Trie might negate the search performance gain.
      */
-    private static boolean byteArrayContainsString(@NonNull byte[] array, @NonNull String text) {
-        for (int i = 0, lastArrayStartIndex = array.length - text.length(); i <= lastArrayStartIndex; i++) {
+    private static boolean byteArrayContainsString(@NonNull byte[] protobufBufferArray, @NonNull String videoId) {
+        for (int i = 0, lastArrayStartIndex = protobufBufferArray.length - 11; i <= lastArrayStartIndex; i++) {
             boolean found = true;
-            for (int j = 0, textLength = text.length(); j < textLength; j++) {
-                if (array[i + j] != (byte) text.charAt(j)) {
+            for (int j = 0; j < 11; j++) {
+                if (protobufBufferArray[i + j] != (byte) videoId.charAt(j)) {
                     found = false;
                     break;
                 }
             }
-            if (found) {
-                return true;
-            }
+            if (found) return true;
         }
 
         return false;

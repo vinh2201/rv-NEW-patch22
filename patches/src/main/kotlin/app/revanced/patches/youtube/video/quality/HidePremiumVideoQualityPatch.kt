@@ -1,7 +1,6 @@
 package app.revanced.patches.youtube.video.quality
 
 import app.revanced.patcher.accessFlags
-import app.revanced.patcher.afterAtMost
 import app.revanced.patcher.allOf
 import app.revanced.patcher.custom
 import app.revanced.patcher.extensions.InstructionExtensions.getInstruction
@@ -77,8 +76,8 @@ internal val hidePremiumVideoQualityPatch = bytecodePatch {
             )
         }
 
-        currentVideoFormatToStringMethod.immutableClassDef.getCurrentVideoFormatConstructorMethodMatch()
-            .let {
+        currentVideoFormatToStringMethod.immutableClassDef
+            .getCurrentVideoFormatConstructorMethodMatch().let {
                 it.method.apply {
                     val index = it[-1]
                     val register = getInstruction<TwoRegisterInstruction>(index).registerA

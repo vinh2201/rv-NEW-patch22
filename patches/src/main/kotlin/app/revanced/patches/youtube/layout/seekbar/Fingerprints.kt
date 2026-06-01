@@ -1,11 +1,27 @@
 package app.revanced.patches.youtube.layout.seekbar
 
-import app.revanced.patcher.*
+import app.revanced.patcher.accessFlags
+import app.revanced.patcher.after
+import app.revanced.patcher.afterAtMost
+import app.revanced.patcher.anyOf
+import app.revanced.patcher.composingFirstMethod
+import app.revanced.patcher.custom
+import app.revanced.patcher.definingClass
+import app.revanced.patcher.firstMethodDeclaratively
+import app.revanced.patcher.gettingFirstImmutableMethodDeclaratively
+import app.revanced.patcher.gettingFirstMethodDeclaratively
+import app.revanced.patcher.instructions
+import app.revanced.patcher.invoke
+import app.revanced.patcher.method
+import app.revanced.patcher.opcodes
+import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.BytecodePatchContext
+import app.revanced.patcher.returnType
 import app.revanced.patches.shared.misc.mapping.ResourceType
+import app.revanced.util.getting
+import app.revanced.util.using
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.ClassDef
 
 internal val BytecodePatchContext.fullscreenSeekbarThumbnailsMethod by gettingFirstMethodDeclaratively {
     returnType("Z")
@@ -91,19 +107,6 @@ internal val BytecodePatchContext.playerLinearGradientMethodMatch by composingFi
     )
 }
 
-/**
- * 19.25 - 19.47
- */
-internal val BytecodePatchContext.playerLinearGradientLegacyMethodMatch by composingFirstMethod {
-    returnType("V")
-    instructions(
-        ResourceType.COLOR("yt_youtube_magenta"),
-
-        Opcode.FILLED_NEW_ARRAY(),
-        after(Opcode.MOVE_RESULT_OBJECT()),
-    )
-}
-
 internal const val LOTTIE_ANIMATION_VIEW_CLASS_TYPE = "Lcom/airbnb/lottie/LottieAnimationView;"
 
 internal val BytecodePatchContext.lottieAnimationViewSetAnimationIntMethod by gettingFirstImmutableMethodDeclaratively {
@@ -123,7 +126,11 @@ internal val BytecodePatchContext.lottieAnimationViewSetAnimationIntMethod by ge
 
 internal val BytecodePatchContext.lottieCompositionFactoryZipMethod by gettingFirstImmutableMethodDeclaratively {
     accessFlags(AccessFlags.PUBLIC, AccessFlags.STATIC)
-    parameterTypes("Landroid/content/Context;", "Ljava/util/zip/ZipInputStream;", "Ljava/lang/String;")
+    parameterTypes(
+        "Landroid/content/Context;",
+        "Ljava/util/zip/ZipInputStream;",
+        "Ljava/lang/String;"
+    )
     returnType("L")
     instructions(
         "Unable to parse composition"(),
@@ -132,16 +139,15 @@ internal val BytecodePatchContext.lottieCompositionFactoryZipMethod by gettingFi
 }
 
 /**
- * Resolves using class found in [lottieCompositionFactoryZipMethod].
- *
  * [Original method](https://github.com/airbnb/lottie-android/blob/26ad8bab274eac3f93dccccfa0cafc39f7408d13/lottie/src/main/java/com/airbnb/lottie/LottieCompositionFactory.java#L386)
  */
-context(_: BytecodePatchContext)
-internal fun ClassDef.getLottieCompositionFactoryFromJsonInputStreamMethod() = firstMethodDeclaratively {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.STATIC)
-    parameterTypes("Ljava/io/InputStream;", "Ljava/lang/String;")
-    returnType("L")
-    instructions(
-        anyOf(2L(), 3L()),
-    )
-}
+internal val BytecodePatchContext.lottieCompositionFactoryFromJsonInputStreamMethod by getting {
+    firstMethodDeclaratively {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.STATIC)
+        parameterTypes("Ljava/io/InputStream;", "Ljava/lang/String;")
+        returnType("L")
+        instructions(
+            anyOf(2L(), 3L()),
+        )
+    }
+} using { lottieCompositionFactoryZipMethod }

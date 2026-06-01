@@ -27,6 +27,14 @@ internal val BytecodePatchContext.animatedNavigationTabsFeatureFlagMethodMatch b
     )
 }
 
+internal val BytecodePatchContext.autoHideNavigationBarMethod by gettingFirstMethodDeclaratively {
+    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+    returnType("V")
+    parameterTypes("Landroid/support/v7/widget/RecyclerView;", "I", "I")
+    instructions(
+        45677535L(),
+    )
+}
 
 internal val BytecodePatchContext.pivotBarStyleMethodMatch by composingFirstMethod {
     definingClass("/PivotBar;")

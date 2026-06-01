@@ -30,32 +30,32 @@ val engagementPanelHookPatch = bytecodePatch(
     dependsOn(sharedExtensionPatch)
 
     apply {
-        val match = getEngagementPanelControllerMethodMatch()
-        match.method.apply {
-            val panelIdField = getInstruction(match[-1]).fieldReference
-            val insertIndex = match[5]
+        getEngagementPanelControllerMethodMatch().let { match ->
+            match.method.apply {
+                val panelIdField = getInstruction(match[-1]).fieldReference
+                val insertIndex = match[5]
 
-            val (freeRegister, panelRegister) =
-                with(getInstruction<TwoRegisterInstruction>(insertIndex)) {
-                    Pair(registerA, registerB)
-                }
+                val (freeRegister, panelRegister) =
+                    with(getInstruction<TwoRegisterInstruction>(insertIndex)) {
+                        Pair(registerA, registerB)
+                    }
 
-            panelControllerMethod = this
-            panelIdIndex = insertIndex
-            panelIdRegister = freeRegister
-            panelIdSmaliInstruction =
-                "iget-object v$panelIdRegister, v$panelRegister, $panelIdField"
+                panelControllerMethod = this
+                panelIdIndex = insertIndex
+                panelIdRegister = freeRegister
+                panelIdSmaliInstruction = "iget-object v$panelIdRegister, v$panelRegister, $panelIdField"
 
-            addInstructions(
-                insertIndex,
-                """
+                addInstructions(
+                    insertIndex,
+                    """
                         $panelIdSmaliInstruction
                         invoke-static { v${panelIdRegister} }, ${EXTENSION_CLASS_DESCRIPTOR}->open(Ljava/lang/String;)V
                     """
-            )
+                )
+            }
         }
 
-        match.immutableClassDef.getEngagementPanelUpdateMethod().addInstruction(
+        engagementPanelUpdateMethod.addInstruction(
             0,
             "invoke-static { }, $EXTENSION_CLASS_DESCRIPTOR->close()V"
         )

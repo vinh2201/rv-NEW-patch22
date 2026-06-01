@@ -3,18 +3,18 @@ package app.revanced.patches.youtube.layout.hide.player.flyoutmenu
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patches.all.misc.resources.addResources
 import app.revanced.patches.all.misc.resources.addResourcesPatch
+import app.revanced.patches.shared.misc.litho.filter.addLithoFilter
 import app.revanced.patches.shared.misc.settings.preference.PreferenceScreenPreference
 import app.revanced.patches.shared.misc.settings.preference.SwitchPreference
-import app.revanced.patches.shared.misc.litho.filter.addLithoFilter
 import app.revanced.patches.youtube.misc.litho.filter.lithoFilterPatch
 import app.revanced.patches.youtube.misc.playertype.playerTypeHookPatch
 import app.revanced.patches.youtube.misc.settings.PreferenceScreen
 import app.revanced.patches.youtube.misc.settings.settingsPatch
 
 @Suppress("unused")
-val hidePlayerFlyoutMenuItemsPatch = bytecodePatch(
-    name = "Hide player flyout menu items",
-    description = "Adds options to hide menu items that appear when pressing the gear icon in the video player.",
+val hidePlayerFlyoutMenuComponentsPatch = bytecodePatch(
+    name = "Hide player flyout menu components",
+    description = "Adds options to hide menu components that appear when pressing the gear icon in the video player.",
 ) {
     dependsOn(
         lithoFilterPatch,
@@ -30,13 +30,14 @@ val hidePlayerFlyoutMenuItemsPatch = bytecodePatch(
             "20.26.46",
             "20.31.42",
             "20.37.48",
-            "20.40.45"
+            "20.40.45",
+            "20.45.36"
         ),
     )
 
     apply {
         val filterClassDescriptor =
-            "Lapp/revanced/extension/youtube/patches/litho/PlayerFlyoutMenuItemsFilter;"
+            "Lapp/revanced/extension/youtube/patches/litho/PlayerFlyoutMenuComponentsFilter;"
 
         addResources("youtube", "layout.hide.player.flyoutmenupanel.hidePlayerFlyoutMenuPatch")
 

@@ -3,17 +3,24 @@ package app.revanced.patches.youtube.misc.playercontrols
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
 import app.revanced.patcher.extensions.addInstruction
 import app.revanced.patcher.extensions.getInstruction
-import app.revanced.patcher.immutableClassDef
 import app.revanced.patcher.patch.PatchException
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patcher.patch.resourcePatch
 import app.revanced.patcher.util.Document
 import app.revanced.patches.shared.misc.mapping.resourceMappingPatch
 import app.revanced.patches.youtube.misc.extension.sharedExtensionPatch
-import app.revanced.patches.youtube.misc.playservice.*
-import app.revanced.util.*
-import com.android.tools.smali.dexlib2.Opcode
+import app.revanced.patches.youtube.misc.playservice.is_20_28_or_greater
+import app.revanced.patches.youtube.misc.playservice.is_20_30_or_greater
+import app.revanced.patches.youtube.misc.playservice.is_20_40_or_greater
+import app.revanced.patches.youtube.misc.playservice.versionCheckPatch
+import app.revanced.util.copyXmlNode
+import app.revanced.util.findElementByAttributeValue
+import app.revanced.util.findElementByAttributeValueOrThrow
+import app.revanced.util.inputStreamFromBundledResource
+import app.revanced.util.returnEarly
+import app.revanced.util.returnLate
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import org.w3c.dom.Node
 
 /**
@@ -56,10 +63,11 @@ internal val playerControlsResourcePatch = resourcePatch {
         ).item(0)
 
         val bottomTargetDocumentChildNodes = bottomTargetDocument.childNodes
-        var bottomInsertBeforeNode: Node = bottomTargetDocumentChildNodes.findElementByAttributeValueOrThrow(
-            "android:inflatedId",
-            bottomLastLeftOf,
-        )
+        var bottomInsertBeforeNode: Node =
+            bottomTargetDocumentChildNodes.findElementByAttributeValueOrThrow(
+                "android:inflatedId",
+                bottomLastLeftOf,
+            )
 
         // Modify the fullscreen button stub attributes for correct positioning.
         // The fullscreen button is lower than the ReVanced buttons (unpatched app bug).
@@ -95,7 +103,8 @@ internal val playerControlsResourcePatch = resourcePatch {
                 // If other top buttons are added by other patches, this code must be changed.
                 // voting button id from the voting button view from the youtube_controls_layout.xml host file
                 val votingButtonId = "@+id/revanced_sb_voting_button"
-                element.attributes.getNamedItem("android:layout_toStartOf").nodeValue = votingButtonId
+                element.attributes.getNamedItem("android:layout_toStartOf").nodeValue =
+                    votingButtonId
             }
         }
 
@@ -117,7 +126,8 @@ internal val playerControlsResourcePatch = resourcePatch {
                 // If the element has no attributes there's no point adding it to the destination.
                 if (!element.hasAttributes()) continue
 
-                element.attributes.getNamedItem("yt:layout_constraintRight_toLeftOf").nodeValue = bottomLastLeftOf
+                element.attributes.getNamedItem("yt:layout_constraintRight_toLeftOf").nodeValue =
+                    bottomLastLeftOf
                 bottomLastLeftOf = element.attributes.getNamedItem("android:id").nodeValue
 
                 bottomTargetDocument.adoptNode(element)
@@ -237,7 +247,8 @@ val playerControlsPatch = bytecodePatch(
             inflateBottomControlMethod = this
 
             val inflateReturnObjectIndex = playerBottomControlsInflateMethodMatch[-1]
-            inflateBottomControlRegister = getInstruction<OneRegisterInstruction>(inflateReturnObjectIndex).registerA
+            inflateBottomControlRegister =
+                getInstruction<OneRegisterInstruction>(inflateReturnObjectIndex).registerA
             inflateBottomControlInsertIndex = inflateReturnObjectIndex + 1
         }
 
@@ -245,12 +256,12 @@ val playerControlsPatch = bytecodePatch(
             inflateTopControlMethod = this
 
             val inflateReturnObjectIndex = playerTopControlsInflateMethodMatch[-1]
-            inflateTopControlRegister = getInstruction<OneRegisterInstruction>(inflateReturnObjectIndex).registerA
+            inflateTopControlRegister =
+                getInstruction<OneRegisterInstruction>(inflateReturnObjectIndex).registerA
             inflateTopControlInsertIndex = inflateReturnObjectIndex + 1
         }
 
-        visibilityMethod =
-            playerTopControlsInflateMethodMatch.immutableClassDef.getControlsOverlayVisibilityMethod()
+        visibilityMethod = controlsOverlayVisibilityMethod
 
         // Hook the fullscreen close button. Used to fix visibility
         // when seeking and other situations.
@@ -261,50 +272,60 @@ val playerControlsPatch = bytecodePatch(
             addInstruction(
                 index + 1,
                 "invoke-static { v$register }, " +
-                    "$EXTENSION_CLASS_DESCRIPTOR->setFullscreenCloseButton(Landroid/view/View;)V",
+                        "$EXTENSION_CLASS_DESCRIPTOR->setFullscreenCloseButton(Landroid/view/View;)V",
             )
         }
 
         visibilityImmediateCallbacksExistMethod = playerControlsExtensionHookListenersExistMethod
         visibilityImmediateMethod = playerControlsExtensionHookMethod
 
-        youtubeControlsOverlayMethod.immutableClassDef.motionEventMethodMatch.let {
-            visibilityNegatedImmediateMethod = it.method
-            visibilityNegatedImmediateInsertIndex = it[0] + 1
-        }
+        visibilityNegatedImmediateMethod = motionEventMethodMatch.method
+        visibilityNegatedImmediateInsertIndex = motionEventMethodMatch[0] + 1
 
         // A/B test for a slightly different bottom overlay controls,
         // that uses layout file youtube_video_exploder_controls_bottom_ui_container.xml
         // The change to support this is simple and only requires adding buttons to both layout files,
         // but for now force this different layout off since it's still an experimental test.
-        if (is_19_35_or_greater) {
-            playerBottomControlsExploderFeatureFlagMethod.returnLate(false)
-        }
-
-        // A/B test of different top overlay controls. Two different layouts can be used:
-        // youtube_cf_navigation_improvement_controls_layout.xml
-        // youtube_cf_minimal_impact_controls_layout.xml
-        //
-        // Flag was removed in 20.19+
-        if (is_19_25_or_greater && !is_20_19_or_greater) {
-            playerTopControlsExperimentalLayoutFeatureFlagMethod.apply {
-                val index = indexOfFirstInstructionOrThrow(Opcode.MOVE_RESULT_OBJECT)
-                val register = getInstruction<OneRegisterInstruction>(index).registerA
-
-                addInstruction(index + 1, "const-string v$register, \"default\"")
-            }
-        }
+        playerBottomControlsExploderFeatureFlagMethod.returnLate(false)
 
         // Turn off a/b tests of ugly player buttons that don't match the style of custom player buttons.
-        if (is_20_20_or_greater) {
-            playerControlsFullscreenLargeButtonsFeatureFlagMethod.returnLate(false)
+        playerControlsFullscreenLargeButtonsFeatureFlagMethod.returnLate(false)
 
-            if (is_20_28_or_greater) {
-                playerControlsLargeOverlayButtonsFeatureFlagMethod.returnLate(false)
-            }
+        if (is_20_28_or_greater) {
+            playerControlsLargeOverlayButtonsFeatureFlagMethod.returnLate(false)
+        }
 
-            if (is_20_30_or_greater) {
-                playerControlsButtonStrokeFeatureFlagMethod.returnLate(false)
+        if (is_20_30_or_greater) {
+            playerControlsButtonStrokeFeatureFlagMethod.returnLate(false)
+
+
+            if (is_20_40_or_greater) {
+                // Clear bottom gradient.
+                // This may not be needed if the new bold player overlay icons are in use.
+                playerBottomGradientScrimMethodMatch.let {
+                    it.method.apply {
+                        val gradientFieldIndex = it[-1]
+                        val gradientFieldRegister =
+                            getInstruction<TwoRegisterInstruction>(gradientFieldIndex).registerA
+
+                        val gradientViewIndex = it[1]
+                        val gradientViewRegister =
+                            getInstruction<OneRegisterInstruction>(gradientViewIndex).registerA
+
+                        // This field is nullable, and if null, the bottom gradient is not set.
+                        addInstruction(
+                            gradientFieldIndex,
+                            "const/4 v$gradientFieldRegister, 0x0"
+                        )
+
+                        // Make the bottom gradient transparent and hide it.
+                        addInstruction(
+                            gradientViewIndex + 1,
+                            "invoke-static { v$gradientViewRegister }, " +
+                                    "${EXTENSION_CLASS_DESCRIPTOR}->hideBottomGradientScrim(Landroid/widget/ImageView;)V"
+                        )
+                    }
+                }
             }
         }
     }

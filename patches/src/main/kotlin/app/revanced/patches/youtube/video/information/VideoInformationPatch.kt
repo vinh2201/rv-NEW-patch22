@@ -4,16 +4,19 @@ import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableClassDef
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod.Companion.toMutable
 import app.revanced.patcher.classDef
-import app.revanced.patcher.extensions.*
+import app.revanced.patcher.extensions.addInstruction
+import app.revanced.patcher.extensions.addInstructions
+import app.revanced.patcher.extensions.fieldReference
+import app.revanced.patcher.extensions.getInstruction
+import app.revanced.patcher.extensions.methodReference
+import app.revanced.patcher.extensions.toInstructions
 import app.revanced.patcher.firstClassDef
 import app.revanced.patcher.immutableClassDef
+import app.revanced.patcher.patch.PatchException
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patches.youtube.misc.extension.sharedExtensionPatch
-import app.revanced.patches.youtube.misc.playservice.is_20_19_or_greater
-import app.revanced.patches.youtube.misc.playservice.is_20_20_or_greater
 import app.revanced.patches.youtube.misc.playservice.is_20_49_or_greater
 import app.revanced.patches.youtube.misc.playservice.versionCheckPatch
-import app.revanced.patches.youtube.shared.videoQualityChangedMethodMatch
 import app.revanced.patches.youtube.video.playerresponse.Hook
 import app.revanced.patches.youtube.video.playerresponse.addPlayerResponseMethodHook
 import app.revanced.patches.youtube.video.playerresponse.playerResponseMethodHookPatch
@@ -24,7 +27,6 @@ import app.revanced.patches.youtube.video.videoid.videoIdPatch
 import app.revanced.util.addInstructionsAtControlFlowLabel
 import app.revanced.util.addStaticFieldToExtension
 import app.revanced.util.indexOfFirstInstructionOrThrow
-import app.revanced.patcher.patch.PatchException
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
@@ -113,8 +115,8 @@ val videoInformationPatch = bytecodePatch(
             // Create extension interface methods.
             addSeekInterfaceMethods(
                 playerInitMethod.classDef,
-                classDef.getSeekMethod(),
-                classDef.getSeekRelativeMethod(),
+                seekMethod,
+                seekRelativeMethod,
             )
         }
 
@@ -133,27 +135,23 @@ val videoInformationPatch = bytecodePatch(
 
             addSeekInterfaceMethods(
                 classDef,
-                classDef.getMdxSeekMethod(),
-                classDef.getMdxSeekRelativeMethod(),
+                mdxSeekMethod,
+                mdxSeekRelativeMethod,
             )
         }
 
-        with(createVideoPlayerSeekbarMethod) {
-            val videoLengthMethodMatch = immutableClassDef.videoLengthMethodMatch
+        videoLengthMethodMatch.method.apply {
+            val videoLengthRegisterIndex = videoLengthMethodMatch[-1] - 2
+            val videoLengthRegister =
+                getInstruction<OneRegisterInstruction>(videoLengthRegisterIndex).registerA
+            val dummyRegisterForLong =
+                videoLengthRegister + 1 // Required for long values since they are wide.
 
-            videoLengthMethodMatch.method.apply {
-                val videoLengthRegisterIndex = videoLengthMethodMatch[-1] - 2
-                val videoLengthRegister =
-                    getInstruction<OneRegisterInstruction>(videoLengthRegisterIndex).registerA
-                val dummyRegisterForLong =
-                    videoLengthRegister + 1 // Required for long values since they are wide.
-
-                addInstruction(
-                    videoLengthMethodMatch[-1],
-                    "invoke-static {v$videoLengthRegister, v$dummyRegisterForLong}, " +
-                            "$EXTENSION_CLASS_DESCRIPTOR->setVideoLength(J)V",
-                )
-            }
+            addInstruction(
+                videoLengthMethodMatch[-1],
+                "invoke-static {v$videoLengthRegister, v$dummyRegisterForLong}, " +
+                        "$EXTENSION_CLASS_DESCRIPTOR->setVideoLength(J)V",
+            )
         }
 
         playerStatusMethod = playerInitMethod.immutableClassDef.getPlayerStatusMethod()
@@ -190,8 +188,9 @@ val videoInformationPatch = bytecodePatch(
         /*
          * Hook the user playback speed selection.
          */
-        onPlaybackSpeedItemClickParentMethod.immutableClassDef.getOnPlaybackSpeedItemClickMethod().apply {
-            val speedSelectionValueInstructionIndex = indexOfFirstInstructionOrThrow(Opcode.IGET)
+        playbackSpeedOnItemClickMethod.apply {
+            val speedSelectionValueInstructionIndex =
+                indexOfFirstInstructionOrThrow(Opcode.IGET)
 
             legacySpeedSelectionInsertMethod = this
             legacySpeedSelectionInsertIndex = speedSelectionValueInstructionIndex + 1
@@ -215,7 +214,10 @@ val videoInformationPatch = bytecodePatch(
                 // we're using the expected class type.
                 var fieldReferenceType: ClassDef? = null
                 classDefs.forEach { classDef ->
-                    if (classDef.interfaces.contains(setPlaybackSpeedContainerClassFieldReference.type)) {
+                    if (classDef.interfaces.contains(
+                            setPlaybackSpeedContainerClassFieldReference.type
+                        )
+                    ) {
                         if (fieldReferenceType != null) {
                             throw PatchException("Found more than one playback speed interface: $classDef")
                         }
@@ -312,7 +314,7 @@ val videoInformationPatch = bytecodePatch(
         }
 
         // Handle new playback speed menu.
-        videoQualityChangedMethodMatch.immutableClassDef.playbackSpeedMenuSpeedChangedMethodMatch.let {
+        playbackSpeedMenuSpeedChangedMethodMatch.let {
             it.method.apply {
                 val index = it[0]
 
@@ -323,16 +325,15 @@ val videoInformationPatch = bytecodePatch(
             }
         }
 
-        val videoQualityClassType : String
-        (if (is_20_19_or_greater) videoQualityMethod else videoQualityLegacyMethod).apply {
+        val videoQualityClassType: String
+        videoQualityMethod.apply {
             videoQualityClassType = immutableClassDef.type
 
             // Fix bad data used by YouTube.
-            val nameRegister = if (is_20_20_or_greater) "p3" else "p2"
             addInstructions(
                 0,
                 """
-                    invoke-static { $nameRegister, p1 }, $EXTENSION_CLASS_DESCRIPTOR->fixVideoQualityResolution(Ljava/lang/String;I)I    
+                    invoke-static { p3, p1 }, $EXTENSION_CLASS_DESCRIPTOR->fixVideoQualityResolution(Ljava/lang/String;I)I    
                     move-result p1
                 """,
             )
@@ -396,7 +397,7 @@ val videoInformationPatch = bytecodePatch(
         }
 
         // Detect video quality changes and override the current quality.
-        videoQualitySetterMethod.immutableClassDef.getSetVideoQualityMethod().let {
+        setVideoQualityMethod.let {
             // This instruction refers to the field with the type that contains the setQuality method.
             val onItemClickListenerClassReference =
                 it.getInstruction<ReferenceInstruction>(0).reference

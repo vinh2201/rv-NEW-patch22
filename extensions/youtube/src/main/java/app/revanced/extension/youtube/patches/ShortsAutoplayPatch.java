@@ -1,5 +1,7 @@
 package app.revanced.extension.youtube.patches;
 
+import static app.revanced.extension.youtube.patches.VersionCheckPatch.IS_21_10_OR_GREATER;
+
 import android.app.Activity;
 
 import java.lang.ref.WeakReference;
@@ -24,7 +26,12 @@ public class ShortsAutoplayPatch {
         /**
          * Pause playback after 1 play.
          */
-        END_SCREEN;
+        END_SCREEN,
+        /**
+         * Play once, then advanced to the next Short.
+         * Only found in 21.10+
+         */
+        AUTO_ADVANCE;
 
         static void setYTEnumValue(Enum<?> ytBehavior) {
             for (ShortsLoopBehavior rvBehavior : values()) {
@@ -78,23 +85,16 @@ public class ShortsAutoplayPatch {
      */
     public static Enum<?> changeShortsRepeatBehavior(Enum<?> original) {
         try {
-            final boolean autoplay;
+            final boolean autoplay = isAppInBackgroundPiPMode()
+                    ? Settings.SHORTS_AUTOPLAY_BACKGROUND.get()
+                    : Settings.SHORTS_AUTOPLAY.get();
 
-            if (isAppInBackgroundPiPMode()) {
-                if (!VersionCheckPatch.IS_19_34_OR_GREATER) {
-                    // 19.34+ is required to set background play behavior.
-                    Logger.printDebug(() -> "PiP Shorts not supported, using original repeat behavior");
-
-                    return original;
-                }
-
-                autoplay = Settings.SHORTS_AUTOPLAY_BACKGROUND.get();
-            } else {
-                autoplay = Settings.SHORTS_AUTOPLAY.get();
-            }
+            ShortsLoopBehavior autoPlayBehavior = IS_21_10_OR_GREATER
+                    ? ShortsLoopBehavior.AUTO_ADVANCE
+                    : ShortsLoopBehavior.SINGLE_PLAY;
 
             Enum<?> overrideBehavior = (autoplay
-                    ? ShortsLoopBehavior.SINGLE_PLAY
+                    ? autoPlayBehavior
                     : ShortsLoopBehavior.REPEAT).ytEnumValue;
 
             if (overrideBehavior != null) {

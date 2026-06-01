@@ -30,19 +30,21 @@ internal val accountCredentialsInvalidTextPatch = bytecodePatch {
         // MicroG accounts look almost identical to Google device accounts,
         // and it's more foolproof to instead uninstall/reinstall.
         arrayOf(
-            specificNetworkErrorViewControllerMethodMatch,
-            loadingFrameLayoutControllerMethodMatch,
+            getSpecificNetworkErrorViewControllerMethodMatch(true),
+            getSpecificNetworkErrorViewControllerMethodMatch(false)
         ).forEach { match ->
-            val index = match[-1]
-            val register = match.method.getInstruction<OneRegisterInstruction>(index).registerA
+            match.methodOrNull?.apply {
+                val index = match[-1]
+                val register = getInstruction<OneRegisterInstruction>(index).registerA
 
-            match.method.addInstructions(
-                index + 1,
-                """
-                    invoke-static { v$register }, $EXTENSION_CLASS_DESCRIPTOR->getOfflineNetworkErrorString(Ljava/lang/String;)Ljava/lang/String;
-                    move-result-object v$register  
-                """,
-            )
+                addInstructions(
+                    index + 1,
+                    """
+                        invoke-static { v$register }, $EXTENSION_CLASS_DESCRIPTOR->getOfflineNetworkErrorString(Ljava/lang/String;)Ljava/lang/String;
+                        move-result-object v$register  
+                    """,
+                )
+            }
         }
     }
 }

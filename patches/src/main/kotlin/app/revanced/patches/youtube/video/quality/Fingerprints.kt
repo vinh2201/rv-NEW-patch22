@@ -1,5 +1,6 @@
 package app.revanced.patches.youtube.video.quality
 
+import app.revanced.patcher.CompositeMatch
 import app.revanced.patcher.accessFlags
 import app.revanced.patcher.afterAtMost
 import app.revanced.patcher.allOf
@@ -7,6 +8,8 @@ import app.revanced.patcher.composingFirstMethod
 import app.revanced.patcher.custom
 import app.revanced.patcher.definingClass
 import app.revanced.patcher.field
+import app.revanced.patcher.firstImmutableMethodDeclaratively
+import app.revanced.patcher.firstMethodComposite
 import app.revanced.patcher.firstMethodDeclaratively
 import app.revanced.patcher.gettingFirstImmutableMethodDeclaratively
 import app.revanced.patcher.gettingFirstMethodDeclaratively
@@ -18,10 +21,17 @@ import app.revanced.patcher.opcodes
 import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patcher.returnType
+import app.revanced.util.getting
+import app.revanced.util.using
+import app.revanced.util.findFieldFromToString
 import app.revanced.util.literal
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.ClassDef
+
+internal val BytecodePatchContext.newAdvancedQualityMenuStyleFlyoutMethodMatch by composingFirstMethod {
+    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+    instructions(45712556L())
+}
 
 internal val BytecodePatchContext.currentVideoFormatToStringMethod by gettingFirstImmutableMethodDeclaratively(
     "currentVideoFormat="
@@ -60,22 +70,46 @@ internal val BytecodePatchContext.hidePremiumVideoQualityGetArrayMethod by getti
     custom { AccessFlags.SYNTHETIC.isSet(immutableClassDef.accessFlags) }
 }
 
-internal val BytecodePatchContext.videoQualityItemOnClickParentMethod by gettingFirstImmutableMethodDeclaratively(
-    "VIDEO_QUALITIES_MENU_BOTTOM_SHEET_FRAGMENT",
-) {
-    returnType("V")
+internal const val FIXED_RESOLUTION_STRING = ", initialPlaybackVideoQualityFixedResolution="
+
+
+internal fun BytecodePatchContext.getPlaybackStartParametersConstructorMethod(): CompositeMatch {
+    val playbackStartParametersToStringMethod = firstMethodDeclaratively(
+        FIXED_RESOLUTION_STRING
+    ) {
+        name("toString")
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("Ljava/lang/String;")
+        parameterTypes()
+    }
+
+    val initialResolutionField = playbackStartParametersToStringMethod
+        .findFieldFromToString(FIXED_RESOLUTION_STRING)
+
+    // Inject a call to override initial video quality.
+    return playbackStartParametersToStringMethod.immutableClassDef.firstMethodComposite {
+        name("<init>")
+        instructions(
+            allOf(Opcode.IPUT_OBJECT(), field { this == initialResolutionField })
+        )
+    }
 }
 
-context(_: BytecodePatchContext)
-internal fun ClassDef.getVideoQualityItemOnClickMethod() = firstMethodDeclaratively {
-    name("onItemClick")
-    returnType("V")
-    parameterTypes(
-        "Landroid/widget/AdapterView;",
-        "Landroid/view/View;",
-        "I",
-        "J",
-    )
+internal val BytecodePatchContext.videoQualityItemOnClickMethod by getting {
+    firstMethodDeclaratively {
+        name("onItemClick")
+        returnType("V")
+        parameterTypes(
+            "Landroid/widget/AdapterView;",
+            "Landroid/view/View;",
+            "I",
+            "J",
+        )
+    }
+} using {
+    firstImmutableMethodDeclaratively("VIDEO_QUALITIES_MENU_BOTTOM_SHEET_FRAGMENT") {
+        returnType("V")
+    }
 }
 
 internal val BytecodePatchContext.videoQualityMenuOptionsMethodMatch by composingFirstMethod {

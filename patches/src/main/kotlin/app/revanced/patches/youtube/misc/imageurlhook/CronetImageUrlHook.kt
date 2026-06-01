@@ -33,9 +33,9 @@ val cronetImageURLHookPatch = bytecodePatch(
 
     apply {
 
-        loadImageURLMethod = messageDigestImageURLParentMethod.immutableClassDef.getMessageDigestImageURLMethod()
-        loadImageSuccessCallbackMethod = onResponseStartedMethod.immutableClassDef.getOnSucceededMethod()
-        loadImageErrorCallbackMethod = onResponseStartedMethod.immutableClassDef.getOnFailureMethod()
+        loadImageURLMethod = messageDigestImageURLMethod
+        loadImageSuccessCallbackMethod = onSucceededMethod
+        loadImageErrorCallbackMethod = onFailureMethod
 
         // The URL is required for the failure callback hook, but the URL field is obfuscated.
         // Add a helper get method that returns the URL field.

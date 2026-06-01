@@ -1,12 +1,16 @@
 package app.revanced.extension.youtube.patches;
 
 import static app.revanced.extension.shared.StringRef.str;
-import static app.revanced.extension.youtube.patches.MiniplayerPatch.MiniplayerType.*;
-import static app.revanced.extension.youtube.patches.VersionCheckPatch.*;
+import static app.revanced.extension.youtube.patches.MiniplayerPatch.MiniplayerType.DEFAULT;
+import static app.revanced.extension.youtube.patches.MiniplayerPatch.MiniplayerType.DISABLED;
+import static app.revanced.extension.youtube.patches.MiniplayerPatch.MiniplayerType.MINIMAL;
+import static app.revanced.extension.youtube.patches.MiniplayerPatch.MiniplayerType.MODERN_1;
+import static app.revanced.extension.youtube.patches.MiniplayerPatch.MiniplayerType.MODERN_2;
+import static app.revanced.extension.youtube.patches.MiniplayerPatch.MiniplayerType.MODERN_3;
+import static app.revanced.extension.youtube.patches.MiniplayerPatch.MiniplayerType.MODERN_4;
 
 import android.util.DisplayMetrics;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -16,7 +20,6 @@ import java.util.List;
 import java.util.Objects;
 
 import app.revanced.extension.shared.Logger;
-import app.revanced.extension.shared.ResourceType;
 import app.revanced.extension.shared.Utils;
 import app.revanced.extension.shared.settings.Setting;
 import app.revanced.extension.youtube.settings.Settings;
@@ -32,7 +35,9 @@ public final class MiniplayerPatch {
          * Disabled. When swiped down the miniplayer is immediately closed.
          */
         DISABLED(false, null),
-        /** Unmodified type, and same as un-patched. */
+        /**
+         * Unmodified type, and same as un-patched.
+         */
         DEFAULT(null, null),
         /**
          * Exactly the same as MINIMAL and only here for migration of user settings.
@@ -111,23 +116,14 @@ public final class MiniplayerPatch {
         MINIPLAYER_SIZE = dipWidth;
     }
 
-    /**
-     * Modern subtitle overlay for {@link MiniplayerType#MODERN_2}.
-     * Resource is not present in older targets, and this field will be zero.
-     */
-    private static final int MODERN_OVERLAY_SUBTITLE_TEXT
-            = Utils.getResourceIdentifier(ResourceType.ID, "modern_miniplayer_subtitle_text");
-
     private static final MiniplayerType CURRENT_TYPE = Settings.MINIPLAYER_TYPE.get();
 
     /**
      * Cannot turn off double tap with modern 2 or 3 with later targets,
      * as forcing it off breakings tapping the miniplayer.
      */
-    private static final boolean DOUBLE_TAP_ACTION_ENABLED =
-            // 19.29+ is very broken if double tap is not enabled.
-            IS_19_29_OR_GREATER ||
-                    (CURRENT_TYPE.isModern() && Settings.MINIPLAYER_DOUBLE_TAP_ACTION.get());
+    private static final boolean DOUBLE_TAP_ACTION_ENABLED = true;
+
 
     private static final boolean DRAG_AND_DROP_ENABLED =
             CURRENT_TYPE.isModern() && !Settings.MINIPLAYER_DISABLE_DRAG_AND_DROP.get();
@@ -143,20 +139,13 @@ public final class MiniplayerPatch {
     // 19.25 is last version that uses forward/back buttons for phones,
     // but buttons still show for tablets/foldable devices, and they don't work well so always hide.
     private static final boolean HIDE_REWIND_FORWARD_ENABLED = CURRENT_TYPE == MODERN_1
-            && (VersionCheckPatch.IS_19_34_OR_GREATER || Settings.MINIPLAYER_HIDE_REWIND_FORWARD.get());
+            && Settings.MINIPLAYER_HIDE_REWIND_FORWARD.get();
 
     private static final boolean MINIPLAYER_ROUNDED_CORNERS_ENABLED =
             CURRENT_TYPE.isModern() && !Settings.MINIPLAYER_DISABLE_ROUNDED_CORNERS.get();
 
     private static final boolean MINIPLAYER_HORIZONTAL_DRAG_ENABLED =
             DRAG_AND_DROP_ENABLED && !Settings.MINIPLAYER_DISABLE_HORIZONTAL_DRAG.get();
-
-    /**
-     * Remove a broken and always present subtitle text that is only
-     * present with {@link MiniplayerType#MODERN_2}. Bug was fixed in 19.21.
-     */
-    private static final boolean HIDE_BROKEN_MODERN_2_SUBTITLE =
-            CURRENT_TYPE == MODERN_2 && !IS_19_21_OR_GREATER;
 
     private static final int OPACITY_LEVEL;
 
@@ -190,18 +179,13 @@ public final class MiniplayerPatch {
         @Override
         public boolean isAvailable() {
             MiniplayerType type = Settings.MINIPLAYER_TYPE.get();
-            return type == MODERN_4
-                    || (!IS_19_20_OR_GREATER && (type == MODERN_1 || type == MODERN_3))
-                    || (!IS_19_26_OR_GREATER && type == MODERN_1
-                    && !Settings.MINIPLAYER_DOUBLE_TAP_ACTION.get() && Settings.MINIPLAYER_DISABLE_DRAG_AND_DROP.get())
-                    || (IS_19_29_OR_GREATER && type == MODERN_3);
+            return type == MODERN_4 || type == MODERN_3;
         }
 
         @Override
         public List<Setting<?>> getParentSettings() {
             return List.of(
                     Settings.MINIPLAYER_TYPE,
-                    Settings.MINIPLAYER_DOUBLE_TAP_ACTION,
                     Settings.MINIPLAYER_DISABLE_DRAG_AND_DROP
             );
         }
@@ -433,27 +417,6 @@ public final class MiniplayerPatch {
             }
         } catch (Exception ex) {
             Logger.printException(() -> "hideMiniplayerSubTexts failure", ex);
-        }
-    }
-
-    /**
-     * Injection point.
-     */
-    public static void playerOverlayGroupCreated(View group) {
-        try {
-            if (HIDE_BROKEN_MODERN_2_SUBTITLE && MODERN_OVERLAY_SUBTITLE_TEXT != 0) {
-                if (group instanceof ViewGroup) {
-                    View subtitleText = Utils.getChildView((ViewGroup) group, true,
-                            view -> view.getId() == MODERN_OVERLAY_SUBTITLE_TEXT);
-
-                    if (subtitleText != null) {
-                        subtitleText.setVisibility(View.GONE);
-                        Logger.printDebug(() -> "Modern overlay subtitle view set to hidden");
-                    }
-                }
-            }
-        } catch (Exception ex) {
-            Logger.printException(() -> "playerOverlayGroupCreated failure", ex);
         }
     }
 }

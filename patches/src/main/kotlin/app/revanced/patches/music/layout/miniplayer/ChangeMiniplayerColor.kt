@@ -1,8 +1,9 @@
 @file:Suppress("SpellCheckingInspection")
 
-package app.revanced.patches.music.layout.miniplayercolor
+package app.revanced.patches.music.layout.miniplayer
 
 import app.revanced.patcher.accessFlags
+import app.revanced.patcher.extensions.fieldReference
 import app.revanced.patcher.extensions.getInstruction
 import app.revanced.patcher.extensions.methodReference
 import app.revanced.patcher.firstMethodDeclaratively
@@ -16,11 +17,13 @@ import app.revanced.patches.music.misc.settings.PreferenceScreen
 import app.revanced.patches.music.misc.settings.settingsPatch
 import app.revanced.patches.shared.misc.mapping.resourceMappingPatch
 import app.revanced.patches.shared.misc.settings.preference.SwitchPreference
-import app.revanced.util.*
+import app.revanced.util.addInstructionsAtControlFlowLabel
+import app.revanced.util.findFreeRegister
+import app.revanced.util.indexOfFirstInstructionOrThrow
+import app.revanced.util.indexOfFirstInstructionReversedOrThrow
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
-import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 
 private const val EXTENSION_CLASS_DESCRIPTOR =
     "Lapp/revanced/extension/music/patches/ChangeMiniplayerColorPatch;"
@@ -43,32 +46,22 @@ val changeMiniplayerColorPatch = bytecodePatch(
             "8.10.52",
             "8.37.56",
             "8.40.54",
+            "8.44.54",
+            "9.13.50"
         ),
     )
 
     apply {
-        addResources("music", "layout.miniplayercolor.changeMiniplayerColor")
+        addResources("music", "layout.miniplayer.changeMiniplayerColor")
 
         PreferenceScreen.PLAYER.addPreferences(
             SwitchPreference("revanced_music_change_miniplayer_color"),
         )
 
-        miniPlayerConstructorMethodMatch.immutableClassDef.switchToggleColorMethodMatch.let {
-            val relativeIndex = it[-1] + 1
-
-            val invokeVirtualIndex = it.method.indexOfFirstInstructionOrThrow(
-                relativeIndex,
-                Opcode.INVOKE_VIRTUAL,
-            )
-            val colorMathPlayerInvokeVirtualReference = it.method
-                .getInstruction<ReferenceInstruction>(invokeVirtualIndex).reference
-
-            val iGetIndex = it.method.indexOfFirstInstructionOrThrow(
-                relativeIndex,
-                Opcode.IGET,
-            )
-            val colorMathPlayerIGetReference = it.method
-                .getInstruction<ReferenceInstruction>(iGetIndex).reference as FieldReference
+        switchToggleColorMethodMatch.let {
+            val colorMathPlayerInvokeVirtualReference =
+                it.method.getInstruction(it[-1]).methodReference!!
+            val colorMathPlayerIGetReference = it.method.getInstruction(it[4]).fieldReference!!
 
             val colorGreyIndex =
                 miniPlayerConstructorMethodMatch.immutableMethod.indexOfFirstInstructionReversedOrThrow {

@@ -130,11 +130,11 @@ val addGiveGroupKudosButtonToGroupActivityPatch = bytecodePatch(
             )
         }
 
-        val actionHandlerMethod = initMethod.immutableClassDef.getActionHandlerMethod()
-        val constShakeToKudosStringIndex = actionHandlerMethod.instructions.indexOfFirst {
+        val actionHandlerTargetMethod = actionHandlerMethod
+        val constShakeToKudosStringIndex = actionHandlerTargetMethod.instructions.indexOfFirst {
             it is NarrowLiteralInstruction && it.narrowLiteral == shakeToKudosStringId
         }
-        val getSingletonInstruction = actionHandlerMethod.instructions.filterIsInstance<BuilderInstruction21c>().last {
+        val getSingletonInstruction = actionHandlerTargetMethod.instructions.filterIsInstance<BuilderInstruction21c>().last {
             it.opcode == Opcode.SGET_OBJECT && it.location.index < constShakeToKudosStringIndex
         }
 
@@ -181,7 +181,7 @@ val addGiveGroupKudosButtonToGroupActivityPatch = bytecodePatch(
                 """
                     sget-object p1, ${getSingletonInstruction.reference}
                     iget-object p0, p0, $outerThisField
-                    invoke-virtual { p0, p1 }, $actionHandlerMethod
+                    invoke-virtual { p0, p1 }, $actionHandlerTargetMethod
                     return-void
                 """,
             )

@@ -1,7 +1,6 @@
 package app.revanced.patches.youtube.interaction.seekbar
 
 import app.revanced.patcher.extensions.addInstructionsWithLabels
-import app.revanced.patcher.immutableClassDef
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patches.all.misc.resources.addResources
 import app.revanced.patches.all.misc.resources.addResourcesPatch
@@ -12,7 +11,6 @@ import app.revanced.patches.youtube.misc.playservice.is_20_28_or_greater
 import app.revanced.patches.youtube.misc.playservice.versionCheckPatch
 import app.revanced.patches.youtube.misc.settings.PreferenceScreen
 import app.revanced.patches.youtube.misc.settings.settingsPatch
-import app.revanced.patches.youtube.shared.seekbarMethod
 import app.revanced.patches.youtube.shared.getSeekbarOnDrawMethodMatch
 import app.revanced.util.insertLiteralOverride
 
@@ -38,7 +36,7 @@ val hideSeekbarPatch = bytecodePatch(
             SwitchPreference("revanced_fullscreen_large_seekbar"),
         )
 
-        seekbarMethod.immutableClassDef.getSeekbarOnDrawMethodMatch().method.addInstructionsWithLabels(
+        getSeekbarOnDrawMethodMatch().method.addInstructionsWithLabels(
             0,
             """
                 const/4 v0, 0x0

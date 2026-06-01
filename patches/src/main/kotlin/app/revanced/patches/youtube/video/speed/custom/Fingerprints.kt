@@ -3,9 +3,30 @@ package app.revanced.patches.youtube.video.speed.custom
 import app.revanced.patcher.*
 import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patches.shared.misc.mapping.ResourceType
+import app.revanced.util.getting
+import app.revanced.util.using
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
+
+internal val BytecodePatchContext.audioTrackOldBottomSheetMethodMatch by composingFirstMethod {
+    returnType("V")
+    instructions(
+        allOf(
+            Opcode.INVOKE_VIRTUAL(),
+            method { returnType == "Z" && parameterTypes.isEmpty() }
+        ),
+        allOf(
+            Opcode.INVOKE_VIRTUAL(),
+            method { returnType == "Z" && parameterTypes.isEmpty() }
+        ),
+        "AUDIO_TRACKS_MENU_BOTTOM_SHEET_FRAGMENT"(),
+        allOf(
+            Opcode.INVOKE_VIRTUAL(),
+            method { returnType == "V" && parameterTypes.size == 2 && parameterTypes[0].startsWith("L") && parameterTypes[1] == "Ljava/lang/String;" }
+        ),
+    )
+}
 
 internal val BytecodePatchContext.getOldPlaybackSpeedsMethod by gettingFirstMethodDeclaratively(
     "menu_item_playback_speed",
@@ -13,12 +34,21 @@ internal val BytecodePatchContext.getOldPlaybackSpeedsMethod by gettingFirstMeth
     parameterTypes("[L", "I")
 }
 
-context(_: BytecodePatchContext)
-internal fun ClassDef.getShowOldPlaybackSpeedMenuMethod() = firstMethodDeclaratively {
-    instructions(
-        ResourceType.STRING("varispeed_unavailable_message"),
-    )
-}
+internal val BytecodePatchContext.showOldPlaybackSpeedMenuMethodMatch by getting {
+    firstMethodComposite {
+        var methodDefiningClass = ""
+        custom {
+            methodDefiningClass = definingClass
+            true
+        }
+
+        instructions(
+            ResourceType.STRING("varispeed_unavailable_message"),
+            Opcode.RETURN_VOID(),
+            allOf(Opcode.IGET_OBJECT(), field { definingClass == methodDefiningClass }),
+        )
+    }
+} using { getOldPlaybackSpeedsMethod }
 
 internal val BytecodePatchContext.showOldPlaybackSpeedMenuExtensionMethod by gettingFirstMethodDeclaratively {
     name("showOldPlaybackSpeedMenu")
@@ -30,6 +60,13 @@ internal val BytecodePatchContext.serverSideMaxSpeedFeatureFlagMethod by getting
     instructions(
         45719140L(),
     )
+}
+
+internal val BytecodePatchContext.flyoutMenuNonLegacyFeatureFlagMethodMatch by composingFirstMethod {
+    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+    returnType("V")
+    parameterTypes()
+    instructions(45731126L())
 }
 
 internal val BytecodePatchContext.speedArrayGeneratorMethodMatch by composingFirstMethod {

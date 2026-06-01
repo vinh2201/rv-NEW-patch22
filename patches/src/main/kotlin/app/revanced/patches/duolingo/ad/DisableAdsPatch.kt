@@ -20,7 +20,7 @@ val disableAdsPatch = bytecodePatch("Disable ads") {
         // SharedPreferences has a debug boolean value with key "disable_ads", which maps to "DebugCategory.DISABLE_ADS".
         //
         // MonetizationDebugSettings seems to be the most general setting to work fine.
-        monetizationDebugSettingsToStringMethod.immutableClassDef.initializeMonetizationDebugSettingsMethodMatch.let {
+        initializeMonetizationDebugSettingsMethodMatch.let {
             it.method.apply {
                 val insertIndex = it[0]
                 val register = getInstruction<TwoRegisterInstruction>(insertIndex).registerA

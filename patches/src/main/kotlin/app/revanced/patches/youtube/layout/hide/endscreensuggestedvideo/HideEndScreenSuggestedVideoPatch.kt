@@ -2,18 +2,16 @@ package app.revanced.patches.youtube.layout.hide.endscreensuggestedvideo
 
 import app.revanced.patcher.extensions.ExternalLabel
 import app.revanced.patcher.extensions.addInstructionsWithLabels
+import app.revanced.patcher.extensions.fieldReference
 import app.revanced.patcher.extensions.getInstruction
 import app.revanced.patcher.extensions.methodReference
-import app.revanced.patcher.immutableClassDef
+import app.revanced.patcher.firstMethod
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patches.all.misc.resources.addResources
 import app.revanced.patches.all.misc.resources.addResourcesPatch
 import app.revanced.patches.shared.misc.settings.preference.SwitchPreference
 import app.revanced.patches.youtube.misc.extension.sharedExtensionPatch
 import app.revanced.patches.youtube.misc.settings.PreferenceScreen
-import app.revanced.util.indexOfFirstInstructionOrThrow
-import app.revanced.util.indexOfFirstInstructionReversedOrThrow
-import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 
 private const val EXTENSION_CLASS_DESCRIPTOR =
@@ -36,37 +34,29 @@ val hideEndScreenSuggestedVideoPatch = bytecodePatch(
             "20.26.46",
             "20.31.42",
             "20.37.48",
-            "20.40.45"
+            "20.40.45",
+            "20.45.36"
         ),
     )
 
     apply {
-        addResources("youtube", "layout.hide.endscreensuggestedvideo.hideEndScreenSuggestedVideoPatch")
-
-        PreferenceScreen.PLAYER.addPreferences(
-            SwitchPreference("revanced_end_screen_suggested_video"),
+        addResources(
+            "youtube",
+            "layout.hide.endscreensuggestedvideo.hideEndScreenSuggestedVideoPatch"
         )
 
-        removeOnLayoutChangeListenerMethodMatch.let {
-            val endScreenMethod = navigate(it.immutableMethod).to(it[-1]).stop()
+        PreferenceScreen.PLAYER.addPreferences(
+            SwitchPreference("revanced_hide_end_screen_suggested_video"),
+        )
 
-            endScreenMethod.apply {
-                val autoNavStatusMethodName =
-                    autoNavConstructorMethod.immutableClassDef.getAutoNavStatusMethod().name
+        val endScreenMethod = removeOnLayoutChangeListenerMethodMatch.let {
+            firstMethod(it.method.getInstruction<ReferenceInstruction>(it[1]).methodReference!!)
+        }
 
-                val invokeIndex = indexOfFirstInstructionOrThrow {
-                    val reference = methodReference
-                    reference?.name == autoNavStatusMethodName &&
-                            reference.returnType == "Z" &&
-                            reference.parameterTypes.isEmpty()
-                }
 
-                val iGetObjectIndex =
-                    indexOfFirstInstructionReversedOrThrow(invokeIndex, Opcode.IGET_OBJECT)
-                val invokeReference = getInstruction<ReferenceInstruction>(invokeIndex).reference
-                val iGetObjectReference =
-                    getInstruction<ReferenceInstruction>(iGetObjectIndex).reference
-                val opcodeName = getInstruction(invokeIndex).opcode.name
+        getEndScreenSuggestedVideoMethodMatch(autoNavStatusMethod).let { match ->
+            match.method.apply {
+                val autoNavField = getInstruction(match[0]).fieldReference!!
 
                 addInstructionsWithLabels(
                     0,
@@ -75,10 +65,10 @@ val hideEndScreenSuggestedVideoPatch = bytecodePatch(
                         move-result v0
                         if-eqz v0, :show_end_screen_recommendation
 
-                        iget-object v0, p0, $iGetObjectReference
+                        iget-object v0, p0, $autoNavField
 
                         # This reference checks whether autoplay is turned on.
-                        $opcodeName { v0 }, $invokeReference
+                        invoke-virtual { v0 }, $autoNavStatusMethod
                         move-result v0
 
                         # Hide suggested video end screen only when autoplay is turned off.

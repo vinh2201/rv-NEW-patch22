@@ -1,7 +1,16 @@
 package app.revanced.patches.youtube.layout.player.fullscreen
 
-import app.revanced.patcher.*
+import app.revanced.patcher.accessFlags
+import app.revanced.patcher.afterAtMost
+import app.revanced.patcher.composingFirstMethod
+import app.revanced.patcher.definingClass
+import app.revanced.patcher.gettingFirstMethodDeclaratively
+import app.revanced.patcher.instructions
+import app.revanced.patcher.invoke
+import app.revanced.patcher.name
+import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.BytecodePatchContext
+import app.revanced.patcher.returnType
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 
@@ -16,28 +25,6 @@ internal val BytecodePatchContext.openVideosFullscreenPortraitMethodMatch by com
         // Open videos fullscreen portrait feature flag.
         afterAtMost(5, 45666112L()), // Cannot be more than 5.
         afterAtMost(10, Opcode.MOVE_RESULT()),
-    )
-}
-
-/**
- * Pre 19.46.
- */
-internal val BytecodePatchContext.openVideosFullscreenPortraitLegacyMethodMatch by composingFirstMethod {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    returnType("V")
-    parameterTypes("L", "Lj\$/util/Optional;")
-    opcodes(
-        Opcode.GOTO,
-        Opcode.SGET_OBJECT,
-        Opcode.GOTO,
-        Opcode.SGET_OBJECT,
-        Opcode.INVOKE_VIRTUAL,
-        Opcode.MOVE_RESULT,
-        Opcode.IF_EQ,
-        Opcode.IF_EQ,
-        Opcode.IGET_OBJECT,
-        Opcode.INVOKE_VIRTUAL,
-        Opcode.MOVE_RESULT, // Conditional check to modify.
     )
 }
 

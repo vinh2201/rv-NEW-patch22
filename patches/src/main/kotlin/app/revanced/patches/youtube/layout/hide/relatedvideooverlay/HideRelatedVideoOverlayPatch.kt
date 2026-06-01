@@ -3,7 +3,6 @@ package app.revanced.patches.youtube.layout.hide.relatedvideooverlay
 import app.revanced.patcher.extensions.ExternalLabel
 import app.revanced.patcher.extensions.addInstructionsWithLabels
 import app.revanced.patcher.extensions.getInstruction
-import app.revanced.patcher.immutableClassDef
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patches.all.misc.resources.addResources
 import app.revanced.patches.all.misc.resources.addResourcesPatch
@@ -35,7 +34,8 @@ val hideRelatedVideoOverlayPatch = bytecodePatch(
             "20.26.46",
             "20.31.42",
             "20.37.48",
-            "20.40.45"
+            "20.40.45",
+            "20.45.36"
         ),
     )
 
@@ -43,11 +43,8 @@ val hideRelatedVideoOverlayPatch = bytecodePatch(
         addResources("youtube", "layout.hide.relatedvideooverlay.hideRelatedVideoOverlayPatch")
 
         PreferenceScreen.PLAYER.addPreferences(
-            SwitchPreference("revanced_hide_related_videos_overlay"),
+            SwitchPreference("revanced_hide_player_related_videos_overlay"),
         )
-
-        val relatedEndScreenResultsMethod =
-            relatedEndScreenResultsParentMethod.immutableClassDef.getRelatedEndScreenResultsMethod()
 
         relatedEndScreenResultsMethod.addInstructionsWithLabels(
             0,

@@ -3,24 +3,46 @@ package app.revanced.extension.shared.settings.preference;
 import static app.revanced.extension.shared.StringRef.str;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.Dialog;
+import android.content.ComponentCallbacks2;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
+import android.net.Uri;
 import android.os.Bundle;
+import android.preference.EditTextPreference;
+import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceGroup;
 import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
 import android.preference.SwitchPreference;
-import android.preference.EditTextPreference;
-import android.preference.ListPreference;
+import android.text.InputType;
 import android.util.Pair;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ListView;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.Scanner;
 
 import app.revanced.extension.shared.Logger;
 import app.revanced.extension.shared.ResourceType;
@@ -29,9 +51,65 @@ import app.revanced.extension.shared.settings.BaseSettings;
 import app.revanced.extension.shared.settings.BooleanSetting;
 import app.revanced.extension.shared.settings.Setting;
 import app.revanced.extension.shared.ui.CustomDialog;
+import app.revanced.extension.shared.ui.Dim;
 
 @SuppressWarnings("deprecation")
 public abstract class AbstractPreferenceFragment extends PreferenceFragment {
+
+    private static class DebouncedListView extends ListView {
+
+        public DebouncedListView(Context context) {
+            super(context);
+
+            setId(android.R.id.list); // Required so PreferenceFragment recognizes it.
+
+            // Match the default layout params
+            setLayoutParams(new ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+            ));
+        }
+
+        @Override
+        public boolean performItemClick(View view, int position, long id) {
+            if (Utils.isFastClick()) {
+                return true; // Ignore fast double click.
+            }
+            return super.performItemClick(view, position, id);
+        }
+    }
+
+    private record DebouncedItemClickListener(
+            AdapterView.OnItemClickListener originalListener) implements AdapterView.OnItemClickListener {
+
+        @Override
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            if (Utils.isFastClick()) {
+                return; // Ignore fast double click.
+            }
+            originalListener.onItemClick(parent, view, position, id);
+        }
+    }
+
+    @Override
+    public boolean onPreferenceTreeClick(PreferenceScreen preferenceScreen, Preference preference) {
+        if (preference instanceof PreferenceScreen) {
+            Dialog dialog = ((PreferenceScreen) preference).getDialog();
+            if (dialog != null) {
+                ListView listView = dialog.findViewById(android.R.id.list);
+                if (listView != null) {
+                    AdapterView.OnItemClickListener originalListener = listView.getOnItemClickListener();
+                    if (originalListener != null && !(originalListener instanceof DebouncedItemClickListener)) {
+                        listView.setOnItemClickListener(new DebouncedItemClickListener(originalListener));
+                    }
+                }
+            }
+        }
+        return super.onPreferenceTreeClick(preferenceScreen, preference);
+    }
+
+    @SuppressLint("StaticFieldLeak")
+    public static AbstractPreferenceFragment instance;
 
     /**
      * Indicates that if a preference changes,
@@ -55,6 +133,14 @@ public abstract class AbstractPreferenceFragment extends PreferenceFragment {
      */
     @Nullable
     protected static CharSequence restartDialogTitle, restartDialogMessage, restartDialogButtonText, confirmDialogTitle;
+
+    private ComponentCallbacks2 configurationListener;
+    private int currentUiMode = -1;
+    private static final int READ_REQUEST_CODE = 42;
+    private static final int WRITE_REQUEST_CODE = 43;
+    private String existingSettings = "";
+
+    private EditText currentImportExportEditText;
 
     private final SharedPreferences.OnSharedPreferenceChangeListener listener = (sharedPreferences, str) -> {
         try {
@@ -198,8 +284,7 @@ public abstract class AbstractPreferenceFragment extends PreferenceFragment {
             return listPref.getValue().equals(defaultValueString);
         }
 
-        throw new IllegalStateException("Must override method to handle "
-                + "preference type: " + pref.getClass());
+        throw new IllegalStateException("Must override method to handle preference type: " + pref.getClass());
     }
 
     /**
@@ -269,7 +354,7 @@ public abstract class AbstractPreferenceFragment extends PreferenceFragment {
     /**
      * Updates a UI Preference with the {@link Setting} that backs it.
      *
-     * @param syncSetting If the UI should be synced {@link Setting} <-> Preference
+     * @param syncSetting              If the UI should be synced {@link Setting} <-> Preference
      * @param applySettingToPreference If true, then apply {@link Setting} -> Preference.
      *                                 If false, then apply {@link Setting} <- Preference.
      */
@@ -322,7 +407,8 @@ public abstract class AbstractPreferenceFragment extends PreferenceFragment {
                 null,                            // No EditText.
                 restartDialogButtonText,         // OK button text.
                 () -> Utils.restartApp(context), // OK button action.
-                () -> {},                        // Cancel button action (dismiss only).
+                () -> {
+                },                        // Cancel button action (dismiss only).
                 null,                            // No Neutral button text.
                 null,                            // No Neutral button action.
                 true                             // Dismiss dialog when onNeutralClick.
@@ -332,10 +418,249 @@ public abstract class AbstractPreferenceFragment extends PreferenceFragment {
         dialogPair.first.show();
     }
 
+    /**
+     * Import / Export Subroutines
+     */
+    public void showImportExportTextDialog() {
+        try {
+            Activity context = getActivity();
+            // Must set text before showing dialog,
+            // otherwise text is non-selectable if this preference is later reopened.
+            existingSettings = Setting.exportToJson(context);
+            currentImportExportEditText = getEditText(context);
+
+            // Create a custom dialog with the EditText.
+            Pair<Dialog, LinearLayout> dialogPair = CustomDialog.create(
+                    context,
+                    str("revanced_pref_import_export_title"), // Title.
+                    null, // No message (EditText replaces it).
+                    currentImportExportEditText, // Pass the EditText.
+                    str("revanced_settings_save"), // OK button text.
+                    () -> importSettingsText(context, currentImportExportEditText.getText().toString()), // OK button action.
+                    () -> {
+                    }, // Cancel button action (dismiss only).
+                    str("revanced_settings_import_copy"), // Neutral button (Copy) text.
+                    () -> Utils.setClipboard(currentImportExportEditText.getText().toString()), // Neutral button (Copy) action. Show the user the settings in JSON format.
+                    true // Dismiss dialog when onNeutralClick.
+            );
+
+            final int margin = Dim.dp4;
+
+            Button btnExport = CustomDialog.createButton(context, null, str("revanced_settings_export_file"), this::exportActivity, false, false);
+            Button btnImport = CustomDialog.createButton(context, null, str("revanced_settings_import_file"), this::importActivity, false, false);
+
+            LinearLayout.LayoutParams exportParams = new LinearLayout.LayoutParams(0, Dim.dp36, 1.0f);
+            exportParams.setMargins(0, 0, margin, 0);
+            btnExport.setLayoutParams(exportParams);
+
+            LinearLayout.LayoutParams importParams = new LinearLayout.LayoutParams(0, Dim.dp36, 1.0f);
+            importParams.setMargins(margin, 0, 0, 0);
+            btnImport.setLayoutParams(importParams);
+
+            LinearLayout fileButtonsContainer = getLinearLayout(context);
+            fileButtonsContainer.addView(btnExport);
+            fileButtonsContainer.addView(btnImport);
+
+            dialogPair.second.addView(fileButtonsContainer, 2);
+
+            dialogPair.first.setOnDismissListener(d -> currentImportExportEditText = null);
+
+            // If there are no settings yet, then show the on-screen keyboard and bring focus to
+            // the edit text. This makes it easier to paste saved settings after a reinstallation.
+            dialogPair.first.setOnShowListener(dialogInterface -> {
+                if (existingSettings.isEmpty() && currentImportExportEditText != null) {
+                    currentImportExportEditText.postDelayed(() -> {
+                        if (currentImportExportEditText != null) {
+                            currentImportExportEditText.requestFocus();
+                            InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+                            if (imm != null)
+                                imm.showSoftInput(currentImportExportEditText, InputMethodManager.SHOW_IMPLICIT);
+                        }
+                    }, 100);
+                }
+            });
+
+            // Show the dialog.
+            dialogPair.first.show();
+        } catch (Exception ex) {
+            Logger.printException(() -> "showImportExportTextDialog failure", ex);
+        }
+    }
+
+    @NonNull
+    private static LinearLayout getLinearLayout(Context context) {
+        LinearLayout fileButtonsContainer = new LinearLayout(context);
+        fileButtonsContainer.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams fbParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+        final int marginTop = Dim.dp16;
+        fbParams.setMargins(0, marginTop, 0, 0);
+        fileButtonsContainer.setLayoutParams(fbParams);
+        return fileButtonsContainer;
+    }
+
+    @NonNull
+    private EditText getEditText(Context context) {
+        EditText editText = new EditText(context);
+        editText.setText(existingSettings);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            editText.setAutofillHints((String) null);
+        }
+        editText.setInputType(InputType.TYPE_CLASS_TEXT |
+                InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS |
+                InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+        editText.setSingleLine(false);
+        editText.setTextSize(14);
+        return editText;
+    }
+
+    public void exportActivity() {
+        try {
+            Setting.exportToJson(getActivity());
+            String appName = Utils.getApplicationName();
+            String safeAppName = appName.replaceAll("\\s+", "_");
+            String formatDate = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
+            String fileName = safeAppName + "_Settings_" + formatDate + ".txt";
+
+            Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.setType("text/plain");
+            intent.putExtra(Intent.EXTRA_TITLE, fileName);
+            startActivityForResult(intent, WRITE_REQUEST_CODE);
+        } catch (Exception ex) {
+            Logger.printException(() -> "exportActivity failure", ex);
+        }
+    }
+
+    public void importActivity() {
+        try {
+            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.setType("*/*");
+            startActivityForResult(intent, READ_REQUEST_CODE);
+        } catch (Exception ex) {
+            Logger.printException(() -> "importActivity failure", ex);
+        }
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        return new DebouncedListView(getActivity());
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == WRITE_REQUEST_CODE && resultCode == Activity.RESULT_OK && data != null) {
+            exportTextToFile(data.getData());
+        } else if (requestCode == READ_REQUEST_CODE && resultCode == Activity.RESULT_OK && data != null) {
+            importTextFromFile(data.getData());
+        } else if (requestCode == LogBufferManager.WRITE_LOGS_REQUEST_CODE && resultCode == Activity.RESULT_OK && data != null) {
+            LogBufferManager.saveLogsToUri(getContext(), data.getData());
+        }
+    }
+
+    protected static void showLocalizedToast(String resourceKey, String fallbackMessage) {
+        if (Utils.getResourceIdentifier(ResourceType.STRING, resourceKey) != 0) {
+            Utils.showToastLong(str(resourceKey));
+        } else {
+            Utils.showToastLong(fallbackMessage);
+        }
+    }
+
+    private void exportTextToFile(Uri uri) {
+        try (OutputStream out = getContext().getContentResolver().openOutputStream(uri, "rwt")) {
+            if (out != null) {
+                String textToExport = existingSettings;
+                if (currentImportExportEditText != null) {
+                    textToExport = currentImportExportEditText.getText().toString();
+                }
+                out.write(textToExport.getBytes(StandardCharsets.UTF_8));
+
+                showLocalizedToast("revanced_settings_export_file_success", "Settings exported successfully");
+            }
+        } catch (Exception e) {
+            showLocalizedToast("revanced_settings_export_file_failed", "Failed to export settings");
+            Logger.printException(() -> "exportTextToFile failure", e);
+        }
+    }
+
+    @SuppressWarnings("CharsetObjectCanBeUsed")
+    private void importTextFromFile(Uri uri) {
+        try (InputStream in = getContext().getContentResolver().openInputStream(uri)) {
+            if (in != null) {
+                Scanner scanner = new Scanner(in, StandardCharsets.UTF_8.name()).useDelimiter("\\A");
+                String result = scanner.hasNext() ? scanner.next() : "";
+
+                if (currentImportExportEditText != null) {
+                    currentImportExportEditText.setText(result);
+                    showLocalizedToast("revanced_settings_import_file_success", "Settings imported successfully, tap Save to apply");
+                } else {
+                    importSettingsText(getContext(), result);
+                }
+            }
+        } catch (Exception e) {
+            showLocalizedToast("revanced_settings_import_file_failed", "Failed to import settings");
+            Logger.printException(() -> "importTextFromFile failure", e);
+        }
+    }
+
+    private void importSettingsText(Context context, String replacementSettings) {
+        try {
+            existingSettings = Setting.exportToJson(null);
+            if (replacementSettings.equals(existingSettings)) {
+                return;
+            }
+            settingImportInProgress = true;
+            final boolean rebootNeeded = Setting.importFromJSON(getActivity(), replacementSettings);
+            if (rebootNeeded) {
+                showRestartDialog(context);
+            }
+        } catch (Exception ex) {
+            Logger.printException(() -> "importSettingsText failure", ex);
+        } finally {
+            settingImportInProgress = false;
+        }
+    }
+
     @SuppressLint("ResourceType")
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        currentUiMode = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        instance = this;
+
+        configurationListener = new ComponentCallbacks2() {
+            @SuppressLint("ChromeOsOnConfigurationChanged")
+            @Override
+            public void onConfigurationChanged(@NonNull Configuration newConfig) {
+                int newUiMode = newConfig.uiMode & Configuration.UI_MODE_NIGHT_MASK;
+                if (currentUiMode != -1 && newUiMode != currentUiMode) {
+                    currentUiMode = newUiMode;
+                    Utils.setIsDarkModeEnabled(newUiMode == Configuration.UI_MODE_NIGHT_YES);
+
+                    Activity activity = getActivity();
+                    if (activity != null) {
+                        Intent intent = activity.getIntent();
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
+                        activity.finish();
+                        activity.overridePendingTransition(0, 0);
+                        startActivity(intent);
+                        activity.overridePendingTransition(0, 0);
+                    }
+                }
+            }
+
+            @Override
+            public void onLowMemory() {
+            }
+
+            @Override
+            public void onTrimMemory(int level) {
+            }
+        };
+        getActivity().getApplicationContext().registerComponentCallbacks(configurationListener);
+
         try {
             PreferenceManager preferenceManager = getPreferenceManager();
             preferenceManager.setSharedPreferencesName(Setting.preferences.name);
@@ -354,6 +679,12 @@ public abstract class AbstractPreferenceFragment extends PreferenceFragment {
 
     @Override
     public void onDestroy() {
+        if (instance == this) {
+            instance = null;
+        }
+        if (configurationListener != null && getActivity() != null) {
+            getActivity().getApplicationContext().unregisterComponentCallbacks(configurationListener);
+        }
         getPreferenceManager().getSharedPreferences().unregisterOnSharedPreferenceChangeListener(listener);
         super.onDestroy();
     }

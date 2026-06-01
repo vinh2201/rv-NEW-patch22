@@ -2,9 +2,10 @@ package app.revanced.patches.youtube.layout.shortsautoplay
 
 import app.revanced.patcher.*
 import app.revanced.patcher.patch.BytecodePatchContext
+import app.revanced.util.getting
+import app.revanced.util.using
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.ClassDef
 
 internal val BytecodePatchContext.reelEnumConstructorMethodMatch by composingFirstMethod {
     accessFlags(AccessFlags.STATIC, AccessFlags.CONSTRUCTOR)
@@ -17,21 +18,19 @@ internal val BytecodePatchContext.reelEnumConstructorMethodMatch by composingFir
     )
 }
 
-internal val BytecodePatchContext.reelPlaybackRepeatParentMethod by gettingFirstImmutableMethodDeclaratively {
-    returnType("V")
-    instructions(
-        "Reels[%s] Playback Time: %d ms"(),
-    )
-}
-
-/**
- * Matches class found in [reelPlaybackRepeatParentMethod].
- */
-context(_: BytecodePatchContext)
-internal fun ClassDef.getReelPlaybackRepeatMethod() = firstMethodDeclaratively {
-    returnType("V")
-    parameterTypes("L")
-    instructions(method { toString() == "Lcom/google/common/util/concurrent/ListenableFuture;->isDone()Z" })
+internal val BytecodePatchContext.reelPlaybackRepeatMethod by getting {
+    firstMethodDeclaratively {
+        returnType("V")
+        parameterTypes("L")
+        instructions(method { toString() == "Lcom/google/common/util/concurrent/ListenableFuture;->isDone()Z" })
+    }
+} using {
+    firstImmutableMethodDeclaratively {
+        returnType("V")
+        instructions(
+            "Reels[%s] Playback Time: %d ms"(),
+        )
+    }
 }
 
 internal val BytecodePatchContext.reelPlaybackMethodMatch by composingFirstMethod {

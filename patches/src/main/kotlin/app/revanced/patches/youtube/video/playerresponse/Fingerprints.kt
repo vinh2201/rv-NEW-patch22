@@ -1,7 +1,12 @@
 package app.revanced.patches.youtube.video.playerresponse
 
-import app.revanced.patcher.*
+import app.revanced.patcher.accessFlags
+import app.revanced.patcher.gettingFirstMethodDeclaratively
+import app.revanced.patcher.instructions
+import app.revanced.patcher.invoke
+import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.BytecodePatchContext
+import app.revanced.patcher.returnType
 import com.android.tools.smali.dexlib2.AccessFlags
 
 /**
@@ -77,33 +82,6 @@ internal val BytecodePatchContext.playerParameterBuilder2015Method by gettingFir
         "Ljava/lang/String;",
         "L",
         "Z", // Appears to indicate if the video ID is being opened or is currently playing.
-        "Z",
-        "Z",
-    )
-    instructions("psps"())
-}
-
-/**
- * For targets 20.10 to 20.14.
- */
-internal val BytecodePatchContext.playerParameterBuilder2010Method by gettingFirstMethodDeclaratively {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    returnType("L")
-    parameterTypes(
-        "Ljava/lang/String;", // VideoId.
-        "[B",
-        "Ljava/lang/String;", // Player parameters proto buffer.
-        "Ljava/lang/String;",
-        "I",
-        "Z",
-        "I",
-        "L",
-        "Ljava/util/Set;",
-        "Ljava/lang/String;",
-        "Ljava/lang/String;",
-        "L",
-        "Z", // Appears to indicate if the video ID is being opened or is currently playing.
-        "Z",
         "Z",
         "Z",
     )

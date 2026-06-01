@@ -9,9 +9,10 @@ import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patcher.returnType
 import app.revanced.patches.shared.misc.mapping.ResourceType
 import app.revanced.patches.youtube.layout.buttons.navigation.navigationBarPatch
+import app.revanced.util.getting
+import app.revanced.util.using
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.ClassDef
 
 internal val BytecodePatchContext.actionBarSearchResultsMethodMatch by composingFirstMethod {
     accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
@@ -34,7 +35,7 @@ internal val BytecodePatchContext.toolbarLayoutMethodMatch by composingFirstMeth
 }
 
 /**
- * Matches to https://android.googlesource.com/platform/frameworks/support/+/9eee6ba/v7/appcompat/src/android/support/v7/widget/Toolbar.java#963
+ * Matches to https://android.googlesource.com/platform/frameworks/support/+/9eee6ba/v7/appcompat/src/android/support/v7/widget/Toolbar.java#963.
  */
 internal val BytecodePatchContext.appCompatToolbarBackButtonMethod by gettingFirstImmutableMethodDeclaratively {
     definingClass("Landroid/support/v7/widget/Toolbar;")
@@ -43,15 +44,13 @@ internal val BytecodePatchContext.appCompatToolbarBackButtonMethod by gettingFir
     parameterTypes()
 }
 
-/**
- * Matches to the class found in [pivotBarConstructorMethod].
- */
-context(_: BytecodePatchContext)
-internal fun ClassDef.getInitializeButtonsMethod() = firstMethodDeclaratively {
-    accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
-    returnType("V")
-    instructions("FEvideo_picker"())
-}
+internal val BytecodePatchContext.initializeButtonsMethod by getting {
+    firstMethodDeclaratively {
+        accessFlags(AccessFlags.PUBLIC, AccessFlags.FINAL)
+        returnType("V")
+        instructions("FEvideo_picker"())
+    }
+} using { pivotBarConstructorMethod }
 
 /**
  * Extension method, used for callback into to other patches.

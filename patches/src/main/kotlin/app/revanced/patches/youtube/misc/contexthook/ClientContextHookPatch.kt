@@ -1,6 +1,5 @@
 package app.revanced.patches.youtube.misc.contexthook
 
-import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod.Companion.toMutable
 import app.revanced.patcher.accessFlags
 import app.revanced.patcher.classDef
@@ -27,7 +26,7 @@ import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 
-private lateinit var browseIdField: FieldReference
+private lateinit var clientFormFactorField: FieldReference
 private lateinit var clientInfoField: FieldReference
 private lateinit var clientVersionField: FieldReference
 private lateinit var messageLiteBuilderField: FieldReference
@@ -41,9 +40,15 @@ enum class Endpoint(
     BROWSE(
         BytecodePatchContext::browseEndpointParentMethod::get
     ),
+    GET_WATCH(
+        BytecodePatchContext::getWatchEndpointConstructorPrimaryMethod::get,
+        BytecodePatchContext::getWatchEndpointConstructorSecondaryMethod::get,
+    ),
     GUIDE(
         BytecodePatchContext::guideEndpointConstructorMethod::get
     ),
+    NEXT(BytecodePatchContext::nextEndpointParentMethod::get),
+    PLAYER(BytecodePatchContext::playerEndpointParentMethod::get),
     REEL(
         BytecodePatchContext::reelCreateItemsEndpointConstructorMethod::get,
         BytecodePatchContext::reelItemWatchEndpointConstructorMethod::get,
@@ -81,7 +86,7 @@ val hookClientContextPatch = bytecodePatch(
                 getInstruction<ReferenceInstruction>(messageLiteBuilderIndex).methodReference!!
         }
 
-        buildClientContextBodyConstructorMethod.immutableClassDef.buildClientContextBodyMethodMatch.let {
+        buildClientContextBodyMethodMatch.let {
             it.method.apply {
                 val osNameIndex = it[1]
 
@@ -90,12 +95,8 @@ val hookClientContextPatch = bytecodePatch(
             }
         }
 
-        browseEndpointParentMethod.immutableClassDef.browseEndpointConstructorMethodMatch.let {
-            it.method.apply {
-                val browseIdIndex = it[-1]
-                browseIdField =
-                    getInstruction<ReferenceInstruction>(browseIdIndex).fieldReference!!
-            }
+        clientFormFactorField = getSetClientFormFactorMethodMatch().let {
+            it.method.getInstruction<ReferenceInstruction>(it[0]).fieldReference!!
         }
     }
 
@@ -140,7 +141,7 @@ val hookClientContextPatch = bytecodePatch(
                         }
                     )
 
-                   it.findInstructionIndicesReversedOrThrow(Opcode.RETURN_VOID).forEach { index ->
+                    it.findInstructionIndicesReversedOrThrow(Opcode.RETURN_VOID).forEach { index ->
                         it.addInstructionsAtControlFlowLabel(
                             index,
                             "invoke-direct/range { p0 .. p0 }, ${it.definingClass}->$helperMethodName()V"
@@ -152,19 +153,22 @@ val hookClientContextPatch = bytecodePatch(
     }
 }
 
+fun addClientFormFactorHook(endPoint: Endpoint, descriptor: String) {
+    endPoint.instructions += """
+        iget v2, v1, $clientFormFactorField
+        invoke-static { v2 }, $descriptor
+        move-result v2
+        iput v2, v1, $clientFormFactorField
+    """
+}
+
 fun addClientVersionHook(endPoint: Endpoint, descriptor: String) {
-    endPoint.instructions += if (endPoint == Endpoint.BROWSE) """
-        iget-object v3, p0, $browseIdField
-        iget-object v2, v1, $clientVersionField
-        invoke-static { v3, v2 }, $descriptor
-        move-result-object v2
-        iput-object v2, v1, $clientVersionField
-        """ else """
+    endPoint.instructions += """
         iget-object v2, v1, $clientVersionField
         invoke-static { v2 }, $descriptor
         move-result-object v2
         iput-object v2, v1, $clientVersionField
-        """
+    """
 }
 
 fun addOSNameHook(endPoint: Endpoint, descriptor: String) {
@@ -173,5 +177,5 @@ fun addOSNameHook(endPoint: Endpoint, descriptor: String) {
         invoke-static { v2 }, $descriptor
         move-result-object v2
         iput-object v2, v1, $osNameField
-        """
+    """
 }

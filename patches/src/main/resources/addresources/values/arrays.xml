@@ -188,6 +188,52 @@
         </patch>
     </app>
     <app id="music">
+        <patch id="layout.startpage.changeStartPagePatch">
+            <string-array name="revanced_change_start_page_entries">
+                <item>@string/revanced_change_start_page_entry_default</item>
+                <item>@string/revanced_change_start_page_entry_charts</item>
+                <item>@string/revanced_change_start_page_entry_episodes_for_later</item>
+                <item>@string/revanced_change_start_page_entry_explore</item>
+                <item>@string/revanced_change_start_page_entry_history</item>
+                <item>@string/revanced_change_start_page_entry_library</item>
+                <item>@string/revanced_change_start_page_entry_liked_music</item>
+                <item>@string/revanced_change_start_page_entry_playlists</item>
+                <item>@string/revanced_change_start_page_entry_search</item>
+                <item>@string/revanced_change_start_page_entry_subscriptions</item>
+            </string-array>
+            <string-array name="revanced_change_start_page_entry_values">
+                <item>DEFAULT</item>
+                <item>CHARTS</item>
+                <item>EPISODES_FOR_LATER</item>
+                <item>EXPLORE</item>
+                <item>HISTORY</item>
+                <item>LIBRARY</item>
+                <item>LIKED_MUSIC</item>
+                <item>PLAYLISTS</item>
+                <item>SEARCH</item>
+                <item>SUBSCRIPTIONS</item>
+            </string-array>
+        </patch>
+        <patch id="layout.branding.header.changeHeaderPatch">
+            <string-array name="revanced_header_logo_entries">
+                <item>@string/revanced_header_logo_entry_1</item>
+                <item>@string/revanced_header_logo_entry_2</item>
+            </string-array>
+            <string-array name="revanced_header_logo_entry_values">
+                <item>DEFAULT</item>
+                <item>REGULAR</item>
+            </string-array>
+            <string-array name="revanced_header_logo_custom_entries">
+                <item>@string/revanced_header_logo_entry_1</item>
+                <item>@string/revanced_header_logo_entry_2</item>
+                <item>@string/revanced_header_logo_entry_3</item>
+            </string-array>
+            <string-array name="revanced_header_logo_custom_entry_values">
+                <item>DEFAULT</item>
+                <item>REGULAR</item>
+                <item>CUSTOM</item>
+            </string-array>
+        </patch>
         <patch id="layout.branding.customBrandingPatch">
             <string-array name="revanced_custom_branding_name_entries">
                 <!-- Original must be first. -->
@@ -425,7 +471,7 @@
                 <item>MODERN_3</item>
             </string-array>
         </patch>
-        <patch id="layout.branding.changeHeaderPatch">
+        <patch id="layout.branding.header.changeHeaderPatch">
             <string-array name="revanced_header_logo_entries">
                 <item>@string/revanced_header_logo_entry_1</item>
                 <item>@string/revanced_header_logo_entry_2</item>
@@ -463,7 +509,6 @@
                 <item>@string/revanced_change_start_page_entry_all_subscriptions</item>
                 <item>@string/revanced_change_start_page_entry_browse</item>
                 <item>@string/revanced_change_start_page_entry_courses</item>
-                <item>@string/revanced_change_start_page_entry_explore</item>
                 <item>@string/revanced_change_start_page_entry_fashion</item>
                 <item>@string/revanced_change_start_page_entry_gaming</item>
                 <item>@string/revanced_change_start_page_entry_history</item>
@@ -480,7 +525,6 @@
                 <item>@string/revanced_change_start_page_entry_shorts</item>
                 <item>@string/revanced_change_start_page_entry_sports</item>
                 <item>@string/revanced_change_start_page_entry_subscriptions</item>
-                <item>@string/revanced_change_start_page_entry_trending</item>
                 <item>@string/revanced_change_start_page_entry_virtual_reality</item>
                 <item>@string/revanced_change_start_page_entry_watch_later</item>
                 <item>@string/revanced_change_start_page_entry_your_clips</item>
@@ -490,7 +534,6 @@
                 <item>ALL_SUBSCRIPTIONS</item>
                 <item>BROWSE</item>
                 <item>COURSES</item>
-                <item>EXPLORE</item>
                 <item>FASHION</item>
                 <item>GAMING</item>
                 <item>HISTORY</item>
@@ -507,7 +550,6 @@
                 <item>SHORTS</item>
                 <item>SPORTS</item>
                 <item>SUBSCRIPTIONS</item>
-                <item>TRENDING</item>
                 <item>VIRTUAL_REALITY</item>
                 <item>WATCH_LATER</item>
                 <item>YOUR_CLIPS</item>
