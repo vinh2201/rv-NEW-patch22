@@ -1,12 +1,9 @@
 package app.revanced.patches.jsepol.trainstatuspt.ads
 
+import app.revanced.patcher.extensions.methodReference
 import app.revanced.patcher.extensions.replaceInstruction
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.util.forEachInstructionAsSequence
-import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
-import com.android.tools.smali.dexlib2.iface.reference.MethodReference
-import com.android.tools.smali.dexlib2.immutable.reference.ImmutableMethodReference
-import com.android.tools.smali.dexlib2.util.MethodUtil
 
 @Suppress("unused")
 val hideAdsPatch = bytecodePatch(
@@ -16,22 +13,19 @@ val hideAdsPatch = bytecodePatch(
     compatibleWith("com.jsepol.trainstatuspt")
 
     apply {
-        val loadAdMethodReference = ImmutableMethodReference(
-            "Lcom/google/android/gms/ads/AdView;",
-            "loadAd",
-            listOf("Lcom/google/android/gms/ads/AdRequest;"),
-            "V"
-        )
-
         forEachInstructionAsSequence(
-            match = { _, _, instruction, index ->
-                val methodReference = instruction.getReference<MethodReference>() ?: return@forEachInstructionAsSequence null
+            match = match@{ classDef, _, instruction, instructionIndex ->
+                if (classDef.type in arrayOf(MOBILE_ADS_CLASS, AD_VIEW_CLASS)) return@match null
 
-                if (MethodUtil.methodSignaturesMatch(ref, loadAdRef)) index else null
+                val reference = instruction.methodReference ?: return@match null
+                if (reference.definingClass !in arrayOf(MOBILE_ADS_CLASS, AD_VIEW_CLASS)) return@match null
+                if (reference.returnType != "V") return@match null
+
+                instructionIndex
             },
-            transform = { mutableMethod, targetIndex ->
-                mutableMethod.replaceInstruction(targetIndex, "nop")
-            }
+            transform = { method, index ->
+                method.replaceInstruction(index, "nop")
+            },
         )
     }
 }
