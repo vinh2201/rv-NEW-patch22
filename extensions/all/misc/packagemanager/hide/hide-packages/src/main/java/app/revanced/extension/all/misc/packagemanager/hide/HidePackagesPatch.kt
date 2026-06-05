@@ -233,10 +233,8 @@ object HidePackagesPatch {
     ): ResolveInfo? = pm.resolveService(intent, flags).scrubResolveInfo()
 
     @JvmStatic
-    fun resolveContentProvider(pm: PackageManager, authority: String?, flags: Int): ProviderInfo? {
-        if (authority == null) return null
-        return pm.resolveContentProvider(authority, flags).scrubProviderInfo()
-    }
+    fun resolveContentProvider(pm: PackageManager, authority: String?, flags: Int): ProviderInfo? =
+        authority?.let { pm.resolveContentProvider(it, flags).scrubProviderInfo() }
 
     @JvmStatic
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -244,10 +242,7 @@ object HidePackagesPatch {
         pm: PackageManager,
         authority: String?,
         flags: PackageManager.ComponentInfoFlags,
-    ): ProviderInfo? {
-        if (authority == null) return null
-        return pm.resolveContentProvider(authority, flags).scrubProviderInfo()
-    }
+    ): ProviderInfo? = authority?.let { pm.resolveContentProvider(it, flags).scrubProviderInfo() }
 
     @JvmStatic
     fun getLaunchIntentForPackage(pm: PackageManager, packageName: String?): Intent? {
@@ -267,7 +262,6 @@ object HidePackagesPatch {
         if (packages.isEmpty()) return packages
         val hidden = hiddenPackages
         if (hidden.isEmpty()) return packages
-
         val kept = packages.filterNot { it in hidden }
         return when {
             kept.size == packages.size -> packages
@@ -281,7 +275,7 @@ object HidePackagesPatch {
         val name = pm.getNameForUid(uid)
         // getNameForUid may return a shared-uid name like "shared:uid:..." rather than a
         // package name. Filtering by exact match means a shared-uid process name wont be
-        // suppressed even if a constituent package is listed
+        // suppressed even if a constituent package is listed.
         return if (isHidden(name)) null else name
     }
 
@@ -317,163 +311,92 @@ object HidePackagesPatch {
         return pm.checkSignatures(uid1, uid2)
     }
 
+    private fun reflectPmMethod(name: String, vararg paramTypes: Class<*>): Method? = try {
+        PackageManager::class.java.getMethod(name, *paramTypes)
+    } catch (_: Exception) { null }
+
     private val installedPackagesAsUserMethod: Method? by lazy {
-        try {
-            PackageManager::class.java.getMethod(
-                "getInstalledPackagesAsUser",
-                Int::class.javaPrimitiveType, Int::class.javaPrimitiveType,
-            )
-        } catch (_: Exception) { null }
+        reflectPmMethod("getInstalledPackagesAsUser", Int::class.java, Int::class.java)
     }
 
     private val installedApplicationsAsUserMethod: Method? by lazy {
-        try {
-            PackageManager::class.java.getMethod(
-                "getInstalledApplicationsAsUser",
-                Int::class.javaPrimitiveType, Int::class.javaPrimitiveType,
-            )
-        } catch (_: Exception) { null }
+        reflectPmMethod("getInstalledApplicationsAsUser", Int::class.java, Int::class.java)
     }
 
     private val packageInfoAsUserMethod: Method? by lazy {
-        try {
-            PackageManager::class.java.getMethod(
-                "getPackageInfoAsUser",
-                String::class.java, Int::class.javaPrimitiveType, Int::class.javaPrimitiveType,
-            )
-        } catch (_: Exception) { null }
+        reflectPmMethod("getPackageInfoAsUser", String::class.java, Int::class.java, Int::class.java)
     }
 
     private val applicationInfoAsUserMethod: Method? by lazy {
-        try {
-            PackageManager::class.java.getMethod(
-                "getApplicationInfoAsUser",
-                String::class.java, Int::class.javaPrimitiveType, Int::class.javaPrimitiveType,
-            )
-        } catch (_: Exception) { null }
+        reflectPmMethod("getApplicationInfoAsUser", String::class.java, Int::class.java, Int::class.java)
     }
 
-    @JvmStatic
-    fun getInstalledPackagesAsUser(pm: PackageManager, flags: Int, userId: Int): MutableList<PackageInfo> {
-        @Suppress("UNCHECKED_CAST")
-        val list = try {
-            installedPackagesAsUserMethod?.invoke(pm, flags, userId) as? MutableList<PackageInfo>
-        } catch (e: InvocationTargetException) {
-            throw e.cause ?: e
-        } catch (_: Exception) { null } ?: return ArrayList(0)
-        return list.stripByPackage()
-    }
+    @Suppress("UNCHECKED_CAST")
+    private fun <T> Method?.invokeReflect(receiver: Any?, vararg args: Any?): T? = try {
+        this?.invoke(receiver, *args) as? T
+    } catch (e: InvocationTargetException) {
+        throw e.cause ?: e
+    } catch (_: Exception) { null }
 
     @JvmStatic
-    fun getInstalledApplicationsAsUser(pm: PackageManager, flags: Int, userId: Int): MutableList<ApplicationInfo> {
-        @Suppress("UNCHECKED_CAST")
-        val list = try {
-            installedApplicationsAsUserMethod?.invoke(pm, flags, userId) as? MutableList<ApplicationInfo>
-        } catch (e: InvocationTargetException) {
-            throw e.cause ?: e
-        } catch (_: Exception) { null } ?: return ArrayList(0)
-        return list.stripByApplication()
-    }
+    fun getInstalledPackagesAsUser(pm: PackageManager, flags: Int, userId: Int): MutableList<PackageInfo> =
+        (installedPackagesAsUserMethod.invokeReflect<MutableList<PackageInfo>>(pm, flags, userId)
+            ?: ArrayList(0)).stripByPackage()
+
+    @JvmStatic
+    fun getInstalledApplicationsAsUser(pm: PackageManager, flags: Int, userId: Int): MutableList<ApplicationInfo> =
+        (installedApplicationsAsUserMethod.invokeReflect<MutableList<ApplicationInfo>>(pm, flags, userId)
+            ?: ArrayList(0)).stripByApplication()
 
     @JvmStatic
     @Throws(NameNotFoundException::class)
     fun getPackageInfoAsUser(pm: PackageManager, packageName: String?, flags: Int, userId: Int): PackageInfo {
         if (isHidden(packageName)) throw NameNotFoundException(packageName)
-        return try {
-            packageInfoAsUserMethod?.invoke(pm, packageName, flags, userId) as? PackageInfo
-                ?: throw NameNotFoundException(packageName)
-        } catch (e: InvocationTargetException) {
-            throw (e.cause ?: NameNotFoundException(packageName))
-        } catch (_: Exception) {
-            throw NameNotFoundException(packageName)
-        }
+        return packageInfoAsUserMethod.invokeReflect<PackageInfo>(pm, packageName, flags, userId)
+            ?: throw NameNotFoundException(packageName)
     }
 
     @JvmStatic
     @Throws(NameNotFoundException::class)
     fun getApplicationInfoAsUser(pm: PackageManager, packageName: String?, flags: Int, userId: Int): ApplicationInfo {
         if (isHidden(packageName)) throw NameNotFoundException(packageName)
-        return try {
-            applicationInfoAsUserMethod?.invoke(pm, packageName, flags, userId) as? ApplicationInfo
-                ?: throw NameNotFoundException(packageName)
-        } catch (e: InvocationTargetException) {
-            throw (e.cause ?: NameNotFoundException(packageName))
-        } catch (_: Exception) {
-            throw NameNotFoundException(packageName)
-        }
+        return applicationInfoAsUserMethod.invokeReflect<ApplicationInfo>(pm, packageName, flags, userId)
+            ?: throw NameNotFoundException(packageName)
     }
 
-    private fun MutableList<PackageInfo>?.stripByPackage(): MutableList<PackageInfo> {
+    private inline fun <T> MutableList<T>?.stripBy(crossinline getName: (T) -> String?): MutableList<T> {
         val list = this ?: return ArrayList(0)
         if (list.isEmpty()) return list
         val hidden = hiddenPackages
         if (hidden.isEmpty()) return list
-        val it = list.iterator()
-        while (it.hasNext()) {
-            val name = it.next().packageName
-            if (name != null && name in hidden) it.remove()
-        }
+        list.removeAll { val name = getName(it); name != null && name in hidden }
         return list
     }
 
-    private fun MutableList<ApplicationInfo>?.stripByApplication(): MutableList<ApplicationInfo> {
-        val list = this ?: return ArrayList(0)
-        if (list.isEmpty()) return list
-        val hidden = hiddenPackages
-        if (hidden.isEmpty()) return list
-        val it = list.iterator()
-        while (it.hasNext()) {
-            val name = it.next().packageName
-            if (name != null && name in hidden) it.remove()
-        }
-        return list
-    }
+    private fun MutableList<PackageInfo>?.stripByPackage(): MutableList<PackageInfo> =
+        stripBy { it.packageName }
 
-    private fun MutableList<ResolveInfo>?.stripByResolveInfo(): MutableList<ResolveInfo> {
-        val list = this ?: return ArrayList(0)
-        if (list.isEmpty()) return list
-        val hidden = hiddenPackages
-        if (hidden.isEmpty()) return list
-        val it = list.iterator()
-        while (it.hasNext()) {
-            val pkg = it.next().packageNameOrNull()
-            if (pkg != null && pkg in hidden) it.remove()
-        }
-        return list
-    }
+    private fun MutableList<ApplicationInfo>?.stripByApplication(): MutableList<ApplicationInfo> =
+        stripBy { it.packageName }
 
-    private fun MutableList<ProviderInfo>?.stripByProviderInfo(): MutableList<ProviderInfo> {
-        val list = this ?: return ArrayList(0)
-        if (list.isEmpty()) return list
-        val hidden = hiddenPackages
-        if (hidden.isEmpty()) return list
-        val it = list.iterator()
-        while (it.hasNext()) {
-            val name = it.next().packageName
-            if (name != null && name in hidden) it.remove()
-        }
-        return list
-    }
+    private fun MutableList<ResolveInfo>?.stripByResolveInfo(): MutableList<ResolveInfo> =
+        stripBy { it.packageNameOrNull() }
 
-    private fun ResolveInfo?.scrubResolveInfo(): ResolveInfo? {
-        val info = this ?: return null
-        val pkg = info.packageNameOrNull()
-        return if (pkg != null && pkg in hiddenPackages) null else info
-    }
+    private fun MutableList<ProviderInfo>?.stripByProviderInfo(): MutableList<ProviderInfo> =
+        stripBy { it.packageName }
 
-    private fun ProviderInfo?.scrubProviderInfo(): ProviderInfo? {
-        val info = this ?: return null
-        val name = info.packageName
-        return if (name != null && name in hiddenPackages) null else info
-    }
+    private fun ResolveInfo?.scrubResolveInfo(): ResolveInfo? =
+        this?.takeUnless { it.packageNameOrNull() in hiddenPackages }
+
+    private fun ProviderInfo?.scrubProviderInfo(): ProviderInfo? =
+        this?.takeUnless { it.packageName in hiddenPackages }
 
     private fun ResolveInfo?.packageNameOrNull(): String? {
         if (this == null) return null
-        activityInfo?.packageName?.let { return it }
-        serviceInfo?.packageName?.let { return it }
-        providerInfo?.packageName?.let { return it }
-        // resolvePackageName is set for forwarded-component resolves (different from activityInfo.packageName)
-        resolvePackageName?.let { return it }
-        return null
+        return activityInfo?.packageName
+            ?: serviceInfo?.packageName
+            ?: providerInfo?.packageName
+            // resolvePackageName is set for forwarded-component resolves (different from activityInfo.packageName)
+            ?: resolvePackageName
     }
 }
