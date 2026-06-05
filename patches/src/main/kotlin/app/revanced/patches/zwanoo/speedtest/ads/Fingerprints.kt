@@ -1,18 +1,21 @@
 package app.revanced.patches.zwanoo.speedtest.ads
 
 import app.revanced.patcher.accessFlags
+import app.revanced.patcher.allOf
 import app.revanced.patcher.anyStaticField
 import app.revanced.patcher.custom
 import app.revanced.patcher.definingClass
 import app.revanced.patcher.gettingFirstMethodDeclaratively
 import app.revanced.patcher.immutableClassDef
+import app.revanced.patcher.instructions
+import app.revanced.patcher.invoke
 import app.revanced.patcher.name
 import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patcher.returnType
+import app.revanced.patcher.type
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.value.StringEncodedValue
 
 internal val BytecodePatchContext.bannerAdEnabledMethod by gettingFirstMethodDeclaratively {
@@ -30,12 +33,7 @@ internal val BytecodePatchContext.nativeAdCreateMethod by gettingFirstMethodDecl
     definingClass("Lcom/ookla/speedtest/nativead/google/")
     returnType("V")
     accessFlags(AccessFlags.PROTECTED)
-    custom {
-        implementation?.instructions?.any { instruction ->
-            instruction.opcode == Opcode.NEW_INSTANCE &&
-            (instruction as? ReferenceInstruction)?.reference?.toString() == "Lcom/google/android/gms/ads/AdManagerAdView;"
-        } ?: false
-    }
+    instructions(allOf(Opcode.NEW_INSTANCE(), type("Lcom/google/android/gms/ads/AdManagerAdView;")))
 }
 
 internal val BytecodePatchContext.nativeAdExecuteMethod by gettingFirstMethodDeclaratively("Request not idle") {
