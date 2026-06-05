@@ -167,26 +167,20 @@ val hidePackagesPatch = bytecodePatch(
         validator = { it.validatePackageNames() },
     )
 
-    dependsOn(
-        bytecodePatch {
-            apply {
-                forEachInstructionAsSequence(
-                    match = { classDef, _, instruction, instructionIndex ->
-                        filterMapInstructionVirtual<MethodCall>(
-                            EXTENSION_CLASS_DESCRIPTOR,
-                            EXTENSION_CLASS_DESCRIPTOR_PREFIX,
-                            classDef,
-                            instruction,
-                            instructionIndex,
-                        )
-                    },
-                    transform = { method, handler -> handler(method) },
-                )
-            }
-        },
-    )
-
     apply {
+        forEachInstructionAsSequence(
+            match = { classDef, _, instruction, instructionIndex ->
+                filterMapInstructionVirtual<MethodCall>(
+                    EXTENSION_CLASS_DESCRIPTOR,
+                    EXTENSION_CLASS_DESCRIPTOR_PREFIX,
+                    classDef,
+                    instruction,
+                    instructionIndex,
+                )
+            },
+            transform = { method, handler -> handler(method) },
+        )
+
         val presetPackages = if (includeUnsafePackages == true) {
             listOf(
                 rootManagerPackages,
