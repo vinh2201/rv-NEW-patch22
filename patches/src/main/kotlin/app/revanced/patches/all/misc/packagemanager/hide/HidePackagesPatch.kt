@@ -48,7 +48,9 @@ val hidePackagesPatch = bytecodePatch(
     )
 
     val rootManagerPackages by stringsOption(
-        name = "Root managers",
+        name = "Root Managers",
+        description = "Apps that grant or manage root access on the device. " +
+            "Commonly probed by anti-root checks to determine whether the device is rooted.",
         default = listOf(
             "com.topjohnwu.magisk",  // Magisk Manager
             "io.github.huskydg.magisk",  // Magisk Delta
@@ -80,6 +82,8 @@ val hidePackagesPatch = bytecodePatch(
 
     val shizukuPackages by stringsOption(
         name = "Shizuku",
+        description = "Apps providing elevated ADB or system-level access. " +
+            "Often flagged by integrity checks as indicators of a non-standard runtime environment.",
         default = listOf(
             "moe.shizuku.privileged.api",  // Shizuku (Rikka)
             "com.rosan.dhizuku",  // Dhizuku
@@ -91,6 +95,8 @@ val hidePackagesPatch = bytecodePatch(
 
     val xposedPackages by stringsOption(
         name = "Xposed / LSPosed",
+        description = "Managers for code-injection frameworks. " +
+            "Their presence usually signals method-hooking capability on the device.",
         default = listOf(
             "de.robv.android.xposed.installer",  // Xposed Installer
             "org.lsposed.manager",  // LSPosed Manager
@@ -106,7 +112,9 @@ val hidePackagesPatch = bytecodePatch(
     )
 
     val moduleManagerPackages by stringsOption(
-        name = "Module managers",
+        name = "Module Managers",
+        description = "Repositories for installing or browsing modules. " +
+            "Indirect indicators of a rooted device with module support.",
         default = listOf(
             "com.fox2code.mmm",  // Androidacy Module Manager
             "com.fox2code.mmm.fdroid",  // Androidacy Module Manager (F-froid Version)
@@ -118,7 +126,9 @@ val hidePackagesPatch = bytecodePatch(
     )
 
     val rootCheckerPackages by stringsOption(
-        name = "Root checkers",
+        name = "Root Checkers",
+        description = "Tools that test for root presence and/or to hide it. " +
+            "Could be treated as a red flag by some anti-tampers.",
         default = listOf(
             "io.github.a13e300.momo",  // Momo
             "com.eltavine.duckdetector",  // Duck Detector
@@ -139,7 +149,9 @@ val hidePackagesPatch = bytecodePatch(
     )
 
     val playIntegrityPackages by stringsOption(
-        name = "Play integrity",
+        name = "Play Integrity",
+        description = "Apps that fix, bypass or test the PairIP attestation. " +
+            "Not Play Integrity itself.",
         default = listOf(
             "io.github.chiteroman.playintegrityfix",  // PlayIntegrityFix
             "io.github.osipxd.playintegrityfix",  // PlayIntegrityFix Fork
