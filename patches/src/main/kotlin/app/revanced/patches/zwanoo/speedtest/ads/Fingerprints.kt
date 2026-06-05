@@ -1,6 +1,7 @@
 package app.revanced.patches.zwanoo.speedtest.ads
 
 import app.revanced.patcher.accessFlags
+import app.revanced.patcher.anyStaticField
 import app.revanced.patcher.custom
 import app.revanced.patcher.definingClass
 import app.revanced.patcher.gettingFirstMethodDeclaratively
@@ -20,7 +21,7 @@ internal val BytecodePatchContext.bannerAdEnabledMethod by gettingFirstMethodDec
     accessFlags(AccessFlags.PUBLIC)
     custom {
         immutableClassDef.anyStaticField {
-            (field.initialValue as? StringEncodedValue)?.value == "BannerAd"
+            (initialValue as? StringEncodedValue)?.value == "BannerAd"
         }
     }
 }
