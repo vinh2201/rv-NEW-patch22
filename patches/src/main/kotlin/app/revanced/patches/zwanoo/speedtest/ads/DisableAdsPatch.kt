@@ -21,6 +21,6 @@ val disableAdsPatch = bytecodePatch("Disable ads") {
         premiumStatusMethod.returnEarly(true)
 
         // Prevent ads from loading.
-        loadAd.returnEarly()
+        loadAdMethod.returnEarly()
     }
 }
