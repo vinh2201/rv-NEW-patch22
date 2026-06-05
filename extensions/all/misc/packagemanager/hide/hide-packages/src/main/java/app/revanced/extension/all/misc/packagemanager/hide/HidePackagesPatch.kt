@@ -16,10 +16,10 @@ import java.lang.reflect.Method
 @Suppress("unused", "MemberVisibilityCanBePrivate")
 object HidePackagesPatch {
     @JvmField
-    var HIDDEN_PACKAGES_CSV: String? = null
+    var HIDDEN_PACKAGES: String? = null
 
     private val hiddenPackages: Set<String> by lazy {
-        HIDDEN_PACKAGES_CSV
+        HIDDEN_PACKAGES
             ?.takeIf { it.isNotEmpty() }
             ?.splitToSequence('\n')
             ?.map { it.trim() }
@@ -396,7 +396,7 @@ object HidePackagesPatch {
         return activityInfo?.packageName
             ?: serviceInfo?.packageName
             ?: providerInfo?.packageName
-            // resolvePackageName is set for forwarded-component resolves (different from activityInfo.packageName)
+            // resolvePackageName is set for forwarded-component resolves (different from activityInfo.packageName).
             ?: resolvePackageName
     }
 }
