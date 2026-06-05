@@ -112,6 +112,7 @@ val hidePackagesPatch = bytecodePatch(
             "com.fox2code.mmm.fdroid",  // Androidacy Module Manager (F-froid Version)
             "com.dergoogler.mmrl",  // Magisk Module Repo Loader
             "io.github.sanmer.mrepo",  // MRepo
+            "io.github.a13e300.ksuwebui",  // KernelSU WebUI Standalone
         ),
         validator = { it.validatePackageNames() },
     )
