@@ -1,47 +1,55 @@
 package app.revanced.patches.zwanoo.speedtest.misc
 
 import app.revanced.patcher.accessFlags
-import app.revanced.patcher.custom
+import app.revanced.patcher.allOf
 import app.revanced.patcher.definingClass
+import app.revanced.patcher.field
+import app.revanced.patcher.firstMethodComposite
+import app.revanced.patcher.gettingFirstImmutableMethodDeclaratively
 import app.revanced.patcher.gettingFirstMethodDeclaratively
+import app.revanced.patcher.instructions
+import app.revanced.patcher.invoke
+import app.revanced.patcher.name
+import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.BytecodePatchContext
+import app.revanced.patcher.reference
 import app.revanced.patcher.returnType
+import app.revanced.util.findFieldFromToString
+import app.revanced.util.getting
+import app.revanced.util.using
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
-import app.revanced.patcher.immutableClassDef
 
-internal val BytecodePatchContext.subscriptionExpiryMethod by gettingFirstMethodDeclaratively("StUserSubscription(subscriptionTypeName=") {
-    definingClass("Lcom/ookla/speedtest/useraccounts/StUserSubscription;")
+internal val BytecodePatchContext.subscriptionToStringMethod by gettingFirstImmutableMethodDeclaratively {
+    name("toString")
     returnType("Ljava/lang/String;")
-    accessFlags(AccessFlags.PUBLIC)
-    custom {
-        val igetInstruction = implementation?.instructions
-            ?.firstOrNull { it.opcode == Opcode.IGET_OBJECT }
-            ?: return@custom false
-        val fieldReference = (igetInstruction as? ReferenceInstruction)?.reference?.toString()
-            ?: return@custom false
-        val fieldName = fieldReference.substringAfter("->").substringBefore(":")
-
-        val lastStringField = immutableClassDef.instanceFields
-            .filter { it.type == "Ljava/lang/String;" }
-            .maxByOrNull { it.name }
-            ?: return@custom false
-
-        fieldName == lastStringField.name && name != fieldName
-    }
+    instructions(
+        "StUserSubscription(subscriptionTypeName="(),
+        ", expiredDate="(),
+    )
 }
+
+internal val BytecodePatchContext.subscriptionExpiryMethod by getting {
+    val expiredDateField = contextOf<BytecodePatchContext>().subscriptionToStringMethod
+        .findFieldFromToString(", expiredDate=")
+
+    firstMethodComposite {
+        returnType("Ljava/lang/String;")
+        accessFlags(AccessFlags.PUBLIC)
+        parameterTypes()
+        name { this != expiredDateField.name }
+        instructions(
+            allOf(Opcode.IGET_OBJECT(), field { this == expiredDateField }),
+        )
+    }
+} using { subscriptionToStringMethod }
 
 internal val BytecodePatchContext.showUpgradeDialogMethod by gettingFirstMethodDeclaratively {
     definingClass("Lcom/ookla/speedtest/app/userprompt/")
     returnType("V")
     accessFlags(AccessFlags.PUBLIC)
-    custom {
-        parameters.isEmpty() &&
-        annotations.none { it.type == "Landroidx/lifecycle/OnLifecycleEvent;" } &&
-        implementation?.instructions?.any { instruction ->
-            instruction.opcode == Opcode.INVOKE_INTERFACE &&
-            (instruction as? ReferenceInstruction)?.reference?.toString()?.contains("speedtest/app/userprompt") == true
-        } ?: false
-    }
+    parameterTypes()
+    instructions(
+        allOf(Opcode.INVOKE_INTERFACE(), reference("speedtest/app/userprompt")),
+    )
 }

@@ -10,6 +10,6 @@ val hideUpgradePromptsPatch = bytecodePatch("Hide upgrade prompts") {
     apply {
         showUpgradeDialogMethod.returnEarly()
 
-        subscriptionExpiryMethod.returnEarly()
+        subscriptionExpiryMethod.method.returnEarly()
     }
 }
