@@ -45,7 +45,6 @@ val hidePackagesPatch = bytecodePatch(
             "hidden list in addition to any custom packages above. " +
             "Separated by category.",
         default = false,
-        required = false,
     )
 
     val rootManagerPackages by stringsOption(
@@ -76,7 +75,6 @@ val hidePackagesPatch = bytecodePatch(
             "com.baidusu.superuser",  // Baidu SuperUser
             "com.saurik.substrate",  // Cydia Substrate
         ),
-        required = false,
         validator = { it.validatePackageNames() },
     )
 
@@ -88,7 +86,6 @@ val hidePackagesPatch = bytecodePatch(
             "af.shizuku.manager",  // ShizukuPlus
             "rikka.sui",  // Sui
         ),
-        required = false,
         validator = { it.validatePackageNames() },
     )
 
@@ -105,7 +102,6 @@ val hidePackagesPatch = bytecodePatch(
             "top.canyie.dreamland.manager",  // Dreamland
             "com.solohsu.android.edxp.manager",  // Solohsu's EdXposed Manager
         ),
-        required = false,
         validator = { it.validatePackageNames() },
     )
 
@@ -117,7 +113,6 @@ val hidePackagesPatch = bytecodePatch(
             "com.dergoogler.mmrl",  // Magisk Module Repo Loader
             "io.github.sanmer.mrepo",  // MRepo
         ),
-        required = false,
         validator = { it.validatePackageNames() },
     )
 
@@ -139,7 +134,6 @@ val hidePackagesPatch = bytecodePatch(
             "com.amphoras.hidemyroot",  // HideRoot
             "com.formyhm.hideapkinstall",  // Hide APK Install
         ),
-        required = false,
         validator = { it.validatePackageNames() },
     )
 
@@ -157,7 +151,6 @@ val hidePackagesPatch = bytecodePatch(
             "gr.nikolasspyr.integritycheck",  // Play Integrity API Checker
             "com.draco.hidemyapps",  // Hide MyApps
         ),
-        required = false,
         validator = { it.validatePackageNames() },
     )
 
