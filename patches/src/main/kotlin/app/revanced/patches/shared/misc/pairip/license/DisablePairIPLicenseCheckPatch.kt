@@ -12,12 +12,6 @@ val disablePairIPLicenseCheckPatch = bytecodePatch(
     description = "Disable PairIP license and VM checks.",
     use = false,
 ) {
-    val disableRepeatedChecks by booleanOption(
-        name = "Disable background repeated checks",
-        description = "Disables background PairIP re-verification to save battery and prevent crashes.",
-        default = true,
-    )
-
     val enableVmLogging by booleanOption(
         name = "Enable VM logging",
         description = "Enables detailed native library and VM logging for debugging PairIP.",
@@ -44,16 +38,14 @@ val disablePairIPLicenseCheckPatch = bytecodePatch(
         checkLocalInstallerMethod?.returnEarly(true)
             ?: logMissing("checkLocalInstallerMethod")
 
-        // Optionally disable repeated background checks.
-        if (disableRepeatedChecks == true) {
-            licenseClientClinit?.addInstruction(
-                0,
-                """
-                    const/4 v0, 0x0
-                    sput-boolean v0, Lcom/pairip/licensecheck/LicenseClient;->repeatedCheckEnabled:Z
-                """
-            ) ?: logMissing("licenseClientClinit")
-        }
+        // Disable repeated background checks.
+        licenseClientClinit?.addInstruction(
+            0,
+            """
+                const/4 v0, 0x0
+                sput-boolean v0, Lcom/pairip/licensecheck/LicenseClient;->repeatedCheckEnabled:Z
+            """
+        ) ?: logMissing("licenseClientClinit")
 
         launchVMMethod?.returnEarly()
             ?: logMissing("launchVMMethod")
