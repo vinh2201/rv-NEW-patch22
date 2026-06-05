@@ -37,9 +37,9 @@ internal val BytecodePatchContext.subscriptionExpiryMethod by getting {
         returnType("Ljava/lang/String;")
         accessFlags(AccessFlags.PUBLIC)
         parameterTypes()
-        name { this != expiredDateField.name }
+        name { !equals(expiredDateField.name) }
         instructions(
-            allOf(Opcode.IGET_OBJECT(), field { this == expiredDateField }),
+            allOf(Opcode.IGET_OBJECT(), field { equals(expiredDateField) }),
         )
     }
 } using { subscriptionToStringMethod }

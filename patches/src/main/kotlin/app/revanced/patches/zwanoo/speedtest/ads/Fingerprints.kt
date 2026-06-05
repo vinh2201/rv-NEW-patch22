@@ -19,7 +19,7 @@ internal val BytecodePatchContext.bannerAdEnabledMethod by gettingFirstMethodDec
     returnType("Z")
     accessFlags(AccessFlags.PUBLIC)
     custom {
-        immutableClassDef.staticFields.any { field ->
+        immutableClassDef.anyStaticField {
             (field.initialValue as? StringEncodedValue)?.value == "BannerAd"
         }
     }
@@ -50,7 +50,7 @@ internal val BytecodePatchContext.premiumStatusMethod by gettingFirstMethodDecla
     accessFlags(AccessFlags.PUBLIC)
 }
 
-internal val BytecodePatchContext.loadAd by gettingFirstMethodDeclaratively {
+internal val BytecodePatchContext.loadAdMethod by gettingFirstMethodDeclaratively {
     definingClass("Lcom/google/android/gms/ads/BaseAdView;")
     name("loadAd")
     returnType("V")
