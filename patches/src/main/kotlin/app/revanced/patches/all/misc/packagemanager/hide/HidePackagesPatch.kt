@@ -61,13 +61,13 @@ val hidePackagesPatch = bytecodePatch(
             "com.noshufou.android.su",  // Superuser (ChainsDD)
             "com.noshufou.android.su.elite",  // Superuser Elite
             "com.koushikdutta.superuser",  // Superuser (Koush)
-            "com.thirdparty.superuser",
-            "com.yellowes.su",
+            "com.thirdparty.superuser",  // Superuser (Koush, PlayStore Version)
+            "com.yellowes.su",  // Superuser (YellowES)
             "com.kingo.root",  // Kingo Root
             "com.kingroot.kinguser",  // KingRoot
-            "com.smedialink.oneclickroot",
-            "com.zhiqupk.root.global",
-            "com.alephzain.framaroot",
+            "com.smedialink.oneclickroot",  // OneClickRoot
+            "com.zhiqupk.root.global",  // Root Dashi
+            "com.alephzain.framaroot",  // Framaroot
             "me.phh.superuser",  // phh's SuperUser
             "com.geohot.towelroot",  // Towelroot
             "com.qihoo.permmgr",  // 360 Root
@@ -81,10 +81,10 @@ val hidePackagesPatch = bytecodePatch(
     val shizukuPackages by stringsOption(
         name = "Shizuku",
         default = listOf(
-            "moe.shizuku.privileged.api",  // Shizuku
+            "moe.shizuku.privileged.api",  // Shizuku (Rikka)
             "com.rosan.dhizuku",  // Dhizuku
             "af.shizuku.manager",  // ShizukuPlus
-            "rikka.sui",  // Sui
+            "rikka.sui",  // Sui (Rikka)
         ),
         validator = { it.validatePackageNames() },
     )
@@ -109,7 +109,7 @@ val hidePackagesPatch = bytecodePatch(
         name = "Module managers",
         default = listOf(
             "com.fox2code.mmm",  // Androidacy Module Manager
-            "com.fox2code.mmm.fdroid",
+            "com.fox2code.mmm.fdroid",  // Androidacy Module Manager (F-froid Version)
             "com.dergoogler.mmrl",  // Magisk Module Repo Loader
             "io.github.sanmer.mrepo",  // MRepo
         ),
@@ -124,7 +124,7 @@ val hidePackagesPatch = bytecodePatch(
             "com.joeykrim.rootcheck",  // Root Checker
             "com.joeykrim.rootcheck.basic",  // Root Checker Basic
             "stericson.busybox",  // BusyBox
-            "stericson.busybox.free",
+            "stericson.busybox.free",  // BusyBox (Ads)
             "eu.thedarken.sdm",  // Root Toolbox PRO
             "com.jrummyapps.rootchecker",  // JRummy's Root Check
             "com.scottyab.rootbeer.sample",  // RootBeer Sample App
@@ -141,7 +141,7 @@ val hidePackagesPatch = bytecodePatch(
         name = "Play integrity",
         default = listOf(
             "io.github.chiteroman.playintegrityfix",  // PlayIntegrityFix
-            "io.github.osipxd.playintegrityfix",
+            "io.github.osipxd.playintegrityfix",  // PlayIntegrityFix Fork
             "app.zygisk.inject",  // ZygiskNext
             "io.github.vvb2060.keyattestation",  // KeyAttestation
             "io.github.vvb2060.zygisk",  // Zygisk
