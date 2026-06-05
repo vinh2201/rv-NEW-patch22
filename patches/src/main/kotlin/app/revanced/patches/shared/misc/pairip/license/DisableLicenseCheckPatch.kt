@@ -49,9 +49,9 @@ val disablePairIPLicenseCheckPatch = bytecodePatch(
             licenseClientClinit?.addInstruction(
                 0,
                 """
-                const/4 v0, 0x0
-                sput-boolean v0, Lcom/pairip/licensecheck/LicenseClient;->repeatedCheckEnabled:Z
-                """.trimIndent()
+                    const/4 v0, 0x0
+                    sput-boolean v0, Lcom/pairip/licensecheck/LicenseClient;->repeatedCheckEnabled:Z
+                """
             ) ?: logMissing("licenseClientClinit")
         }
 
