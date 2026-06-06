@@ -7,7 +7,7 @@ import app.revanced.util.returnEarly
 val hideVideoAdsPatch = bytecodePatch(
     name = "Hide video ads"
 ) {
-    compatibleWith("com.viki.android")
+    compatibleWith("com.viki.android"("26.5.0"),)
 
     apply {
         shouldLoadVideoAdsMethod.returnEarly()
