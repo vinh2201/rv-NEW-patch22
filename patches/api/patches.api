@@ -165,7 +165,7 @@ public final class app/revanced/patches/amazon/DeepLinkingPatchKt {
 	public static final fun getAlwaysAllowDeepLinkingPatch ()Lapp/revanced/patcher/patch/Patch;
 }
 
-public final class app/revanced/patches/angulus/ads/RemoveAdsPatchKt {
+public final class app/revanced/patches/angulus/ads/HideAdsPatchKt {
 	public static final fun getHideAdsPatch ()Lapp/revanced/patcher/patch/Patch;
 }
 
@@ -1017,8 +1017,8 @@ public final class app/revanced/patches/shared/misc/mapping/ResourceType$Compani
 	public final fun fromValue (Ljava/lang/String;)Lapp/revanced/patches/shared/misc/mapping/ResourceType;
 }
 
-public final class app/revanced/patches/shared/misc/pairip/license/DisableLicenseCheckPatchKt {
-	public static final fun getDisablePairipLicenseCheckPatch ()Lapp/revanced/patcher/patch/Patch;
+public final class app/revanced/patches/shared/misc/pairip/license/DisablePairIPLicenseCheckPatchKt {
+	public static final fun getDisablePairIPLicenseCheckPatch ()Lapp/revanced/patcher/patch/Patch;
 }
 
 public final class app/revanced/patches/shared/misc/privacy/DisableSentryTelemetryKt {
@@ -1286,6 +1286,10 @@ public final class app/revanced/patches/strava/quickedit/DisableQuickEditPatchKt
 	public static final fun getDisableQuickEditPatch ()Lapp/revanced/patcher/patch/Patch;
 }
 
+public final class app/revanced/patches/strava/route/export/AddRouteExportPatchKt {
+	public static final fun getAddRouteExportPatch ()Lapp/revanced/patcher/patch/Patch;
+}
+
 public final class app/revanced/patches/strava/subscription/UnlockSubscriptionPatchKt {
 	public static final fun getUnlockSubscriptionFeaturesPatch ()Lapp/revanced/patcher/patch/Patch;
 }
@@ -1448,6 +1452,10 @@ public final class app/revanced/patches/twitch/misc/extension/SharedExtensionPat
 	public static final fun getSharedExtensionPatch ()Lapp/revanced/patcher/patch/Patch;
 }
 
+public final class app/revanced/patches/twitch/misc/fix/FixResourceLinkingPatchKt {
+	public static final fun getFixResourceLinkingPatch ()Lapp/revanced/patcher/patch/Patch;
+}
+
 public final class app/revanced/patches/twitch/misc/settings/SettingsPatchKt {
 	public static final fun addSettingPreference (Lapp/revanced/patches/shared/misc/settings/preference/BasePreference;)V
 	public static final fun getSettingsPatch ()Lapp/revanced/patcher/patch/Patch;
@@ -1504,6 +1512,10 @@ public final class app/revanced/patches/viber/ads/HideAdsPatchKt {
 
 public final class app/revanced/patches/viber/misc/navbar/HideNavigationButtonsKt {
 	public static final fun getHideNavigationButtonsPatch ()Lapp/revanced/patcher/patch/Patch;
+}
+
+public final class app/revanced/patches/viki/ads/videoads/HideVideoAdsPatchKt {
+	public static final fun getHideVideoAdsPatch ()Lapp/revanced/patcher/patch/Patch;
 }
 
 public final class app/revanced/patches/warnwetter/misc/firebasegetcert/FirebaseGetCertPatchKt {
@@ -1690,6 +1702,10 @@ public final class app/revanced/patches/youtube/layout/seekbar/SeekbarColorPatch
 
 public final class app/revanced/patches/youtube/layout/shortsautoplay/ShortsAutoplayPatchKt {
 	public static final fun getShortsAutoplayPatch ()Lapp/revanced/patcher/patch/Patch;
+}
+
+public final class app/revanced/patches/youtube/layout/shortsplayer/DimShortsOverlayPatchKt {
+	public static final fun getDimShortsOverlayPatch ()Lapp/revanced/patcher/patch/Patch;
 }
 
 public final class app/revanced/patches/youtube/layout/shortsplayer/OpenShortsInRegularPlayerPatchKt {
