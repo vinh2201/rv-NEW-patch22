@@ -12,6 +12,7 @@ import java.util.Objects;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+// https://raw.githubusercontent.com/Dr-TSNG/TwiFucker/880cdf1c1622e54ab45561ffcb4f53d94ed97bae/app/src/main/java/icu/nullptr/twifucker/hook/JsonHook.kt
 public final class TwiFucker {
     public static final TwiFucker INSTANCE = new TwiFucker();
 
