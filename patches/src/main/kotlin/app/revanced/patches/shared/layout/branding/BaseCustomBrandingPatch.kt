@@ -73,7 +73,7 @@ internal fun baseCustomBrandingPatch(
     activityAliasNameWithIntents: String,
     preferenceScreen: BasePreferenceScreen.Screen,
     block: ResourcePatchBuilder.() -> Unit,
-    sharedExtensionPatch: Patch<*>,
+    sharedExtensionPatch: Patch,
     executeBlock: ResourcePatchContext.() -> Unit = {},
 ) = resourcePatch(
     name = "Custom branding",
