@@ -20,7 +20,7 @@ val customBrandingPatch = baseCustomBrandingPatch(
     mainActivityName = YOUTUBE_MAIN_ACTIVITY_NAME,
     activityAliasNameWithIntents = $$"com.google.android.youtube.app.honeycomb.Shell$HomeActivity",
     preferenceScreen = PreferenceScreen.GENERAL,
-    dependencyPatch = sharedExtensionPatch,
+    sharedExtensionPatch = sharedExtensionPatch,
 
     block = {
         compatibleWith(
