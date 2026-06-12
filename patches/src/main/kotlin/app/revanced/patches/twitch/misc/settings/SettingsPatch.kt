@@ -14,6 +14,7 @@ import app.revanced.patches.all.misc.resources.addResourcesPatch
 import app.revanced.patches.shared.misc.settings.preference.*
 import app.revanced.patches.shared.misc.settings.settingsPatch
 import app.revanced.patches.twitch.misc.extension.sharedExtensionPatch
+import app.revanced.patches.twitch.misc.fix.fixResourceLinkingPatch
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.immutable.ImmutableField
 
@@ -44,6 +45,7 @@ val settingsPatch = bytecodePatch(
         sharedExtensionPatch,
         addResourcesPatch,
         settingsPatch(preferences = preferences),
+        fixResourceLinkingPatch
     )
 
     compatibleWith("tv.twitch.android.app"("16.9.1"))
