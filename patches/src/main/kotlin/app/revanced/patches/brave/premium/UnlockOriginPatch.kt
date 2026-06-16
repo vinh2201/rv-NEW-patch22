@@ -17,7 +17,7 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
 @Suppress("unused")
 val unlockOriginPatch = bytecodePatch(
     name = "Unlock Brave Origin",
-    description = "Unlocks Brave Origin to allow debloating features such as VPN, Rewards, Wallet, and Leo."
+    description = "Unlocks Brave Origin to debloat features such as VPN, Rewards, Wallet, Leo, and Web Discovery."
 ) {
     compatibleWith("com.brave.browser"("1.91.169"))
 
@@ -241,6 +241,12 @@ $policyInjections
             invoke-interface {v2, v0, v3}, Landroid/content/SharedPreferences;->getBoolean(Ljava/lang/String;Z)Z
             move-result v0
             const-string v4, "BraveAIChatEnabled"
+            invoke-virtual {v1, v4, v0}, Landroid/os/Bundle;->putBoolean(Ljava/lang/String;Z)V
+            
+            const-string v0, "web_discovery_project_switch"
+            invoke-interface {v2, v0, v3}, Landroid/content/SharedPreferences;->getBoolean(Ljava/lang/String;Z)Z
+            move-result v0
+            const-string v4, "BraveWebDiscoveryEnabled"
             invoke-virtual {v1, v4, v0}, Landroid/os/Bundle;->putBoolean(Ljava/lang/String;Z)V
             
             invoke-virtual {v5, v1}, $superClassName->$aMethodName(Landroid/os/Bundle;)V
