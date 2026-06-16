@@ -261,6 +261,17 @@ $policyInjections
             const-string v4, "MetricsReportingEnabled"
             invoke-virtual {v1, v4, v0}, Landroid/os/Bundle;->putBoolean(Ljava/lang/String;Z)V
             
+            const-string v0, "vpn_switch"
+            invoke-interface {v2, v0, v3}, Landroid/content/SharedPreferences;->getBoolean(Ljava/lang/String;Z)Z
+            move-result v0
+            if-nez v0, :cond_skip_vpn_callout
+            invoke-interface {v2}, Landroid/content/SharedPreferences;->edit()Landroid/content/SharedPreferences${"$"}Editor;
+            move-result-object v0
+            const-string v4, "brave_vpn_callout"
+            invoke-interface {v0, v4, v3}, Landroid/content/SharedPreferences${"$"}Editor;->putBoolean(Ljava/lang/String;Z)Landroid/content/SharedPreferences${"$"}Editor;
+            invoke-interface {v0}, Landroid/content/SharedPreferences${"$"}Editor;->apply()V
+            :cond_skip_vpn_callout
+            
             invoke-virtual {v5, v1}, $superClassName->$aMethodName(Landroid/os/Bundle;)V
             return-void
         """.trimIndent()
