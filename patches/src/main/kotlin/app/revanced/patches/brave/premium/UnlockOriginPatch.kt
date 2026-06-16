@@ -19,7 +19,7 @@ val unlockOriginPatch = bytecodePatch(
     name = "Unlock Brave Origin",
     description = "Unlocks Brave Origin to debloat features such as VPN, Rewards, Wallet, Leo, Web Discovery, Analytics, and Statistics."
 ) {
-    compatibleWith("com.brave.browser"("1.91.169"))
+    compatibleWith("com.brave.browser")
 
     apply {
         // 1. Force cached credential summary to true
@@ -261,22 +261,47 @@ $policyInjections
             const-string v4, "MetricsReportingEnabled"
             invoke-virtual {v1, v4, v0}, Landroid/os/Bundle;->putBoolean(Ljava/lang/String;Z)V
             
-            const-string v0, "vpn_switch"
-            invoke-interface {v2, v0, v3}, Landroid/content/SharedPreferences;->getBoolean(Ljava/lang/String;Z)Z
-            move-result v0
-            if-nez v0, :cond_skip_vpn_callout
-            invoke-interface {v2}, Landroid/content/SharedPreferences;->edit()Landroid/content/SharedPreferences${"$"}Editor;
-            move-result-object v0
-            const-string v4, "brave_vpn_callout"
-            invoke-interface {v0, v4, v3}, Landroid/content/SharedPreferences${"$"}Editor;->putBoolean(Ljava/lang/String;Z)Landroid/content/SharedPreferences${"$"}Editor;
-            invoke-interface {v0}, Landroid/content/SharedPreferences${"$"}Editor;->apply()V
-            :cond_skip_vpn_callout
-            
             invoke-virtual {v5, v1}, $superClassName->$aMethodName(Landroid/os/Bundle;)V
             return-void
         """.trimIndent()
         
         bMethod.implementation = MutableMethodImplementation(6)
         bMethod.addInstructions(0, spoofSmali)
+        
+        // 4. Fix 500ms flicker for SettingsPromoCardPreference (Sign in to sync banner)
+        val promoCardClassDef = classDefs.firstOrNull { it.type == "Lorg/chromium/chrome/browser/ui/settings_promo_card/SettingsPromoCardPreference;" }
+        
+        if (promoCardClassDef != null) {
+            val promoCardClass = classDefs.getOrReplaceMutable(promoCardClassDef)
+            
+            val promoInit = promoCardClass.methods.firstOrNull { it.name == "<init>" } as? MutableMethod
+            val promoBind = promoCardClass.methods.firstOrNull { it.name != "<init>" && it.parameters.toList().size == 1 && it.returnType == "V" } as? MutableMethod
+            
+
+
+        // Dynamically find the obfuscated setVisible(boolean) method name from onBindViewHolder
+        val setVisibleMethodName = promoBind?.implementation?.instructions?.filterIsInstance<ReferenceInstruction>()?.firstOrNull {
+            it.opcode.name == "invoke-virtual" &&
+            (it.reference as? MethodReference)?.definingClass == "Landroidx/preference/Preference;" &&
+            (it.reference as? MethodReference)?.returnType == "V" &&
+            (it.reference as? MethodReference)?.parameterTypes?.firstOrNull()?.toString() == "Z"
+        }?.let { (it.reference as MethodReference).name }
+        
+
+        
+        if (promoInit != null && setVisibleMethodName != null) {
+            val newInitSmali = """
+                invoke-direct {p0, p1, p2}, Landroidx/preference/Preference;-><init>(Landroid/content/Context;Landroid/util/AttributeSet;)V
+                const/4 p1, 0x0
+                invoke-virtual {p0, p1}, Landroidx/preference/Preference;->$setVisibleMethodName(Z)V
+                return-void
+            """.trimIndent()
+            
+            promoInit.removeInstructions(0, promoInit.implementation!!.instructions.count())
+            promoInit.implementation = MutableMethodImplementation(3)
+            promoInit.addInstructions(0, newInitSmali)
+
+        }
+        }
     }
 }
