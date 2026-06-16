@@ -10,6 +10,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import app.revanced.util.returnEarly
 
 @Suppress("unused")
 val unlockBraveOriginPatch = bytecodePatch(
@@ -23,10 +24,10 @@ val unlockBraveOriginPatch = bytecodePatch(
         spoofBraveEnterprisePolicies()
 
         // 1. Force cached credential summary to true
-        hasOriginCachedMethod.returnEarlyTrue()
+        hasOriginCachedMethod.returnEarly(true)
 
         // 2. Bypass "fetching credentials" infinite spinner
-        isFetchingCredentialsMethod.returnEarlyFalse()
+        isFetchingCredentialsMethod.returnEarly(false)
 
         // 3. Spoof PrefService to make C++ engine believe purchase is fully validated
         val factoryInstr = isOriginSubscriptionActiveMethod.implementation?.instructions?.let { insns ->
@@ -70,7 +71,7 @@ val unlockBraveOriginPatch = bytecodePatch(
             
             isOriginSubscriptionActiveMethod.addInstructions(0, dynamicSmali)
         } else {
-            isOriginSubscriptionActiveMethod.returnEarlyTrue()
+            isOriginSubscriptionActiveMethod.returnEarly(true)
         }
 
         // 4. Bypass infinite loading spinner in the UI directly
