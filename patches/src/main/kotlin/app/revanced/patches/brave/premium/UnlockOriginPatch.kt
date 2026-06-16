@@ -206,9 +206,11 @@ val unlockOriginPatch = bytecodePatch(
             const-string v0, "$prefKey"
             invoke-interface {v2, v0, v3}, Landroid/content/SharedPreferences;->getBoolean(Ljava/lang/String;Z)Z
             move-result v0
-            xor-int/lit8 v0, v0, 0x1
+            if-nez v0, :cond_skip_$prefKey
+            const/4 v0, 0x1
             const-string v4, "$policyName"
             invoke-virtual {v1, v4, v0}, Landroid/os/Bundle;->putBoolean(Ljava/lang/String;Z)V
+            :cond_skip_$prefKey
             """.trimIndent()
         }
         
@@ -240,26 +242,34 @@ $policyInjections
             const-string v0, "leo_ai_switch"
             invoke-interface {v2, v0, v3}, Landroid/content/SharedPreferences;->getBoolean(Ljava/lang/String;Z)Z
             move-result v0
+            if-nez v0, :cond_skip_leo
             const-string v4, "BraveAIChatEnabled"
-            invoke-virtual {v1, v4, v0}, Landroid/os/Bundle;->putBoolean(Ljava/lang/String;Z)V
+            invoke-virtual {v1, v4, v3}, Landroid/os/Bundle;->putBoolean(Ljava/lang/String;Z)V
+            :cond_skip_leo
             
             const-string v0, "web_discovery_project_switch"
             invoke-interface {v2, v0, v3}, Landroid/content/SharedPreferences;->getBoolean(Ljava/lang/String;Z)Z
             move-result v0
+            if-nez v0, :cond_skip_wdp
             const-string v4, "BraveWebDiscoveryEnabled"
-            invoke-virtual {v1, v4, v0}, Landroid/os/Bundle;->putBoolean(Ljava/lang/String;Z)V
+            invoke-virtual {v1, v4, v3}, Landroid/os/Bundle;->putBoolean(Ljava/lang/String;Z)V
+            :cond_skip_wdp
             
             const-string v0, "privacy_preserving_analytics_switch"
             invoke-interface {v2, v0, v3}, Landroid/content/SharedPreferences;->getBoolean(Ljava/lang/String;Z)Z
             move-result v0
+            if-nez v0, :cond_skip_p3a
             const-string v4, "BraveP3AEnabled"
-            invoke-virtual {v1, v4, v0}, Landroid/os/Bundle;->putBoolean(Ljava/lang/String;Z)V
+            invoke-virtual {v1, v4, v3}, Landroid/os/Bundle;->putBoolean(Ljava/lang/String;Z)V
+            :cond_skip_p3a
             
             const-string v0, "statistics_reporting_switch"
             invoke-interface {v2, v0, v3}, Landroid/content/SharedPreferences;->getBoolean(Ljava/lang/String;Z)Z
             move-result v0
+            if-nez v0, :cond_skip_stats
             const-string v4, "MetricsReportingEnabled"
-            invoke-virtual {v1, v4, v0}, Landroid/os/Bundle;->putBoolean(Ljava/lang/String;Z)V
+            invoke-virtual {v1, v4, v3}, Landroid/os/Bundle;->putBoolean(Ljava/lang/String;Z)V
+            :cond_skip_stats
             
             invoke-virtual {v5, v1}, $superClassName->$aMethodName(Landroid/os/Bundle;)V
             return-void
