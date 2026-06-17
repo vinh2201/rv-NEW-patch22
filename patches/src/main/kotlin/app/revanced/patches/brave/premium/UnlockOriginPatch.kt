@@ -33,7 +33,7 @@ val unlockOriginPatch = bytecodePatch(
         isFetchingCredentialsMethod.addInstructions(0, "const/4 v0, 0x0\nreturn v0")
 
         // 3. Spoof PrefService to make C++ engine believe purchase is fully validated
-        val factoryInstr = isOriginSubscriptionActiveMethod.implementation?.instructions?.let { insns ->
+        val factoryInstructions = isOriginSubscriptionActiveMethod.implementation?.instructions?.let { insns ->
             insns.filterIsInstance<ReferenceInstruction>().find { instr ->
                 instr.opcode.name == "invoke-static" && 
                 (instr.reference as? MethodReference)?.returnType == "Lorg/chromium/components/prefs/PrefService;"
