@@ -23,8 +23,8 @@ val removeSettingsPromoCardFlickerPatch = bytecodePatch(
         if (promoCardClassDef != null) {
             val promoCardClass = classDefs.getOrReplaceMutable(promoCardClassDef)
             
-            val promoInit = promoCardClass.methods.firstOrNull { it.name == "<init>" } as? MutableMethod
-            val promoBind = promoCardClass.methods.firstOrNull { it.name != "<init>" && it.parameters.toList().size == 1 && it.returnType == "V" } as? MutableMethod
+            val promoInit = promoCardClass.methods.firstOrNull { it.name == "<init>" }
+            val promoBind = promoCardClass.methods.firstOrNull { it.name != "<init>" && it.parameters.toList().size == 1 && it.returnType == "V" }
             
             // Dynamically find the obfuscated setVisible(boolean) method name from onBindViewHolder
             val setVisibleMethodName = promoBind?.implementation?.instructions?.filterIsInstance<ReferenceInstruction>()?.firstOrNull {

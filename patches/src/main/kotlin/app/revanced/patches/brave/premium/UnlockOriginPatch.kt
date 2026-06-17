@@ -118,44 +118,42 @@ val unlockOriginPatch = bytecodePatch(
         }
         val onPrefChangeMethod = braveOriginPreferencesFingerprint.method
         
-        if (onPrefChangeMethod != null) {
-            val onPrefChangeInstructions = onPrefChangeMethod.implementation!!.instructions.toList()
-            val invokeDirectIndex = onPrefChangeInstructions.indexOfFirst {
-                it.opcode.name == "invoke-direct" && 
-                (it as? ReferenceInstruction)?.reference?.let { ref ->
-                    (ref as? MethodReference)?.definingClass?.startsWith("Lorg/chromium/chrome/browser/settings/BraveOriginPreferences$$") == true
-                } == true
+        val onPrefChangeInstructions = onPrefChangeMethod.implementation!!.instructions.toList()
+        val invokeDirectIndex = onPrefChangeInstructions.indexOfFirst {
+            it.opcode.name == "invoke-direct" && 
+            (it as? ReferenceInstruction)?.reference?.let { ref ->
+                (ref as? MethodReference)?.definingClass?.startsWith("Lorg/chromium/chrome/browser/settings/BraveOriginPreferences$$") == true
+            } == true
+        }
+        
+        if (invokeDirectIndex != -1) {
+            var invokeInterfaceIndex = -1
+            var invokeInterfaceInstr: com.android.tools.smali.dexlib2.iface.instruction.Instruction? = null
+            for (i in (invokeDirectIndex + 1) until onPrefChangeInstructions.size) {
+                val instr = onPrefChangeInstructions[i]
+                if (instr.opcode.name.startsWith("invoke-interface")) {
+                    invokeInterfaceIndex = i
+                    invokeInterfaceInstr = instr
+                    break
+                }
             }
             
-            if (invokeDirectIndex != -1) {
-                var invokeInterfaceIndex = -1
-                var invokeInterfaceInstr: com.android.tools.smali.dexlib2.iface.instruction.Instruction? = null
-                for (i in (invokeDirectIndex + 1) until onPrefChangeInstructions.size) {
-                    val instr = onPrefChangeInstructions[i]
-                    if (instr.opcode.name.startsWith("invoke-interface")) {
-                        invokeInterfaceIndex = i
-                        invokeInterfaceInstr = instr
-                        break
-                    }
+            if (invokeInterfaceIndex != -1 && invokeInterfaceInstr != null) {
+                val (vA, vB, vC) = when (invokeInterfaceInstr) {
+                    is FiveRegisterInstruction -> Triple(invokeInterfaceInstr.registerC, invokeInterfaceInstr.registerD, invokeInterfaceInstr.registerE)
+                    is RegisterRangeInstruction -> Triple(invokeInterfaceInstr.startRegister, invokeInterfaceInstr.startRegister + 1, invokeInterfaceInstr.startRegister + 2)
+                    else -> error("Unknown instruction format for invoke-interface")
                 }
                 
-                if (invokeInterfaceIndex != -1 && invokeInterfaceInstr != null) {
-                    val (vA, vB, vC) = when (invokeInterfaceInstr) {
-                        is FiveRegisterInstruction -> Triple(invokeInterfaceInstr.registerC, invokeInterfaceInstr.registerD, invokeInterfaceInstr.registerE)
-                        is RegisterRangeInstruction -> Triple(invokeInterfaceInstr.startRegister, invokeInterfaceInstr.startRegister + 1, invokeInterfaceInstr.startRegister + 2)
-                        else -> error("Unknown instruction format for invoke-interface")
-                    }
-                    
-                    val spoofSmali = """
-                        invoke-static {}, ${"$"}{braveLocalStateGetMethod.definingClass}->${"$"}{braveLocalStateGetMethod.name}()Lorg/chromium/components/prefs/PrefService;
-                        move-result-object v$vA
-                        const-string v$vB, "brave.origin.purchase_validated"
-                        const/4 v$vC, 0x1
-                        invoke-virtual {v$vA, v$vB, v$vC}, Lorg/chromium/components/prefs/PrefService;->f(Ljava/lang/String;Z)V
-                    """.trimIndent()
-                    
-                    onPrefChangeMethod.addInstructions(invokeInterfaceIndex + 1, spoofSmali)
-                }
+                val spoofSmali = """
+                    invoke-static {}, ${"$"}{braveLocalStateGetMethod.definingClass}->${"$"}{braveLocalStateGetMethod.name}()Lorg/chromium/components/prefs/PrefService;
+                    move-result-object v$vA
+                    const-string v$vB, "brave.origin.purchase_validated"
+                    const/4 v$vC, 0x1
+                    invoke-virtual {v$vA, v$vB, v$vC}, Lorg/chromium/components/prefs/PrefService;->f(Ljava/lang/String;Z)V
+                """.trimIndent()
+                
+                onPrefChangeMethod.addInstructions(invokeInterfaceIndex + 1, spoofSmali)
             }
         }
     }

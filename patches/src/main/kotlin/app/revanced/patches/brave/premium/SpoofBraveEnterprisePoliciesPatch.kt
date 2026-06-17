@@ -35,7 +35,7 @@ val spoofBraveEnterprisePoliciesPatch = bytecodePatch(
             }
         }
         
-        val appRestrictionsMethod = appRestrictionsProviderFingerprint.method ?: error("AppRestrictionsProvider method not found")
+        val appRestrictionsMethod = appRestrictionsProviderFingerprint.method
         
         val className = appRestrictionsMethod.definingClass
         val classDef = classDefs.first { it.type == className }
