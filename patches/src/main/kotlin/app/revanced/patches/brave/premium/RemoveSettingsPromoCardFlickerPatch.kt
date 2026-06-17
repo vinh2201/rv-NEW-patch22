@@ -1,5 +1,6 @@
 package app.revanced.patches.brave.premium
 
+import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
 import app.revanced.patcher.extensions.addInstructions
 import app.revanced.patcher.extensions.removeInstructions
 import app.revanced.patcher.patch.bytecodePatch
@@ -10,19 +11,21 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 @Suppress("unused")
 val removeSettingsPromoCardFlickerPatch = bytecodePatch(
     name = "Remove Settings Promo Card Flicker",
-    description = "Removes the 500ms layout flicker caused by the Settings Promo Card (Sign in to sync banner)."
+    description = "Removes the 500ms flicker of the sign-in promo banner in settings."
 ) {
     compatibleWith("com.brave.browser")
+    dependsOn(unlockOriginPatch)
 
     apply {
+        // Fix 500ms flicker for SettingsPromoCardPreference (Sign in to sync banner)
         val promoCardClassDef = classDefs.firstOrNull { it.type == "Lorg/chromium/chrome/browser/ui/settings_promo_card/SettingsPromoCardPreference;" }
         
         if (promoCardClassDef != null) {
             val promoCardClass = classDefs.getOrReplaceMutable(promoCardClassDef)
             
-            val promoInit = promoCardClass.methods.firstOrNull { it.name == "<init>" }
-            val promoBind = promoCardClass.methods.firstOrNull { it.name != "<init>" && it.parameters.toList().size == 1 && it.returnType == "V" }
-
+            val promoInit = promoCardClass.methods.firstOrNull { it.name == "<init>" } as? MutableMethod
+            val promoBind = promoCardClass.methods.firstOrNull { it.name != "<init>" && it.parameters.toList().size == 1 && it.returnType == "V" } as? MutableMethod
+            
             // Dynamically find the obfuscated setVisible(boolean) method name from onBindViewHolder
             val setVisibleMethodName = promoBind?.implementation?.instructions?.filterIsInstance<ReferenceInstruction>()?.firstOrNull {
                 it.opcode.name == "invoke-virtual" &&
@@ -30,7 +33,7 @@ val removeSettingsPromoCardFlickerPatch = bytecodePatch(
                 (it.reference as? MethodReference)?.returnType == "V" &&
                 (it.reference as? MethodReference)?.parameterTypes?.firstOrNull()?.toString() == "Z"
             }?.let { (it.reference as MethodReference).name }
-
+            
             if (promoInit != null && setVisibleMethodName != null) {
                 val newInitSmali = """
                     invoke-direct {p0, p1, p2}, Landroidx/preference/Preference;-><init>(Landroid/content/Context;Landroid/util/AttributeSet;)V
@@ -39,8 +42,7 @@ val removeSettingsPromoCardFlickerPatch = bytecodePatch(
                     return-void
                 """.trimIndent()
                 
-                val initImpl = promoInit.implementation ?: return@apply
-                promoInit.removeInstructions(0, initImpl.instructions.count())
+                promoInit.removeInstructions(0, promoInit.implementation!!.instructions.count())
                 promoInit.implementation = MutableMethodImplementation(3)
                 promoInit.addInstructions(0, newInitSmali)
             }
