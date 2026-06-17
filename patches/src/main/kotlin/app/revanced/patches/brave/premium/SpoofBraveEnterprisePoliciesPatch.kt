@@ -69,8 +69,8 @@ val spoofBraveEnterprisePoliciesPatch = bytecodePatch(
             const/4 v0, 0x1
             const-string v4, "$policyName"
             invoke-virtual {v1, v4, v0}, Landroid/os/Bundle;->putBoolean(Ljava/lang/String;Z)V
-            :cond_skip_$prefKey
-            """.trimIndent()
+                :cond_skip_$prefKey
+            """
         }
         
         val spoofSmali = """
