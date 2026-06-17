@@ -14,6 +14,7 @@ val removeSettingsPromoCardFlickerPatch = bytecodePatch(
     description = "Removes the 500ms flicker of the sign-in promo banner in settings."
 ) {
     compatibleWith("com.brave.browser")
+
     dependsOn(unlockOriginPatch)
 
     apply {
