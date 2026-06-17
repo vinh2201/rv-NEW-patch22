@@ -11,7 +11,7 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
 
 @Suppress("unused")
 val spoofBraveEnterprisePoliciesPatch = bytecodePatch(
-    name = "Spoof Brave Enterprise Policies",
+    name = "Spoof Brave enterprise policies",
     description = "Spoofs enterprise policies to configure debloated features in Brave."
 ) {
     compatibleWith("com.brave.browser")
