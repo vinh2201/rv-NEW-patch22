@@ -1,52 +1,49 @@
 package app.revanced.patches.brave.premium
 
-import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
 import app.revanced.patcher.extensions.addInstructions
-import app.revanced.patcher.extensions.removeInstructions
+import app.revanced.patcher.extensions.getInstruction
+import app.revanced.patcher.extensions.methodReference
 import app.revanced.patcher.patch.bytecodePatch
-import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
-import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 @Suppress("unused")
-val removeSettingsPromoCardFlickerPatch = bytecodePatch(
-    name = "Remove Settings Promo Card Flicker",
-    description = "Removes the 500ms flicker of the sign-in promo banner in settings."
-) {
-    compatibleWith("com.brave.browser")
+val removeSettingsPromoCardFlickerPatch =
+    bytecodePatch(
+        name = "Remove Settings Promo Card Flicker",
+        description = "Removes the 500ms flicker of the sign-in promo banner in settings.",
+    ) {
+        compatibleWith("com.brave.browser")
 
-    dependsOn(unlockOriginPatch)
+        dependsOn(unlockOriginPatch)
 
-    apply {
-        // Fix the 500ms flicker for SettingsPromoCardPreference (Sign in to sync banner).
-        val promoCardClassDef = classDefs.firstOrNull { it.type == "Lorg/chromium/chrome/browser/ui/settings_promo_card/SettingsPromoCardPreference;" }
-        
-        if (promoCardClassDef != null) {
-            val promoCardClass = classDefs.getOrReplaceMutable(promoCardClassDef)
-            
-            val promoInit = promoCardClass.methods.firstOrNull { it.name == "<init>" }
-            val promoBind = promoCardClass.methods.firstOrNull { it.name != "<init>" && it.parameters.toList().size == 1 && it.returnType == "V" }
-            
-            // Dynamically find the obfuscated setVisible(boolean) method name from onBindViewHolder
-            val setVisibleMethodName = promoBind?.implementation?.instructions?.filterIsInstance<ReferenceInstruction>()?.firstOrNull {
-                it.opcode.name == "invoke-virtual" &&
-                (it.reference as? MethodReference)?.definingClass == "Landroidx/preference/Preference;" &&
-                (it.reference as? MethodReference)?.returnType == "V" &&
-                (it.reference as? MethodReference)?.parameterTypes?.firstOrNull()?.toString() == "Z"
-            }?.let { (it.reference as MethodReference).name }
-            
-            if (promoInit != null && setVisibleMethodName != null) {
-                val newInitSmali = """
-                    invoke-direct {p0, p1, p2}, Landroidx/preference/Preference;-><init>(Landroid/content/Context;Landroid/util/AttributeSet;)V
+        apply {
+            // Fix the 500ms flicker for SettingsPromoCardPreference (Sign in to sync banner).
+            val promoCardClassDef = settingsPromoCardPreferenceClassDef
+
+            if (promoCardClassDef != null) {
+                val promoCardClass = classDefs.getOrReplaceMutable(promoCardClassDef)
+
+                val promoInit = promoCardClass.promoInitMethod
+                val promoBindMatch = promoCardClass.getPromoBindMethodMatch()
+
+                // Dynamically find the obfuscated setVisible(boolean) method name from onBindViewHolder
+                val setVisibleMethodName =
+                    promoBindMatch.let { match ->
+                        val setVisibleIndex = match[0]
+                        match.method
+                            .getInstruction<ReferenceInstruction>(setVisibleIndex)
+                            .methodReference!!
+                            .name
+                    }
+
+                if (promoInit != null) {
+                    val setVisibleSmali = """
                     const/4 p1, 0x0
-                    invoke-virtual {p0, p1}, Landroidx/preference/Preference;->$setVisibleMethodName(Z)V
-                    return-void
+                    invoke-virtual { p0, p1 }, Landroidx/preference/Preference;->$setVisibleMethodName(Z)V
                 """
-                
-                promoInit.removeInstructions(0, promoInit.implementation!!.instructions.count())
-                promoInit.implementation = MutableMethodImplementation(3)
-                promoInit.addInstructions(0, newInitSmali)
+
+                    promoInit.addInstructions(1, setVisibleSmali)
+                }
             }
         }
     }
-}
