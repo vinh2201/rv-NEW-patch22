@@ -18,7 +18,7 @@ val removeSettingsPromoCardFlickerPatch = bytecodePatch(
     dependsOn(unlockOriginPatch)
 
     apply {
-        // Fix 500ms flicker for SettingsPromoCardPreference (Sign in to sync banner)
+        // Fix the 500ms flicker for SettingsPromoCardPreference (Sign in to sync banner).
         val promoCardClassDef = classDefs.firstOrNull { it.type == "Lorg/chromium/chrome/browser/ui/settings_promo_card/SettingsPromoCardPreference;" }
         
         if (promoCardClassDef != null) {
