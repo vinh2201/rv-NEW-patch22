@@ -41,7 +41,7 @@ val removeSettingsPromoCardFlickerPatch = bytecodePatch(
                     const/4 p1, 0x0
                     invoke-virtual {p0, p1}, Landroidx/preference/Preference;->$setVisibleMethodName(Z)V
                     return-void
-                """.trimIndent()
+                """
                 
                 promoInit.removeInstructions(0, promoInit.implementation!!.instructions.count())
                 promoInit.implementation = MutableMethodImplementation(3)
