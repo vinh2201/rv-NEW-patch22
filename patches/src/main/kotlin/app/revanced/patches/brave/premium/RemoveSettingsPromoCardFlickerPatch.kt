@@ -38,8 +38,8 @@ val removeSettingsPromoCardFlickerPatch =
                     promoInit.addInstructions(
                         1,
                         """
-                        const/4 p1, 0x0
-                        invoke-virtual {p0, p1}, Landroidx/preference/Preference;->$setVisibleMethodName(Z)V
+                            const/4 p1, 0x0
+                            invoke-virtual {p0, p1}, Landroidx/preference/Preference;->$setVisibleMethodName(Z)V
                         """,
                     )
                 }

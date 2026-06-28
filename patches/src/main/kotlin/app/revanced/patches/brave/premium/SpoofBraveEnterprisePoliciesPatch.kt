@@ -45,11 +45,11 @@ val spoofBraveEnterprisePoliciesPatch =
             onRestrictionsReceivedMethod.addInstructions(
                 0,
                 """
-                iget-object v0, p0, $className->$contextField:Landroid/content/Context;
-                invoke-static {v0}, Lapp/revanced/extension/brave/premium/SpoofBraveEnterprisePoliciesPatch;->getSpoofedRestrictions(Landroid/content/Context;)Landroid/os/Bundle;
-                move-result-object v0
-                invoke-virtual {p0, v0}, $superClassName->$onRestrictionsReceivedCallbackMethodName(Landroid/os/Bundle;)V
-                return-void
+                    iget-object v0, p0, $className->$contextField:Landroid/content/Context;
+                    invoke-static {v0}, Lapp/revanced/extension/brave/premium/SpoofBraveEnterprisePoliciesPatch;->getSpoofedRestrictions(Landroid/content/Context;)Landroid/os/Bundle;
+                    move-result-object v0
+                    invoke-virtual {p0, v0}, $superClassName->$onRestrictionsReceivedCallbackMethodName(Landroid/os/Bundle;)V
+                    return-void
                 """,
             )
         }
