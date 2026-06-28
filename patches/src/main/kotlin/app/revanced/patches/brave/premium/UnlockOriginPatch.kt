@@ -3,8 +3,11 @@ package app.revanced.patches.brave.premium
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
 import app.revanced.patcher.extensions.addInstructions
 import app.revanced.patcher.extensions.getInstruction
+import app.revanced.patcher.extensions.instructions
 import app.revanced.patcher.extensions.replaceInstruction
 import app.revanced.patcher.patch.bytecodePatch
+import app.revanced.util.indexOfFirstInstruction
+import app.revanced.util.indexOfFirstInstructionOrThrow
 import app.revanced.util.returnEarly
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
@@ -25,56 +28,55 @@ val unlockOriginPatch =
         compatibleWith("com.brave.browser")
 
         apply {
-            // 1. Force cached credential summary to true
+            // 1. Force cached credential summary to true.
             hasOriginCachedMethod.returnEarly(true)
 
-            // 2. Bypass "fetching credentials" infinite spinner
+            // 2. Bypass "fetching credentials" infinite spinner.
             isFetchingCredentialsMethod.returnEarly(false)
 
-            // 3. Spoof PrefService to make C++ engine believe purchase is fully validated
-            val factoryInstr =
-                isOriginSubscriptionActiveMethod.implementation?.instructions?.let { insns ->
-                    insns.filterIsInstance<ReferenceInstruction>().find { instr ->
-                        instr.opcode.name == "invoke-static" &&
-                            (instr.reference as? MethodReference)?.returnType == "Lorg/chromium/components/prefs/PrefService;"
-                    }
+            // 3. Spoof PrefService to make C++ engine believe purchase is fully validated.
+            val factoryInstructionIndex =
+                isOriginSubscriptionActiveMethod.indexOfFirstInstructionOrThrow {
+                    opcode == Opcode.INVOKE_STATIC &&
+                        (this as? ReferenceInstruction)?.reference?.let { reference ->
+                            (reference as? MethodReference)?.returnType == "Lorg/chromium/components/prefs/PrefService;"
+                        } == true
                 }
-            val factoryRef = factoryInstr?.reference as? MethodReference
+            val factoryReference =
+                isOriginSubscriptionActiveMethod
+                    .getInstruction<ReferenceInstruction>(factoryInstructionIndex)
+                    .reference as MethodReference
 
-            if (factoryRef != null) {
-                val factoryClass = factoryRef.definingClass
-                val factoryMethod = factoryRef.name
+            val factoryClassName = factoryReference.definingClass
+            val factoryMethodName = factoryReference.name
 
-                val dynamicSmali =
-                    """
-                    if-nez p0, :cond_patched
-                    const/4 v0, 0x1
-                    return v0
-                    
-                    :cond_patched
-                    invoke-static {p0}, $factoryClass->$factoryMethod(Lorg/chromium/content_public/browser/BrowserContextHandle;)Lorg/chromium/components/prefs/PrefService;
-                    move-result-object p0
-                    
-                    const-string v1, "brave.origin.subscription_active_android"
-                    const/4 v0, 0x1
-                    invoke-virtual {p0, v1, v0}, Lorg/chromium/components/prefs/PrefService;->f(Ljava/lang/String;Z)V
-                    
-                    invoke-static {}, ${braveLocalStateGetMethod.definingClass}->${braveLocalStateGetMethod.name}()Lorg/chromium/components/prefs/PrefService;
-                    move-result-object p0
-                    
-                    const-string v1, "brave.origin.purchase_validated"
-                    invoke-virtual {p0, v1, v0}, Lorg/chromium/components/prefs/PrefService;->f(Ljava/lang/String;Z)V
-                    
-                    const/4 v0, 0x1
-                    return v0
-                    """.trimIndent()
+            isOriginSubscriptionActiveMethod.addInstructions(
+                0,
+                """
+                if-nez p0, :cond_patched
+                const/4 v0, 0x1
+                return v0
+                
+                :cond_patched
+                invoke-static {p0}, $factoryClassName->$factoryMethodName(Lorg/chromium/content_public/browser/BrowserContextHandle;)Lorg/chromium/components/prefs/PrefService;
+                move-result-object p0
+                
+                const-string v1, "brave.origin.subscription_active_android"
+                const/4 v0, 0x1
+                invoke-virtual {p0, v1, v0}, Lorg/chromium/components/prefs/PrefService;->f(Ljava/lang/String;Z)V
+                
+                invoke-static {}, ${braveLocalStateGetMethod.definingClass}->${braveLocalStateGetMethod.name}()Lorg/chromium/components/prefs/PrefService;
+                move-result-object p0
+                
+                const-string v1, "brave.origin.purchase_validated"
+                invoke-virtual {p0, v1, v0}, Lorg/chromium/components/prefs/PrefService;->f(Ljava/lang/String;Z)V
+                
+                const/4 v0, 0x1
+                return v0
+                """,
+            )
 
-                isOriginSubscriptionActiveMethod.addInstructions(0, dynamicSmali)
-            } else {
-                isOriginSubscriptionActiveMethod.returnEarly(true)
-            }
-
-            // 4. Bypass infinite loading spinner in the UI directly
+            // 4. Bypass infinite loading spinner in the UI directly.
             onCreatePreferencesMethod.let {
                 val invokeStaticIndex = it[4]
                 val moveResultIndex = it[5]
@@ -85,8 +87,9 @@ val unlockOriginPatch =
                 it.method.replaceInstruction(moveResultIndex, "nop")
             }
 
-            // 5. Force requestCredentialSummary to return true so the UI asks C++ for policy values
-            val smali =
+            // 5. Force requestCredentialSummary to return true so the UI asks C++ for policy values.
+            requestCredentialSummaryMethod.addInstructions(
+                0,
                 """
                 if-eqz p1, :cond_end
                 const/4 v0, 0x1
@@ -95,75 +98,69 @@ val unlockOriginPatch =
                 invoke-interface {p1, v0}, Lorg/chromium/base/Callback;->onResult(Ljava/lang/Object;)V
                 :cond_end
                 return-void
-                """.trimIndent()
+                """,
+            )
 
-            requestCredentialSummaryMethod.addInstructions(0, smali)
-
-            // 6. Intercept BraveOriginPreferences.onPreferenceChange to spoof purchase state before Mojo IPC
-            val onPrefChangeMethod = braveOriginPreferencesOnPreferenceChangeMethod
-
-            val onPrefChangeInstructions = onPrefChangeMethod.implementation!!.instructions.toList()
-            val invokeDirectIndex =
-                onPrefChangeInstructions.indexOfFirst {
-                    it.opcode.name == "invoke-direct" &&
-                        (it as? ReferenceInstruction)?.reference?.let { ref ->
-                            (ref as? MethodReference)?.definingClass?.startsWith(
-                                "Lorg/chromium/chrome/browser/settings/BraveOriginPreferences$$",
-                            ) ==
-                                true
-                        } == true
-                }
-
-            if (invokeDirectIndex != -1) {
-                var invokeInterfaceIndex = -1
-                var invokeInterfaceInstr: Instruction? = null
-                for (i in (invokeDirectIndex + 1) until onPrefChangeInstructions.size) {
-                    val instr = onPrefChangeInstructions[i]
-                    if (instr.opcode == Opcode.INVOKE_INTERFACE || instr.opcode == Opcode.INVOKE_INTERFACE_RANGE) {
-                        invokeInterfaceIndex = i
-                        invokeInterfaceInstr = instr
-                        break
+            // 6. Intercept BraveOriginPreferences.onPreferenceChange to spoof purchase state before Mojo IPC.
+            braveOriginPreferencesOnPreferenceChangeMethod.apply {
+                val invokeDirectIndex =
+                    indexOfFirstInstruction {
+                        opcode == Opcode.INVOKE_DIRECT &&
+                            (this as? ReferenceInstruction)?.reference?.let { reference ->
+                                (reference as? MethodReference)?.definingClass?.startsWith(
+                                    "Lorg/chromium/chrome/browser/settings/BraveOriginPreferences$$",
+                                ) ==
+                                    true
+                            } == true
                     }
-                }
 
-                if (invokeInterfaceIndex != -1 && invokeInterfaceInstr != null) {
-                    val (vA, vB, vC) =
-                        when (invokeInterfaceInstr) {
-                            is FiveRegisterInstruction -> {
-                                Triple(
-                                    invokeInterfaceInstr.registerC,
-                                    invokeInterfaceInstr.registerD,
-                                    invokeInterfaceInstr.registerE,
-                                )
-                            }
-
-                            is RegisterRangeInstruction -> {
-                                Triple(
-                                    invokeInterfaceInstr.startRegister,
-                                    invokeInterfaceInstr.startRegister + 1,
-                                    invokeInterfaceInstr.startRegister + 2,
-                                )
-                            }
-
-                            else -> {
-                                error("Unknown instruction format for invoke-interface")
-                            }
+                if (invokeDirectIndex != -1) {
+                    val invokeInterfaceIndex =
+                        indexOfFirstInstruction(invokeDirectIndex + 1) {
+                            opcode == Opcode.INVOKE_INTERFACE || opcode == Opcode.INVOKE_INTERFACE_RANGE
                         }
 
-                    val spoofSmali =
-                        """
-                        invoke-static {}, ${"$"}{braveLocalStateGetMethod.definingClass}->${"$"}{braveLocalStateGetMethod.name}()Lorg/chromium/components/prefs/PrefService;
-                        move-result-object v$vA
-                        const-string v$vB, "brave.origin.purchase_validated"
-                        const/4 v$vC, 0x1
-                        invoke-virtual {v$vA, v$vB, v$vC}, Lorg/chromium/components/prefs/PrefService;->f(Ljava/lang/String;Z)V
-                        """.trimIndent()
+                    if (invokeInterfaceIndex != -1) {
+                        val invokeInterfaceInstruction =
+                            getInstruction<Instruction>(invokeInterfaceIndex)
+                        val (vA, vB, vC) =
+                            when (invokeInterfaceInstruction) {
+                                is FiveRegisterInstruction -> {
+                                    Triple(
+                                        invokeInterfaceInstruction.registerC,
+                                        invokeInterfaceInstruction.registerD,
+                                        invokeInterfaceInstruction.registerE,
+                                    )
+                                }
 
-                    onPrefChangeMethod.addInstructions(invokeInterfaceIndex + 1, spoofSmali)
+                                is RegisterRangeInstruction -> {
+                                    Triple(
+                                        invokeInterfaceInstruction.startRegister,
+                                        invokeInterfaceInstruction.startRegister + 1,
+                                        invokeInterfaceInstruction.startRegister + 2,
+                                    )
+                                }
+
+                                else -> {
+                                    error("Unknown instruction format for invoke-interface")
+                                }
+                            }
+
+                        addInstructions(
+                            invokeInterfaceIndex + 1,
+                            """
+                            invoke-static {}, ${"$"}{braveLocalStateGetMethod.definingClass}->${"$"}{braveLocalStateGetMethod.name}()Lorg/chromium/components/prefs/PrefService;
+                            move-result-object v$vA
+                            const-string v$vB, "brave.origin.purchase_validated"
+                            const/4 v$vC, 0x1
+                            invoke-virtual {v$vA, v$vB, v$vC}, Lorg/chromium/components/prefs/PrefService;->f(Ljava/lang/String;Z)V
+                            """,
+                        )
+                    }
                 }
             }
 
-            // 7. Stub showOriginSettingsForRestart to prevent settings page from auto-opening on startup
+            // 7. Disable showOriginSettingsForRestart to prevent settings page from auto-opening on startup.
             showOriginSettingsForRestartMethod.returnEarly()
         }
     }

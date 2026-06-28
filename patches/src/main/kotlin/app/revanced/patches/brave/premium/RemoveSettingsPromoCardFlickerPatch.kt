@@ -26,23 +26,22 @@ val removeSettingsPromoCardFlickerPatch =
                 val promoInit = promoCardClass.promoInitMethod
                 val promoBindMatch = promoCardClass.getPromoBindMethodMatch()
 
-                // Dynamically find the obfuscated setVisible(boolean) method name from onBindViewHolder
+                // Dynamically find the obfuscated setVisible(boolean) method name from onBindViewHolder.
+                val setVisibleInstructionIndex = promoBindMatch[0]
                 val setVisibleMethodName =
-                    promoBindMatch.let { match ->
-                        val setVisibleIndex = match[0]
-                        match.method
-                            .getInstruction<ReferenceInstruction>(setVisibleIndex)
-                            .methodReference!!
-                            .name
-                    }
+                    promoBindMatch.method
+                        .getInstruction<ReferenceInstruction>(setVisibleInstructionIndex)
+                        .methodReference!!
+                        .name
 
                 if (promoInit != null) {
-                    val setVisibleSmali = """
-                    const/4 p1, 0x0
-                    invoke-virtual { p0, p1 }, Landroidx/preference/Preference;->$setVisibleMethodName(Z)V
-                """
-
-                    promoInit.addInstructions(1, setVisibleSmali)
+                    promoInit.addInstructions(
+                        1,
+                        """
+                        const/4 p1, 0x0
+                        invoke-virtual {p0, p1}, Landroidx/preference/Preference;->$setVisibleMethodName(Z)V
+                        """,
+                    )
                 }
             }
         }

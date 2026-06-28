@@ -6,7 +6,7 @@ import android.os.StrictMode;
 import android.preference.PreferenceManager;
 import android.content.SharedPreferences;
 
-public class Policies {
+public class SpoofBraveEnterprisePoliciesPatch {
     public static Bundle getSpoofedRestrictions(Context context) {
         StrictMode.ThreadPolicy oldPolicy = StrictMode.allowThreadDiskReads();
         try {

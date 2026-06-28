@@ -91,14 +91,14 @@ internal fun com.android.tools.smali.dexlib2.iface.ClassDef.getPromoBindMethodMa
 internal val BytecodePatchContext.appRestrictionsMethod: Method
     get() =
         classDefs.flatMap { it.methods }.firstMethod {
-            val params = parameters.toList()
-            params.size == 2 &&
-                params[0].type == "Landroid/os/UserManager;" &&
-                params[1].type == "Ljava/lang/String;" &&
+            val methodParameters = parameters.toList()
+            methodParameters.size == 2 &&
+                methodParameters[0].type == "Landroid/os/UserManager;" &&
+                methodParameters[1].type == "Ljava/lang/String;" &&
                 returnType == "Landroid/os/Bundle;" &&
-                implementation?.instructions?.any { instr ->
-                    instr is ReferenceInstruction &&
-                        (instr.reference as? StringReference)?.string == "cr_AppResProvider"
+                implementation?.instructions?.any { instruction ->
+                    instruction is ReferenceInstruction &&
+                        (instruction.reference as? StringReference)?.string == "cr_AppResProvider"
                 } == true
         }
 
@@ -127,11 +127,11 @@ internal fun com.android.tools.smali.dexlib2.iface.ClassDef.getAppRestrictionsPr
 internal val BytecodePatchContext.braveOriginPreferencesOnPreferenceChangeMethod: MutableMethod
     get() =
         classDefs.flatMap { it.methods }.firstMethod {
-            val params = parameters.toList()
+            val methodParameters = parameters.toList()
             immutableClassDef.type == "Lorg/chromium/chrome/browser/settings/BraveOriginPreferences;" &&
-                params.size == 2 &&
-                params[0].type == "Landroidx/preference/Preference;" &&
-                params[1].type == "Ljava/lang/Object;" &&
+                methodParameters.size == 2 &&
+                methodParameters[0].type == "Landroidx/preference/Preference;" &&
+                methodParameters[1].type == "Ljava/lang/Object;" &&
                 returnType == "Z"
         }
 
