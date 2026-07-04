@@ -93,7 +93,7 @@ val unlockOriginPatch =
                 """
                     if-eqz p1, :cond_end
                     const/4 v0, 0x1
-                    invoke-static {v0}, Ljava/lang/Boolean;->valueOf(Z)Ljava/lang/Boolean;
+                    invoke-static { v0 }, Ljava/lang/Boolean;->valueOf(Z)Ljava/lang/Boolean;
                     move-result-object v0
                     invoke-interface {p1, v0}, Lorg/chromium/base/Callback;->onResult(Ljava/lang/Object;)V
                     :cond_end
