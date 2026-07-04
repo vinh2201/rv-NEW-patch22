@@ -149,7 +149,7 @@ val unlockOriginPatch =
                         addInstructions(
                             invokeInterfaceIndex + 1,
                             """
-                                invoke-static {}, ${"$"}{braveLocalStateGetMethod.definingClass}->${"$"}{braveLocalStateGetMethod.name}()Lorg/chromium/components/prefs/PrefService;
+                                invoke-static { }, ${"$"}{braveLocalStateGetMethod.definingClass}->${"$"}{braveLocalStateGetMethod.name}()Lorg/chromium/components/prefs/PrefService;
                                 move-result-object v$vA
                                 const-string v$vB, "brave.origin.purchase_validated"
                                 const/4 v$vC, 0x1
