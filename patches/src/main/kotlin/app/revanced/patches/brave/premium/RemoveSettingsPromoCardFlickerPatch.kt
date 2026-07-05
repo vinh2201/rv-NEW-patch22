@@ -4,7 +4,8 @@ import app.revanced.patcher.extensions.addInstructions
 import app.revanced.patcher.extensions.getInstruction
 import app.revanced.patcher.extensions.methodReference
 import app.revanced.patcher.patch.bytecodePatch
-import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import app.revanced.util.indexOfFirstInstruction
+import com.android.tools.smali.dexlib2.Opcode
 
 @Suppress("unused")
 val removeSettingsPromoCardFlickerPatch =
@@ -24,13 +25,19 @@ val removeSettingsPromoCardFlickerPatch =
                 val promoCardClass = classDefs.getOrReplaceMutable(promoCardClassDef)
 
                 val promoInit = promoCardClass.promoInitMethod
-                val promoBindMatch = promoCardClass.getPromoBindMethodMatch()
+                val promoBindMethod = promoCardClass.getPromoBindMethod()
 
                 // Dynamically find the obfuscated setVisible(boolean) method name from onBindViewHolder.
-                val setVisibleInstructionIndex = promoBindMatch[0]
+                val setVisibleInstructionIndex =
+                    promoBindMethod.indexOfFirstInstruction {
+                        opcode == Opcode.INVOKE_VIRTUAL &&
+                            methodReference?.definingClass == "Landroidx/preference/Preference;" &&
+                            methodReference?.returnType == "V" &&
+                            methodReference?.parameterTypes == listOf("Z")
+                    }
                 val setVisibleMethodName =
-                    promoBindMatch.method
-                        .getInstruction<ReferenceInstruction>(setVisibleInstructionIndex)
+                    promoBindMethod
+                        .getInstruction(setVisibleInstructionIndex)
                         .methodReference!!
                         .name
 

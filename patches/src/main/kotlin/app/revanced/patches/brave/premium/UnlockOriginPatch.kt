@@ -1,10 +1,7 @@
 package app.revanced.patches.brave.premium
 
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
-import app.revanced.patcher.extensions.addInstructions
-import app.revanced.patcher.extensions.getInstruction
-import app.revanced.patcher.extensions.instructions
-import app.revanced.patcher.extensions.replaceInstruction
+import app.revanced.patcher.extensions.*
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.util.indexOfFirstInstruction
 import app.revanced.util.indexOfFirstInstructionOrThrow
@@ -35,20 +32,14 @@ val unlockOriginPatch =
             isFetchingCredentialsMethod.returnEarly(false)
 
             // 3. Spoof PrefService to make C++ engine believe purchase is fully validated.
-            val factoryInstructionIndex =
-                isOriginSubscriptionActiveMethod.indexOfFirstInstructionOrThrow {
-                    opcode == Opcode.INVOKE_STATIC &&
-                        (this as? ReferenceInstruction)?.reference?.let { reference ->
-                            (reference as? MethodReference)?.returnType == "Lorg/chromium/components/prefs/PrefService;"
-                        } == true
-                }
-            val factoryReference =
-                isOriginSubscriptionActiveMethod
-                    .getInstruction<ReferenceInstruction>(factoryInstructionIndex)
-                    .reference as MethodReference
-
-            val factoryClassName = factoryReference.definingClass
-            val factoryMethodName = factoryReference.name
+            val factoryMethodReference =
+                isOriginSubscriptionActiveMethod.implementation?.instructions
+                    ?.firstNotNullOfOrNull { instruction ->
+                        instruction.methodReference?.takeIf {
+                            instruction.opcode == Opcode.INVOKE_STATIC &&
+                                it.returnType == "Lorg/chromium/components/prefs/PrefService;"
+                        }
+                    } ?: error("PrefService factory method not found")
 
             isOriginSubscriptionActiveMethod.addInstructions(
                 0,
@@ -58,7 +49,7 @@ val unlockOriginPatch =
                     return v0
                     
                     :cond_patched
-                    invoke-static {p0}, $factoryClassName->$factoryMethodName(Lorg/chromium/content_public/browser/BrowserContextHandle;)Lorg/chromium/components/prefs/PrefService;
+                    invoke-static {p0}, ${factoryMethodReference.definingClass}->${factoryMethodReference.name}(Lorg/chromium/content_public/browser/BrowserContextHandle;)Lorg/chromium/components/prefs/PrefService;
                     move-result-object p0
                     
                     const-string v1, "brave.origin.subscription_active_android"
@@ -77,14 +68,10 @@ val unlockOriginPatch =
             )
 
             // 4. Bypass infinite loading spinner in the UI directly.
-            onCreatePreferencesMethod.let {
-                val invokeStaticIndex = it[4]
-                val moveResultIndex = it[5]
-                val moveResultRegister =
-                    it.method.getInstruction<OneRegisterInstruction>(moveResultIndex).registerA
+            onCreatePreferencesMethod.apply {
+                val moveResultRegister = method.getInstruction<OneRegisterInstruction>(this[5]).registerA
 
-                it.method.replaceInstruction(invokeStaticIndex, "const/4 v$moveResultRegister, 0x0")
-                it.method.replaceInstruction(moveResultIndex, "nop")
+                method.replaceInstruction(this[5], "const/4 v$moveResultRegister, 0x0")
             }
 
             // 5. Force requestCredentialSummary to return true so the UI asks C++ for policy values.
@@ -106,12 +93,9 @@ val unlockOriginPatch =
                 val invokeDirectIndex =
                     indexOfFirstInstruction {
                         opcode == Opcode.INVOKE_DIRECT &&
-                            (this as? ReferenceInstruction)?.reference?.let { reference ->
-                                (reference as? MethodReference)?.definingClass?.startsWith(
-                                    "Lorg/chromium/chrome/browser/settings/BraveOriginPreferences$$",
-                                ) ==
-                                    true
-                            } == true
+                            methodReference?.definingClass?.startsWith(
+                                "Lorg/chromium/chrome/browser/settings/BraveOriginPreferences$$",
+                            ) == true
                     }
 
                 if (invokeDirectIndex != -1) {

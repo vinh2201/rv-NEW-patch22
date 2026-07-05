@@ -37,7 +37,7 @@ val spoofBraveEnterprisePoliciesPatch =
                 onRestrictionsReceivedMethodMatch.let { match ->
                     val callbackInstructionIndex = match[0]
                     match.method
-                        .getInstruction<ReferenceInstruction>(callbackInstructionIndex)
+                        .getInstruction(callbackInstructionIndex)
                         .methodReference!!
                         .name
                 }

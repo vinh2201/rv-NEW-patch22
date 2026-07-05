@@ -12,9 +12,8 @@ import app.revanced.patcher.returnType
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
-import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
-import com.android.tools.smali.dexlib2.iface.reference.StringReference
+import app.revanced.patcher.extensions.string
 
 internal val BytecodePatchContext.hasOriginCachedMethod by gettingFirstMethodDeclaratively("brave_origin_credential_summary_cached") {
     returnType("Z")
@@ -52,9 +51,7 @@ internal val BytecodePatchContext.requestCredentialSummaryMethod by gettingFirst
 )
 
 internal val BytecodePatchContext.braveLocalStateGetMethod by gettingFirstMethodDeclaratively {
-    custom {
-        immutableClassDef.type == "Lorg/chromium/chrome/browser/prefs/LocalStatePrefs;"
-    }
+    definingClass("Lorg/chromium/chrome/browser/prefs/LocalStatePrefs;")
     returnType("Lorg/chromium/components/prefs/PrefService;")
     parameterTypes()
 }
@@ -66,26 +63,17 @@ internal val BytecodePatchContext.walletPolicyMethod by gettingFirstMethodDeclar
 internal val BytecodePatchContext.leoPolicyMethod by gettingFirstMethodDeclaratively("brave.ai_chat.enabled_by_policy")
 
 internal val BytecodePatchContext.settingsPromoCardPreferenceClassDef
-    get() = firstClassDefOrNull("Lorg/chromium/chrome/browser/ui/settings_promo_card/SettingsPromoCardPreference;")
+    get() = firstClassDefOrNull("/SettingsPromoCardPreference;")
 
 context(_: BytecodePatchContext)
 internal val com.android.tools.smali.dexlib2.iface.ClassDef.promoInitMethod
     get() = firstMethodOrNull { name == "<init>" }
 
-internal fun com.android.tools.smali.dexlib2.iface.ClassDef.getPromoBindMethodMatch() =
-    firstMethodComposite {
+context(_: BytecodePatchContext)
+internal fun com.android.tools.smali.dexlib2.iface.ClassDef.getPromoBindMethod() =
+    firstMethodDeclaratively {
         returnType("V")
         parameterTypes("L")
-        instructions(
-            allOf(
-                Opcode.INVOKE_VIRTUAL(),
-                method {
-                    definingClass == "Landroidx/preference/Preference;" &&
-                        returnType == "V" &&
-                        parameterTypes == listOf("Z")
-                },
-            ),
-        )
     }
 
 internal val BytecodePatchContext.appRestrictionsMethod: Method
@@ -97,8 +85,7 @@ internal val BytecodePatchContext.appRestrictionsMethod: Method
                 methodParameters[1].type == "Ljava/lang/String;" &&
                 returnType == "Landroid/os/Bundle;" &&
                 implementation?.instructions?.any { instruction ->
-                    instruction is ReferenceInstruction &&
-                        (instruction.reference as? StringReference)?.string == "cr_AppResProvider"
+                    instruction.string == "cr_AppResProvider"
                 } == true
         }
 
@@ -136,9 +123,7 @@ internal val BytecodePatchContext.braveOriginPreferencesOnPreferenceChangeMethod
         }
 
 internal val BytecodePatchContext.showOriginSettingsForRestartMethod by gettingFirstMethodDeclaratively {
-    custom {
-        immutableClassDef.type == "Lorg/chromium/chrome/browser/brave_origin/BraveOriginSettingsLauncherHelper;"
-    }
+    definingClass("Lorg/chromium/chrome/browser/brave_origin/BraveOriginSettingsLauncherHelper;")
     returnType("V")
     parameterTypes()
 }
