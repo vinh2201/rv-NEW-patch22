@@ -32,14 +32,13 @@ val unlockOriginPatch =
             isFetchingCredentialsMethod.returnEarly(false)
 
             // 3. Spoof PrefService to make C++ engine believe purchase is fully validated.
+            val factoryMethodIndex =
+                isOriginSubscriptionActiveMethod.indexOfFirstInstructionOrThrow {
+                    opcode == Opcode.INVOKE_STATIC &&
+                        methodReference?.returnType == "Lorg/chromium/components/prefs/PrefService;"
+                }
             val factoryMethodReference =
-                isOriginSubscriptionActiveMethod.implementation?.instructions
-                    ?.firstNotNullOfOrNull { instruction ->
-                        instruction.methodReference?.takeIf {
-                            instruction.opcode == Opcode.INVOKE_STATIC &&
-                                it.returnType == "Lorg/chromium/components/prefs/PrefService;"
-                        }
-                    } ?: error("PrefService factory method not found")
+                isOriginSubscriptionActiveMethod.getInstruction(factoryMethodIndex).methodReference!!
 
             isOriginSubscriptionActiveMethod.addInstructions(
                 0,

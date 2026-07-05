@@ -1,12 +1,12 @@
 package app.revanced.patches.brave.premium
 
+import app.revanced.patcher.classDef
 import app.revanced.patcher.extensions.addInstructions
 import app.revanced.patcher.extensions.getInstruction
 import app.revanced.patcher.extensions.methodReference
 import app.revanced.patcher.firstMethod
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patches.brave.misc.extension.sharedExtensionPatch
-import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 
 @Suppress("unused")
 val spoofBraveEnterprisePoliciesPatch =
@@ -22,16 +22,14 @@ val spoofBraveEnterprisePoliciesPatch =
             val appRestrictionsMethod = appRestrictionsMethod
 
             val className = appRestrictionsMethod.definingClass
-            val classDef = classDefs.first { it.type == className }
+            val classDef = classDefs.getOrReplaceMutable(appRestrictionsMethod.classDef)
             val superClassName = classDef.superclass
             val contextField = classDef.contextFieldName
 
             val onRestrictionsReceivedMethodMatch =
-                classDef.getAppRestrictionsProviderOnRestrictionsReceivedMethodMatch(
-                    appRestrictionsMethod,
-                )
+                classDef.getAppRestrictionsProviderOnRestrictionsReceivedMethodMatch(appRestrictionsMethod)
             val onRestrictionsReceivedMethod =
-                classDefs.getOrReplaceMutable(classDef).methods.firstMethod(onRestrictionsReceivedMethodMatch.method)
+                classDef.methods.firstMethod(onRestrictionsReceivedMethodMatch.method)
 
             val onRestrictionsReceivedCallbackMethodName =
                 onRestrictionsReceivedMethodMatch.let { match ->
