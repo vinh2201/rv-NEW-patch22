@@ -1897,7 +1897,11 @@ User id ของคุณเหมือนกับรหัสผ่าน �
             <string name="revanced_block_video_ads_summary_off">วิดีโอโฆษณาไม่ได้รับการบล็อก</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
+            <string name="revanced_deleted_msg">ลบข้อความแล้ว</string>
             <string name="revanced_show_deleted_messages_title">แสดงข้อความที่ถูกลบ</string>
+            <string name="revanced_show_deleted_messages_entry_1">ไม่แสดงข้อความที่ถูกลบ</string>
+            <string name="revanced_show_deleted_messages_entry_2">ซ่อนข้อความที่ถูกลบไว้หลังสปอยเลอร์</string>
+            <string name="revanced_show_deleted_messages_entry_3">แสดงข้อความที่ถูกลบเป็นข้อความที่ถูกขีดทับ</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">เรียก Channel Points โดยอัตโนมัติ</string>

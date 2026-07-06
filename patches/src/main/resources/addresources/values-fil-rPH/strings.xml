@@ -1839,7 +1839,11 @@ Maaaring mag-stutter o mag-drop ng frames ang pag-playback ng video na may AV1."
             <string name="revanced_block_video_ads_summary_off">Na-unblock ang mga video ad</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
+            <string name="revanced_deleted_msg">Tinanggal ang mensahe</string>
             <string name="revanced_show_deleted_messages_title">Ipakita ang mga tinanggal na mensahe</string>
+            <string name="revanced_show_deleted_messages_entry_1">Huwag ipakita ang mga tinanggal na mensahe</string>
+            <string name="revanced_show_deleted_messages_entry_2">Itago ang mga tinanggal na mensahe sa likod ng isang spoiler</string>
+            <string name="revanced_show_deleted_messages_entry_3">Ipakita ang mga tinanggal na mensahe bilang naka-cross-out na text</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">Awtomatikong i-claim ang Channel Points</string>

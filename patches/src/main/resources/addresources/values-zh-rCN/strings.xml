@@ -1863,7 +1863,11 @@ Second \"item\" text"</string>
             <string name="revanced_block_video_ads_summary_off">视频广告未屏蔽</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
+            <string name="revanced_deleted_msg">消息已删除</string>
             <string name="revanced_show_deleted_messages_title">显示已删除的消息</string>
+            <string name="revanced_show_deleted_messages_entry_1">不显示已删除的消息</string>
+            <string name="revanced_show_deleted_messages_entry_2">在剧透后面隐藏已删除的消息</string>
+            <string name="revanced_show_deleted_messages_entry_3">将已删除的消息显示为删除线文字</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">自动领取频道积分</string>

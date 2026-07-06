@@ -1900,7 +1900,11 @@ Phát video bằng AV1 có thể bị giật hoặc tụt khung hình."</string>
             <string name="revanced_block_video_ads_summary_off">Quảng cáo video không được chặn</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
+            <string name="revanced_deleted_msg">Tin nhắn đã xóa</string>
             <string name="revanced_show_deleted_messages_title">Hiện tin nhắn đã xóa</string>
+            <string name="revanced_show_deleted_messages_entry_1">Không hiện tin nhắn đã xóa</string>
+            <string name="revanced_show_deleted_messages_entry_2">Che tin nhắn đã xóa</string>
+            <string name="revanced_show_deleted_messages_entry_3">Hiện tin nhắn đã xóa dưới dạnh gạch ngang</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">Tự nhận Điểm Kênh</string>

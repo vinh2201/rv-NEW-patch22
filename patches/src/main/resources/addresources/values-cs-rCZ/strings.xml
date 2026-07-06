@@ -1900,7 +1900,11 @@ Přehrávání videa s AV1 se může sekat nebo vypadávat snímky."</string>
             <string name="revanced_block_video_ads_summary_off">Video reklamy jsou neblokované</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
+            <string name="revanced_deleted_msg">Zpráva smazána</string>
             <string name="revanced_show_deleted_messages_title">Zobrazit smazané zprávy</string>
+            <string name="revanced_show_deleted_messages_entry_1">Nezobrazovat smazané zprávy</string>
+            <string name="revanced_show_deleted_messages_entry_2">Skrýt smazané zprávy za spoiler</string>
+            <string name="revanced_show_deleted_messages_entry_3">Zobrazit smazané zprávy jako přeškrtnutý text</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">Automaticky získat Channel Points</string>

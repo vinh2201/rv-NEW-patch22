@@ -1899,7 +1899,11 @@ AV1 での動画再生は、カクつくまたはコマ落ちが発生する場�
             <string name="revanced_block_video_ads_summary_off">動画広告はブロックされません</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
+            <string name="revanced_deleted_msg">メッセージを削除しました</string>
             <string name="revanced_show_deleted_messages_title">削除されたメッセージの表示方法</string>
+            <string name="revanced_show_deleted_messages_entry_1">削除されたメッセージを表示しない</string>
+            <string name="revanced_show_deleted_messages_entry_2">削除されたメッセージをスポイラー表示で隠して表示する</string>
+            <string name="revanced_show_deleted_messages_entry_3">削除されたメッセージを取り消し線つきで表示する</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">チャンネルポイントの受け取りを自動化</string>

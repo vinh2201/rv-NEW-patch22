@@ -1900,7 +1900,11 @@ Pemutaran video dengan AV1 mungkin tersendat atau kehilangan bingkai."</string>
             <string name="revanced_block_video_ads_summary_off">Iklan video tidak diblokir</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
+            <string name="revanced_deleted_msg">Pesan dihapus</string>
             <string name="revanced_show_deleted_messages_title">Tampilkan pesan yang terhapus</string>
+            <string name="revanced_show_deleted_messages_entry_1">Jangan tampilkan pesan yang terhapus</string>
+            <string name="revanced_show_deleted_messages_entry_2">Sembunyikan pesan yang dihapus di balik spoiler</string>
+            <string name="revanced_show_deleted_messages_entry_3">Tampilkan pesan yang dihapus sebagai teks yang dicoret</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">Klaim Poin Saluran secara otomatis</string>

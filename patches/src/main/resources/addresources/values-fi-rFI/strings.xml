@@ -1901,7 +1901,11 @@ AV1-videon toisto saattaa pätkiä."</string>
             <string name="revanced_block_video_ads_summary_off">Videomainoksia ei estetä</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
+            <string name="revanced_deleted_msg">Viesti poistettiin</string>
             <string name="revanced_show_deleted_messages_title">Näytä poistetut viestit</string>
+            <string name="revanced_show_deleted_messages_entry_1">Älä näytä poistettuja viestejä</string>
+            <string name="revanced_show_deleted_messages_entry_2">Piilota poistetut viestit spoilereilla</string>
+            <string name="revanced_show_deleted_messages_entry_3">Näytä poistetut viestit yliviivattuna tekstinä</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">Lunasta kanavapisteet automaattisesti</string>

@@ -1864,7 +1864,11 @@ A reprodução de vídeo com AV1 pode gaguejar ou perder quadros."</string>
             <string name="revanced_block_video_ads_summary_off">Anúncios de vídeo não estão bloqueados</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
+            <string name="revanced_deleted_msg">Mensagem excluída</string>
             <string name="revanced_show_deleted_messages_title">Mostrar mensagens apagadas</string>
+            <string name="revanced_show_deleted_messages_entry_1">Não mostrar mensagens apagadas</string>
+            <string name="revanced_show_deleted_messages_entry_2">Ocultar mensagens apagadas atrás de um spoiler</string>
+            <string name="revanced_show_deleted_messages_entry_3">Mostrar mensagens apagadas como texto riscado</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">Resgatar Pontos do Canal automaticamente</string>

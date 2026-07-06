@@ -1870,7 +1870,11 @@ Second \"item\" text"</string>
             <string name="revanced_block_video_ads_summary_off">Видео рекламата е разблокирана</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
+            <string name="revanced_deleted_msg">Съобщението е изтрито</string>
             <string name="revanced_show_deleted_messages_title">Покажи изтритите съобщения</string>
+            <string name="revanced_show_deleted_messages_entry_1">Не показвай изтритите съобщения</string>
+            <string name="revanced_show_deleted_messages_entry_2">Скрийте изтритите съобщения зад спойлер</string>
+            <string name="revanced_show_deleted_messages_entry_3">Показване на изтритите съобщения като зачеркнат текст</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">Автоматично изискване на Channel Points</string>

@@ -1874,7 +1874,11 @@ AV1-ով տեսանյութի նվագարկումը կարող է ընդհատ�
             <string name="revanced_block_video_ads_summary_off">Տեսահոլովակների գովազդները բլոկավորված չեն</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
+            <string name="revanced_deleted_msg">Հաղորդագրությունը ջնջված է</string>
             <string name="revanced_show_deleted_messages_title">Ցուցադրել հեռացված հաղորդագրությունները</string>
+            <string name="revanced_show_deleted_messages_entry_1">Մի ցուցադրել հեռացված հաղորդագրությունները</string>
+            <string name="revanced_show_deleted_messages_entry_2">Թաքցնել ջնջված հաղորդագրությունները սպոիլերով</string>
+            <string name="revanced_show_deleted_messages_entry_3">Ցուցադրել ջնջված հաղորդագրությունները, ինչպես խաչված տեքստ</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">Ավտոմատ կերպով ստանալ ալիքի կետեր</string>

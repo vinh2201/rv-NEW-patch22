@@ -1867,7 +1867,11 @@ Video oynatma AV1 ilə ilişə bilər və ya kadrlar buraxıla bilər."</string>
             <string name="revanced_block_video_ads_summary_off">Video reklamlar bloklanmır</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
+            <string name="revanced_deleted_msg">Məlumat silindi</string>
             <string name="revanced_show_deleted_messages_title">Silinən mesajları göstər</string>
+            <string name="revanced_show_deleted_messages_entry_1">Silinən mesajlar göstərilməsin</string>
+            <string name="revanced_show_deleted_messages_entry_2">Silinmiş mesajları boz panel arxasında gizlət</string>
+            <string name="revanced_show_deleted_messages_entry_3">Silinən mesajları cızılmış mətn kimi göstər</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">Kanal Xallarını avtomatik təsdiqlə</string>

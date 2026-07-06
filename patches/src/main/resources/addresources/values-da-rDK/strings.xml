@@ -1855,7 +1855,11 @@ Videoafspilning med AV1 kan hakke eller tabe billeder."</string>
             <string name="revanced_block_video_ads_summary_off">Videoannoncer er ublokerede</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
+            <string name="revanced_deleted_msg">Meddelelse slettet</string>
             <string name="revanced_show_deleted_messages_title">Vis slettede beskeder</string>
+            <string name="revanced_show_deleted_messages_entry_1">Vis ikke slettede beskeder</string>
+            <string name="revanced_show_deleted_messages_entry_2">Skjul slettede beskeder bag en spoiler</string>
+            <string name="revanced_show_deleted_messages_entry_3">Vis slettede beskeder som krydset tekst</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">Auto-hævde Kanalpunkter</string>

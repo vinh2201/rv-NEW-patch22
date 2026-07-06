@@ -1861,7 +1861,11 @@ Az AV1-es videólejátszás akadozhat vagy képkockákat ejthet."</string>
             <string name="revanced_block_video_ads_summary_off">A videós hirdetések nincsenek blokkolva</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
+            <string name="revanced_deleted_msg">Üzenet törölve</string>
             <string name="revanced_show_deleted_messages_title">Törölt üzenetek megjelenítése</string>
+            <string name="revanced_show_deleted_messages_entry_1">Ne mutassa a törölt üzeneteket</string>
+            <string name="revanced_show_deleted_messages_entry_2">A törölt üzenetek elrejtése egy spoiler mögé</string>
+            <string name="revanced_show_deleted_messages_entry_3">Törölt üzenetek megjelenítése áthúzott szövegként</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">Csatornapontok automatikus gyűjtése</string>

@@ -1900,7 +1900,11 @@ La lecture vidéo avec AV1 peut être saccadée et des images peuvent être perd
             <string name="revanced_block_video_ads_summary_off">Les annonces vidéo ne sont pas bloquées</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
+            <string name="revanced_deleted_msg">Message supprimé</string>
             <string name="revanced_show_deleted_messages_title">Afficher les messages supprimés</string>
+            <string name="revanced_show_deleted_messages_entry_1">Ne pas afficher les messages supprimés</string>
+            <string name="revanced_show_deleted_messages_entry_2">Cacher les messages supprimés derrière un spoiler</string>
+            <string name="revanced_show_deleted_messages_entry_3">Afficher les messages supprimés sous forme de texte barré</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">Réclamer automatiquement les points de chaîne</string>

@@ -1901,7 +1901,11 @@ A reprodução de vídeo com AV1 pode apresentar soluços ou perder quadros."</s
             <string name="revanced_block_video_ads_summary_off">Anúncios de vídeo são desbloqueados</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
+            <string name="revanced_deleted_msg">Mensagem eliminada</string>
             <string name="revanced_show_deleted_messages_title">Mostrar mensagens eliminadas</string>
+            <string name="revanced_show_deleted_messages_entry_1">Não exibir mensagens excluídas</string>
+            <string name="revanced_show_deleted_messages_entry_2">Esconder mensagens excluídas atrás de um spoiler</string>
+            <string name="revanced_show_deleted_messages_entry_3">Mostrar mensagens excluídas como texto ultrapassado</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">Automaticamente reivindicar Pontos do Canal</string>

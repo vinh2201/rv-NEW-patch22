@@ -1885,7 +1885,11 @@ Second \"item\" text"</string>
             <string name="revanced_block_video_ads_summary_off">يتم إلغاء حظر إعلانات الفيديو</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
+            <string name="revanced_deleted_msg">تم حذف الرسالة</string>
             <string name="revanced_show_deleted_messages_title">عرض الرسائل المحذوفة</string>
+            <string name="revanced_show_deleted_messages_entry_1">لا تعرض الرسائل المحذوفة</string>
+            <string name="revanced_show_deleted_messages_entry_2">إخفاء الرسائل المحذوفة داخل Spoiler</string>
+            <string name="revanced_show_deleted_messages_entry_3">عرض الرسائل المحذوفة كنص مشطوب</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">الحصول على نقاط القناة تلقائيًا</string>

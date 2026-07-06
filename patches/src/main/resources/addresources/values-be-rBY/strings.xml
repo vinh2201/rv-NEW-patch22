@@ -1871,7 +1871,11 @@ Second \"item\" text"</string>
             <string name="revanced_block_video_ads_summary_off">Відэарэклама разблакіравана</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
+            <string name="revanced_deleted_msg">Паведамленне выдалена</string>
             <string name="revanced_show_deleted_messages_title">Паказаць выдаленыя паведамленні</string>
+            <string name="revanced_show_deleted_messages_entry_1">Не паказваць выдаленыя паведамленні</string>
+            <string name="revanced_show_deleted_messages_entry_2">Схаваць выдаленыя паведамленні за спойлерам</string>
+            <string name="revanced_show_deleted_messages_entry_3">Паказаць выдаленыя паведамленні ў выглядзе закрэсленага тэксту</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">Аўтаматычна патрабаваць балы канала</string>
