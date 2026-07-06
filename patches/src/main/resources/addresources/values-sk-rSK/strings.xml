@@ -1862,11 +1862,7 @@ Prehrávanie videa s AV1 môže sekať alebo vynechávať snímky."</string>
             <string name="revanced_block_video_ads_summary_off">Videoreklamy sú odblokované</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
-            <string name="revanced_deleted_msg">Správa odstránená</string>
             <string name="revanced_show_deleted_messages_title">Zobraziť odstránené správy</string>
-            <string name="revanced_show_deleted_messages_entry_1">Nezobrazovať odstránené správy</string>
-            <string name="revanced_show_deleted_messages_entry_2">Skryť odstránené správy za spojler</string>
-            <string name="revanced_show_deleted_messages_entry_3">Zobraziť odstránené správy ako preškrtnutý text</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">Automaticky nárokovať body kanála</string>

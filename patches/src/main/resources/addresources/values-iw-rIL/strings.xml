@@ -1869,11 +1869,7 @@ Second \"item\" text"</string>
             <string name="revanced_block_video_ads_summary_off">מודעות סרטון אינן חסומות</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
-            <string name="revanced_deleted_msg">ההודעה נמחקה</string>
             <string name="revanced_show_deleted_messages_title">הצג הודעות שנמחקו</string>
-            <string name="revanced_show_deleted_messages_entry_1">אל תציג הודעות שנמחקו</string>
-            <string name="revanced_show_deleted_messages_entry_2">הסתר מודעות שנמחקו מאחורי ספויילר</string>
-            <string name="revanced_show_deleted_messages_entry_3">הצג מודעות שנמחקו כטקסט מחוק</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">קבל נקודות ערוץ באופן אוטומטי</string>

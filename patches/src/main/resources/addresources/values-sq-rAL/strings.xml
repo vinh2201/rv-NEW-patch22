@@ -1849,11 +1849,7 @@ Luajtja e videos me AV1 mund të ngecë ose të humbasë korniza."</string>
             <string name="revanced_block_video_ads_summary_off">Reklamat e videove nuk janë të bllokuara</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
-            <string name="revanced_deleted_msg">Mesazhi u fshi.</string>
             <string name="revanced_show_deleted_messages_title">Shfaq mesazhet e fshira</string>
-            <string name="revanced_show_deleted_messages_entry_1">Mos shfaq mesazhet e fshira</string>
-            <string name="revanced_show_deleted_messages_entry_2">Fshih mesazhet e fshira pas një spoileri</string>
-            <string name="revanced_show_deleted_messages_entry_3">Shfaq mesazhet e fshira si tekst i kaluar</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">Kërko automatikisht pikat e kanalit</string>

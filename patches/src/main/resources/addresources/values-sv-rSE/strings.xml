@@ -1854,11 +1854,7 @@ Videouppspelning med AV1 kan hacka eller tappa bildrutor."</string>
             <string name="revanced_block_video_ads_summary_off">Videoannonser är inte blockerade</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
-            <string name="revanced_deleted_msg">Meddelande borttaget</string>
             <string name="revanced_show_deleted_messages_title">Visa borttagna meddelanden</string>
-            <string name="revanced_show_deleted_messages_entry_1">Visa inte borttagna meddelanden</string>
-            <string name="revanced_show_deleted_messages_entry_2">Dölj borttagna meddelanden bakom en spoiler</string>
-            <string name="revanced_show_deleted_messages_entry_3">Visa borttagna meddelanden som överstruken text</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">Hämta kanalpoäng automatiskt</string>

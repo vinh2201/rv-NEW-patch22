@@ -1857,11 +1857,7 @@ Die Videowiedergabe mit AV1 kann stottern oder Bilder überspringen."</string>
             <string name="revanced_block_video_ads_summary_off">Video-Anzeigen sind entsperrt</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
-            <string name="revanced_deleted_msg">Nachricht gelöscht</string>
             <string name="revanced_show_deleted_messages_title">Gelöschte Nachrichten anzeigen</string>
-            <string name="revanced_show_deleted_messages_entry_1">Gelöschte Nachrichten nicht anzeigen</string>
-            <string name="revanced_show_deleted_messages_entry_2">Gelöschte Nachrichten hinter einem Spoiler ausblenden</string>
-            <string name="revanced_show_deleted_messages_entry_3">Gelöschte Nachrichten als überschneidenden Text anzeigen</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">Kanalpunkte automatisch beanspruchen</string>

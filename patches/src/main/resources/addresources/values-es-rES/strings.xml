@@ -1887,11 +1887,7 @@ La reproducción puede tartamudear o perder fotogramas"</string>
             <string name="revanced_block_video_ads_summary_off">Los anuncios de vídeo están desbloqueados</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
-            <string name="revanced_deleted_msg">Mensaje eliminado</string>
             <string name="revanced_show_deleted_messages_title">Mostrar mensajes borrados</string>
-            <string name="revanced_show_deleted_messages_entry_1">No mostrar mensajes borrados</string>
-            <string name="revanced_show_deleted_messages_entry_2">Ocultar mensajes eliminados detrás de un spoiler</string>
-            <string name="revanced_show_deleted_messages_entry_3">Mostrar mensajes borrados como texto cruzado</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">Reclamar automáticamente los puntos de canal</string>

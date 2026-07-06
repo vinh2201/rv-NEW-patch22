@@ -1877,11 +1877,7 @@ AV1 video atskaņošana var raustīties vai izlaist kadrus."</string>
             <string name="revanced_block_video_ads_summary_off">Video reklāmas ir atbloķētas</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
-            <string name="revanced_deleted_msg">Ziņojums dzēsts.</string>
             <string name="revanced_show_deleted_messages_title">Rādīt izdzēstās ziņas</string>
-            <string name="revanced_show_deleted_messages_entry_1">Nerādīt izdzēstās ziņas</string>
-            <string name="revanced_show_deleted_messages_entry_2">Slēpt izdzēstās ziņas aiz spoileriem</string>
-            <string name="revanced_show_deleted_messages_entry_3">Rādīt izdzēstās ziņas kā pārvilktas</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">Automātiski pieprasīt kanāla punktus</string>

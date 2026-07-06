@@ -1870,11 +1870,7 @@ AV1 সহ ভিডিও প্লেব্যাক আটকে যেতে
             <string name="revanced_block_video_ads_summary_off">ভিডিও বিজ্ঞাপন আটকানো হয়নি</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
-            <string name="revanced_deleted_msg">বার্তা মুছে ফেলা হয়েছে</string>
             <string name="revanced_show_deleted_messages_title">মুছে ফেলা বার্তা দেখান</string>
-            <string name="revanced_show_deleted_messages_entry_1">মুছে ফেলা বার্তা দেখাবেন না</string>
-            <string name="revanced_show_deleted_messages_entry_2">স্পয়লার এর পেছনে থাকা মুছে ফেলা বার্তা লুকান</string>
-            <string name="revanced_show_deleted_messages_entry_3">মুছে ফেলা বার্তাগুলো ক্রসড-আউট পাঠ্য হিসেবে দেখান</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">স্বয়ংক্রিয়ভাবে চ্যানেল পয়েন্ট নিয়ে নিন</string>

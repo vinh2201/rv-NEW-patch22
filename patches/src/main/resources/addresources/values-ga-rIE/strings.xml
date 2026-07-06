@@ -1899,11 +1899,7 @@ D’fhéadfadh sé go mbeadh stad nó go gcaillfí frámaí ag athsheinm físe l
             <string name="revanced_block_video_ads_summary_off">Tá fógraí físe díbhlocáilte</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
-            <string name="revanced_deleted_msg">Teachtaireacht scriosta</string>
             <string name="revanced_show_deleted_messages_title">Taispeáin teachtaireachtaí scriosta</string>
-            <string name="revanced_show_deleted_messages_entry_1">Ná taispeáin teachtaireachtaí scriosta</string>
-            <string name="revanced_show_deleted_messages_entry_2">Folaigh teachtaireachtaí scriosta taobh thiar a mhilleann</string>
-            <string name="revanced_show_deleted_messages_entry_3">Taispeáin teachtaireachtaí scriosta mar théacs trasnaithe amach</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">Éiligh Pointí Cainéil go huathoibríoch</string>

@@ -1871,11 +1871,7 @@ Vaizdo įrašo atkūrimas su AV1 gali strigti arba praleisti kadrus."</string>
             <string name="revanced_block_video_ads_summary_off">Vaizdo reklamos nėra blokuojamos</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
-            <string name="revanced_deleted_msg">Pranešimas ištrintas</string>
             <string name="revanced_show_deleted_messages_title">Rodyti ištrintas žinutes</string>
-            <string name="revanced_show_deleted_messages_entry_1">Nerodyti ištrintų žinučių</string>
-            <string name="revanced_show_deleted_messages_entry_2">Slėpti ištrintas žinutes po spoileriu</string>
-            <string name="revanced_show_deleted_messages_entry_3">Rodyti ištrintas žinutes kaip perbrauktas tekstą</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">Automatiškai gauti kanalo taškus</string>

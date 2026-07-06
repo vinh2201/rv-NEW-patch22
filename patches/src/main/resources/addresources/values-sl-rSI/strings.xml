@@ -1896,11 +1896,7 @@ Predvajanje videa z AV1 se lahko zatika ali izpušča sličice."</string>
             <string name="revanced_block_video_ads_summary_off">Video oglasi so odklenjeni</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
-            <string name="revanced_deleted_msg">Sporočilo izbrisano</string>
             <string name="revanced_show_deleted_messages_title">Prikaži izbrisana sporočila</string>
-            <string name="revanced_show_deleted_messages_entry_1">Ne prikazuj izbrisanih sporočil</string>
-            <string name="revanced_show_deleted_messages_entry_2">Skrij izbrisana sporočila za spojlerjem</string>
-            <string name="revanced_show_deleted_messages_entry_3">Prikaži izbrisana sporočila kot prečrtano besedilo</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">Samodejno zahtevaj točke kanala</string>

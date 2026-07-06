@@ -1840,11 +1840,7 @@ Redarea video cu AV1 poate sacada sau pierde cadre."</string>
             <string name="revanced_block_video_ads_summary_off">Anunţurile video sunt deblocate</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
-            <string name="revanced_deleted_msg">Mesaj șters.</string>
             <string name="revanced_show_deleted_messages_title">Arată mesajele șterse</string>
-            <string name="revanced_show_deleted_messages_entry_1">Nu afișa mesajele șterse</string>
-            <string name="revanced_show_deleted_messages_entry_2">Ascunde mesajele șterse în spatele unui spoiler</string>
-            <string name="revanced_show_deleted_messages_entry_3">Arată mesajele șterse ca text interceptat</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">Solicită automat punctele canalului</string>

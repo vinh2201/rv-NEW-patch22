@@ -1905,11 +1905,7 @@ AV1 視訊播放可能會卡頓或丟格。"</string>
             <string name="revanced_block_video_ads_summary_off">未攔截影片廣告</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
-            <string name="revanced_deleted_msg">訊息已刪除</string>
             <string name="revanced_show_deleted_messages_title">顯示已刪除的訊息</string>
-            <string name="revanced_show_deleted_messages_entry_1">不顯示已刪除的訊息</string>
-            <string name="revanced_show_deleted_messages_entry_2">將已刪除的訊息隱藏在劇透後面</string>
-            <string name="revanced_show_deleted_messages_entry_3">將已刪除的訊息顯示為劃掉的文字</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">自動化領取頻道忠誠點數</string>

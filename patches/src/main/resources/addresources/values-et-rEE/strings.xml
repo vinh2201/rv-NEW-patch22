@@ -1874,11 +1874,7 @@ AV1-ga videotaasesitus võib hakitud olla või kaadreid vahele jätta."</string>
             <string name="revanced_block_video_ads_summary_off">Videoreklaamid on avatud</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
-            <string name="revanced_deleted_msg">Sõnum kustutatud</string>
             <string name="revanced_show_deleted_messages_title">Näita kustutatud sõnumeid</string>
-            <string name="revanced_show_deleted_messages_entry_1">Ära näita kustutatud sõnumeid</string>
-            <string name="revanced_show_deleted_messages_entry_2">Peida kustutatud sõnumid spoileri taha</string>
-            <string name="revanced_show_deleted_messages_entry_3">Näita kustutatud sõnumeid läbistatud tekstina</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">Nõua Kanalipunkte automaatselt</string>

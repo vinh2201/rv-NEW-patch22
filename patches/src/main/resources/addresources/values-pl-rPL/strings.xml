@@ -1897,11 +1897,7 @@ Odtwarzanie wideo z AV1 może powodować zacinanie się lub gubienie klatek."</s
             <string name="revanced_block_video_ads_summary_off">Reklamy w filmie są odblokowane</string>
         </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
-            <string name="revanced_deleted_msg">Wiadomość usunięta</string>
             <string name="revanced_show_deleted_messages_title">Usunięte wiadomości</string>
-            <string name="revanced_show_deleted_messages_entry_1">Nie pokazuj usuniętych wiadomości</string>
-            <string name="revanced_show_deleted_messages_entry_2">Ukryj usunięte wiadomości za spoilerem</string>
-            <string name="revanced_show_deleted_messages_entry_3">Pokaż usunięte wiadomości jako przekreślony tekst</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">Automatyczne przyznawanie punktów kanału</string>
