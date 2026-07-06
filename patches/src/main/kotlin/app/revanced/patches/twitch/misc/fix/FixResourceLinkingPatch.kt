@@ -36,8 +36,11 @@ val fixResourceLinkingPatch = resourcePatch(
                 val activity = activities.item(index)
                 val name = activity.attributes?.getNamedItem("android:name")?.nodeValue
 
-                if (name == SETTINGS_ACTIVITY_NAME && activity.attributes.getNamedItem("android:launchMode") != null) {
-                    activity.attributes.removeNamedItem("android:launchMode")
+                if (name == SETTINGS_ACTIVITY_NAME) {
+                    val launchMode = activity.attributes?.getNamedItem("android:launchMode")
+                    if (launchMode != null) {
+                        launchMode.nodeValue = "standard"
+                    }
                 }
             }
         }

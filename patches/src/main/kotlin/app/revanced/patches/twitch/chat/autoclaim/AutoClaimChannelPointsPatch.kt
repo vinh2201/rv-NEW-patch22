@@ -1,15 +1,30 @@
 package app.revanced.patches.twitch.chat.autoclaim
 
-import app.revanced.patcher.extensions.ExternalLabel
-import app.revanced.patcher.extensions.addInstructionsWithLabels
-import app.revanced.patcher.extensions.getInstruction
+import app.revanced.patcher.classDef
+import app.revanced.patcher.extensions.addInstructions
 import app.revanced.patcher.extensions.instructions
 import app.revanced.patcher.patch.bytecodePatch
+import app.revanced.patcher.patch.resourcePatch
 import app.revanced.patches.all.misc.resources.addResources
 import app.revanced.patches.all.misc.resources.addResourcesPatch
+import app.revanced.patches.shared.misc.mapping.ResourceType
+import app.revanced.patches.shared.misc.mapping.resourceMappingPatch
 import app.revanced.patches.shared.misc.settings.preference.SwitchPreference
 import app.revanced.patches.twitch.misc.settings.PreferenceScreen
 import app.revanced.patches.twitch.misc.settings.settingsPatch
+import app.revanced.util.indexOfFirstLiteralInstruction
+import com.android.tools.smali.dexlib2.Opcode
+
+internal var icClaimResourceId = -1L
+    private set
+
+private val autoClaimChannelPointsResourcePatch = resourcePatch {
+    dependsOn(resourceMappingPatch)
+
+    apply {
+        icClaimResourceId = ResourceType.DRAWABLE["ic_claim"]
+    }
+}
 
 @Suppress("unused")
 val autoClaimChannelPointsPatch = bytecodePatch(
@@ -19,9 +34,10 @@ val autoClaimChannelPointsPatch = bytecodePatch(
     dependsOn(
         settingsPatch,
         addResourcesPatch,
+        autoClaimChannelPointsResourcePatch,
     )
 
-    compatibleWith("tv.twitch.android.app"("16.9.1", "25.3.0"))
+    compatibleWith("tv.twitch.android.app")
 
     apply {
         addResources("twitch", "chat.autoclaim.autoClaimChannelPointsPatch")
@@ -30,21 +46,31 @@ val autoClaimChannelPointsPatch = bytecodePatch(
             SwitchPreference("revanced_auto_claim_channel_points"),
         )
 
-        communityPointsButtonViewDelegateMethod.apply {
-            val lastIndex = instructions.lastIndex
-            addInstructionsWithLabels(
-                lastIndex, // place in front of return-void
+        communityPointsButtonRenderMethod.apply {
+            val buttonField = classDef.fields.firstOrNull { it.type == "Landroid/view/ViewGroup;" }?.name
+                ?: throw Exception("Could not find claim button view field in $definingClass")
+
+            val claimIconIndex = indexOfFirstLiteralInstruction(icClaimResourceId)
+
+            if (claimIconIndex == -1)
+                throw Exception("Could not find ic_claim resource in bytecode")
+
+            val returnOffset = instructions.drop(claimIconIndex).indexOfFirst {
+                it.opcode == Opcode.RETURN_VOID || it.opcode == Opcode.RETURN_VOID_NO_BARRIER
+            }
+
+            if (returnOffset == -1)
+                throw Exception("Could not find claim branch return in bytecode")
+
+            val insertIndex = claimIconIndex + returnOffset
+
+            addInstructions(
+                insertIndex,
                 """
-                    invoke-static {}, Lapp/revanced/extension/twitch/patches/AutoClaimChannelPointsPatch;->shouldAutoClaim()Z
-                    move-result v0
-                    if-eqz v0, :auto_claim
-
-                    # Claim by calling the button's onClick method
-
-                    iget-object v0, p0, Ltv/twitch/android/shared/community/points/viewdelegate/CommunityPointsButtonViewDelegate;->buttonLayout:Landroid/view/ViewGroup;
-                    invoke-virtual { v0 }, Landroid/view/View;->callOnClick()Z
+                    move-object/from16 v0, p0
+                    iget-object v0, v0, $definingClass->$buttonField:Landroid/view/ViewGroup;
+                    invoke-static { v0 }, Lapp/revanced/extension/twitch/patches/AutoClaimChannelPointsPatch;->autoClaim(Landroid/view/View;)V
                 """,
-                ExternalLabel("auto_claim", getInstruction(lastIndex)),
             )
         }
     }
