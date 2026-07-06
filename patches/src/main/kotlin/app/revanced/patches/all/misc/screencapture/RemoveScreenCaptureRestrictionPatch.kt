@@ -5,6 +5,7 @@ import app.revanced.patcher.patch.resourcePatch
 import app.revanced.patches.all.misc.transformation.IMethodCall
 import app.revanced.patches.all.misc.transformation.filterMapInstruction35c
 import app.revanced.patches.all.misc.transformation.transformInstructionsPatch
+import app.revanced.util.replaceInvokeVirtualWithExtension
 import org.w3c.dom.Element
 
 private val removeCaptureRestrictionResourcePatch = resourcePatch(

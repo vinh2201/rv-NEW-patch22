@@ -4,6 +4,7 @@ import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patches.all.misc.transformation.IMethodCall
 import app.revanced.patches.all.misc.transformation.filterMapInstruction35c
 import app.revanced.util.forEachInstructionAsSequence
+import app.revanced.util.replaceInvokeVirtualWithExtension
 
 private const val EXTENSION_CLASS_DESCRIPTOR_PREFIX =
     "Lapp/revanced/extension/all/misc/connectivity/wifi/spoof/SpoofWifiPatch"
