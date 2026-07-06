@@ -31,7 +31,7 @@ val hidePackagesPatch = bytecodePatch(
     extendWith("extensions/all/misc/packagemanager/hide/hide-packages.rve")
 
     val hiddenPackages by stringsOption(
-        name = "Packages to hide",
+        name = "Hidden packages",
         description = "List of package names to hide from the patched app.",
         default = emptyList(),
         required = true,
@@ -39,7 +39,7 @@ val hidePackagesPatch = bytecodePatch(
     )
 
     val includeUnsafePackages by booleanOption(
-        name = "Extra known unsafe packages",
+        name = "Include unsafe packages",
         description = "Add predefined package names to the " +
             "hidden list in addition to any custom packages above. " +
             "Separated by category.",
@@ -47,7 +47,7 @@ val hidePackagesPatch = bytecodePatch(
     )
 
     val rootManagerPackages by stringsOption(
-        name = "Root Managers",
+        name = "Root manager packages",
         description = "Apps that grant or manage root access on the device. " +
             "Commonly probed by anti-root checks to determine whether the device is rooted.",
         default = listOf(
@@ -80,7 +80,7 @@ val hidePackagesPatch = bytecodePatch(
     )
 
     val shizukuPackages by stringsOption(
-        name = "Shizuku",
+        name = "Shizuku packages",
         description = "Apps providing elevated ADB or system-level access. " +
             "Often flagged by integrity checks as indicators of a non-standard runtime environment.",
         default = listOf(
@@ -93,7 +93,7 @@ val hidePackagesPatch = bytecodePatch(
     )
 
     val xposedPackages by stringsOption(
-        name = "Xposed / LSPosed",
+        name = "Xposed packages",
         description = "Managers for code-injection frameworks. " +
             "Their presence usually signals method-hooking capability on the device.",
         default = listOf(
@@ -111,7 +111,7 @@ val hidePackagesPatch = bytecodePatch(
     )
 
     val moduleManagerPackages by stringsOption(
-        name = "Module Managers",
+        name = "Module manager packages",
         description = "Repositories for installing or browsing modules. " +
             "Indirect indicators of a rooted device with module support.",
         default = listOf(
@@ -125,7 +125,7 @@ val hidePackagesPatch = bytecodePatch(
     )
 
     val rootCheckerPackages by stringsOption(
-        name = "Root Checkers",
+        name = "Root checker packages",
         description = "Tools that test for root presence and/or to hide it. " +
             "Could be treated as a red flag by some anti-tampers.",
         default = listOf(
@@ -148,7 +148,7 @@ val hidePackagesPatch = bytecodePatch(
     )
 
     val playIntegrityPackages by stringsOption(
-        name = "Play Integrity",
+        name = "Play integrity packages",
         description = "Apps that fix, bypass or test the PairIP attestation. " +
             "Not Play Integrity itself.",
         default = listOf(
