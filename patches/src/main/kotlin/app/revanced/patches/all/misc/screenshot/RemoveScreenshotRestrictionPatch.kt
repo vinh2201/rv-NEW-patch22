@@ -5,6 +5,7 @@ import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patches.all.misc.transformation.IMethodCall
 import app.revanced.patches.all.misc.transformation.filterMapInstruction35c
 import app.revanced.patches.all.misc.transformation.transformInstructionsPatch
+import app.revanced.util.replaceInvokeVirtualWithExtension
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.formats.Instruction22c
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference

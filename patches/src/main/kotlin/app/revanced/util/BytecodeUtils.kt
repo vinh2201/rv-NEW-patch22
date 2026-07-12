@@ -18,6 +18,7 @@ import app.revanced.patcher.extensions.instructions
 import app.revanced.patcher.extensions.instructionsOrNull
 import app.revanced.patcher.extensions.methodReference
 import app.revanced.patcher.extensions.removeInstruction
+import app.revanced.patcher.extensions.replaceInstruction
 import app.revanced.patcher.extensions.stringReference
 import app.revanced.patcher.firstClassDef
 import app.revanced.patcher.firstClassDefOrNull
@@ -25,6 +26,7 @@ import app.revanced.patcher.firstMethod
 import app.revanced.patcher.immutableClassDef
 import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patcher.patch.PatchException
+import app.revanced.patches.all.misc.transformation.IMethodCall
 import app.revanced.patches.shared.misc.mapping.ResourceType
 import app.revanced.patches.shared.misc.mapping.resourceMappingPatch
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -45,6 +47,8 @@ import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.WideLiteralInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.formats.Instruction35c
+import com.android.tools.smali.dexlib2.iface.instruction.formats.Instruction3rc
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.Reference
 import com.android.tools.smali.dexlib2.iface.value.BooleanEncodedValue
@@ -1373,3 +1377,57 @@ infix fun <T> (context(BytecodePatchContext) (ClassDef) -> T).using(getMethod: B
 
 fun <T> getting(get: context(BytecodePatchContext) ClassDef.() -> T):
         context(BytecodePatchContext) (ClassDef) -> T = { classDef -> classDef.get() }
+
+/**
+ * Replaces an invoke-virtual instruction with an invoke-static instruction,
+ * which calls a static replacement method in the respective extension class.
+ * The method definition in the extension class is expected to be the same,
+ * except that the method should be static and take as a first parameter
+ * an instance of the class, in which the original method was defined in.
+ *
+ * Example:
+ *
+ * original method: Window#setFlags(int, int)
+ *
+ * replacement method: Extension#setFlags(Window, int, int)
+ */
+fun IMethodCall.replaceInvokeVirtualWithExtension(
+    definingClassDescriptor: String,
+    method: MutableMethod,
+    instruction: Instruction35c,
+    instructionIndex: Int,
+) {
+    val args = with(instruction) {
+        arrayOf(registerC, registerD, registerE, registerF, registerG)
+            .take(registerCount).joinToString(", ") { "v$it" }
+    }
+    val replacementMethod =
+        "$methodName(${definedClassName}${methodParams.joinToString(separator = "")})$returnType"
+
+    method.replaceInstruction(
+        instructionIndex,
+        "invoke-static { $args }, $definingClassDescriptor->$replacementMethod",
+    )
+}
+
+/**
+ * Replaces an invoke-virtual/range instruction with invoke-static/range.
+ * The register range is unchanged because the static replacement also receives
+ * the original receiver as its first argument.
+ */
+fun IMethodCall.replaceInvokeVirtualRangeWithExtension(
+    definingClassDescriptor: String,
+    method: MutableMethod,
+    instruction: Instruction3rc,
+    instructionIndex: Int,
+) {
+    val start = instruction.startRegister
+    val end = start + instruction.registerCount - 1
+    val replacementMethod =
+        "$methodName(${definedClassName}${methodParams.joinToString(separator = "")})$returnType"
+
+    method.replaceInstruction(
+        instructionIndex,
+        "invoke-static/range { v$start .. v$end }, $definingClassDescriptor->$replacementMethod",
+    )
+}
