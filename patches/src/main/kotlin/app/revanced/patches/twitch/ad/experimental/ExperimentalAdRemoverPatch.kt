@@ -1,4 +1,4 @@
-package app.revanced.patches.twitch.ad.audio
+package app.revanced.patches.twitch.ad.experimental
 
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
 import app.revanced.patcher.extensions.ExternalLabel
@@ -12,16 +12,15 @@ import app.revanced.patches.twitch.misc.extension.sharedExtensionPatch
 import app.revanced.patches.twitch.misc.settings.PreferenceScreen
 import app.revanced.patches.twitch.misc.settings.settingsPatch
 
-private const val EXTENSION_CLASS_DESCRIPTOR = "Lapp/revanced/extension/twitch/patches/AudioAdsPatch;"
-
+private const val RETURN_VOID = "return-void"
+private const val RETURN_NULL = "const/4 v0, 0x0\nreturn-object v0"
 private const val RETURN_ZERO = "const/4 v0, 0x0\nreturn v0"
-private const val RETURN_EMPTY_LIST =
-    "invoke-static {}, Ljava/util/Collections;->emptyList()Ljava/util/List;\n" +
-        "move-result-object v0\n" +
-        "return-object v0"
 
 @Suppress("unused")
-val blockAudioAdsPatch = bytecodePatch("Block audio ads") {
+val experimentalAdRemoverPatch = bytecodePatch(
+    name = "Experimental Ad Remover",
+    description = "Experimentally removes display and banner ads by neutralizing ad container and response methods.",
+) {
     dependsOn(
         sharedExtensionPatch,
         settingsPatch,
@@ -31,10 +30,10 @@ val blockAudioAdsPatch = bytecodePatch("Block audio ads") {
     compatibleWith("tv.twitch.android.app")
 
     apply {
-        addResources("twitch", "ad.audio.audioAdsPatch")
+        addResources("twitch", "ad.experimental.remover")
 
         PreferenceScreen.ADS.GENERAL.addPreferences(
-            SwitchPreference("revanced_block_audio_ads"),
+            SwitchPreference("revanced_block_display_ads"),
         )
 
         fun MutableMethod.gateReturn(returnInstructions: String) {
@@ -42,7 +41,7 @@ val blockAudioAdsPatch = bytecodePatch("Block audio ads") {
 
             addInstructionsWithLabels(
                 0,
-                "invoke-static {}, $EXTENSION_CLASS_DESCRIPTOR->shouldBlockAudioAds()Z\n" +
+                "invoke-static {}, $EXTENSION_CLASS_DESCRIPTOR->shouldBlockAds()Z\n" +
                     "move-result v0\n" +
                     "if-eqz v0, :original\n" +
                     returnInstructions,
@@ -50,8 +49,18 @@ val blockAudioAdsPatch = bytecodePatch("Block audio ads") {
             )
         }
 
-        audioAdGetAudioAdsMethod.gateReturn(RETURN_EMPTY_LIST)
-        audioAdGetDurationMethod.gateReturn(RETURN_ZERO)
-        audioAdGetDurationSecondsMethod.gateReturn(RETURN_ZERO)
+        getTreatmentAndRecordTriggerMethod.gateReturn(RETURN_NULL)
+        getAdViewMethod.gateReturn(RETURN_NULL)
+        onMeasureMethod.gateReturn(RETURN_VOID)
+        checkerAd1Method.gateReturn(RETURN_NULL)
+        getAccessTokenMethod.gateReturn(RETURN_NULL)
+        getAccessToken2Method.gateReturn(RETURN_NULL)
+        onActivityResultMethod.gateReturn(RETURN_VOID)
+        getMaxHeightPxMethod.gateReturn(RETURN_ZERO)
+        getMaxWidthPxMethod.gateReturn(RETURN_ZERO)
+        getAdHeightPxMethod.gateReturn(RETURN_NULL)
+        getAdWidthPxMethod.gateReturn(RETURN_NULL)
+        getHeightMethod.gateReturn(RETURN_ZERO)
+        getWidthMethod.gateReturn(RETURN_ZERO)
     }
 }

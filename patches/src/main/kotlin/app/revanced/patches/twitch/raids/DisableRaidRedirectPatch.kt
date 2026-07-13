@@ -1,4 +1,4 @@
-package app.revanced.patches.twitch.chat.antidelete
+package app.revanced.patches.twitch.raids
 
 import app.revanced.patcher.extensions.ExternalLabel
 import app.revanced.patcher.extensions.addInstructionsWithLabels
@@ -12,9 +12,9 @@ import app.revanced.patches.twitch.misc.settings.PreferenceScreen
 import app.revanced.patches.twitch.misc.settings.settingsPatch
 
 @Suppress("unused")
-val showDeletedMessagesPatch = bytecodePatch(
-    name = "Show deleted messages",
-    description = "Keeps chat messages deleted by moderators visible."
+val disableRaidRedirectPatch = bytecodePatch(
+    name = "Disable raid redirect",
+    description = "Stops the player from automatically switching to the channel you are raided into.",
 ) {
     dependsOn(
         sharedExtensionPatch,
@@ -25,22 +25,22 @@ val showDeletedMessagesPatch = bytecodePatch(
     compatibleWith("tv.twitch.android.app")
 
     apply {
-        addResources("twitch", "chat.antidelete.showDeletedMessagesPatch")
+        addResources("twitch", "raids.disableRaidRedirectPatch")
 
-        PreferenceScreen.CHAT.GENERAL.addPreferences(
-            SwitchPreference("revanced_show_deleted_messages"),
+        PreferenceScreen.MISC.GENERAL.addPreferences(
+            SwitchPreference("revanced_disable_raid_redirect"),
         )
 
-        messageHasBeenDeletedMethod.addInstructionsWithLabels(
+        forceRaidNowSecondsMethod.addInstructionsWithLabels(
             0,
             """
-                invoke-static {}, Lapp/revanced/extension/twitch/patches/ShowDeletedMessagesPatch;->shouldShowDeletedMessages()Z
+                invoke-static {}, Lapp/revanced/extension/twitch/patches/RaidPatch;->shouldDisableRaidRedirect()Z
                 move-result v0
                 if-eqz v0, :original
-                const/4 v0, 0x0
+                const v0, 0x1e8480
                 return v0
             """,
-            ExternalLabel("original", messageHasBeenDeletedMethod.getInstruction(0)),
+            ExternalLabel("original", forceRaidNowSecondsMethod.getInstruction(0)),
         )
     }
 }

@@ -1899,30 +1899,27 @@ Video playback with AV1 may stutter or drop frames."</string>
         </patch>
     </app>
     <app id="twitch">
+        <patch id="ad.embedded.embeddedAdsPatch">
+            <string name="revanced_block_embedded_ads_title">Block embedded ads (proxy)</string>
+            <string name="revanced_block_embedded_ads_summary_on">Live streams routed through the proxy to remove ads</string>
+            <string name="revanced_block_embedded_ads_summary_off">Embedded ad proxy is disabled</string>
+            <string name="revanced_embedded_ads_proxy_host_title">Ad-block proxy host</string>
+            <string name="revanced_embedded_ads_proxy_host_summary">Luminous proxy host, e.g. eu.luminous.dev</string>
+        </patch>
         <patch id="ad.audio.audioAdsPatch">
             <string name="revanced_block_audio_ads_title">Block audio ads</string>
             <string name="revanced_block_audio_ads_summary_on">Audio ads are blocked</string>
             <string name="revanced_block_audio_ads_summary_off">Audio ads are unblocked</string>
         </patch>
-        <patch id="ad.embedded.embeddedAdsPatch">
-            <string name="revanced_embedded_ads_service_unavailable">%s unavailable, ads may show. Try changing ad block service in settings.</string>
-            <string name="revanced_embedded_ads_service_failed">%s returned an error, ads may show. Try changing ad block service in settings.</string>
-            <string name="revanced_block_embedded_ads_title">Block embedded video ads</string>
-            <string name="revanced_block_embedded_ads_entry_1">Disabled</string>
-            <string name="revanced_block_embedded_ads_entry_2">Luminous proxy</string>
-            <string name="revanced_block_embedded_ads_entry_3">PurpleAdBlock proxy</string>
-        </patch>
-        <patch id="ad.video.videoAdsPatch">
-            <string name="revanced_block_video_ads_title">Block video ads</string>
-            <string name="revanced_block_video_ads_summary_on">Video ads are blocked</string>
-            <string name="revanced_block_video_ads_summary_off">Video ads are unblocked</string>
-        </patch>
         <patch id="chat.antidelete.showDeletedMessagesPatch">
-            <string name="revanced_deleted_msg">Message deleted</string>
             <string name="revanced_show_deleted_messages_title">Show deleted messages</string>
-            <string name="revanced_show_deleted_messages_entry_1">Do not show deleted messages</string>
-            <string name="revanced_show_deleted_messages_entry_2">Hide deleted messages behind a spoiler</string>
-            <string name="revanced_show_deleted_messages_entry_3">Show deleted messages as crossed-out text</string>
+            <string name="revanced_show_deleted_messages_summary_on">Moderator-deleted messages stay visible</string>
+            <string name="revanced_show_deleted_messages_summary_off">Moderator-deleted messages are removed</string>
+        </patch>
+        <patch id="chat.haptics.disableChatHapticsPatch">
+            <string name="revanced_disable_chat_haptics_title">Disable chat haptics</string>
+            <string name="revanced_disable_chat_haptics_summary_on">No vibration on chat message interaction</string>
+            <string name="revanced_disable_chat_haptics_summary_off">Vibration on chat message interaction</string>
         </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch">
             <string name="revanced_auto_claim_channel_points_title">Automatically claim Channel Points</string>
@@ -1945,13 +1942,155 @@ Video playback with AV1 may stutter or drop frames."</string>
             <string name="revanced_chat_screen_summary">Chat settings</string>
             <string name="revanced_misc_screen_title">Miscellaneous</string>
             <string name="revanced_misc_screen_summary">Miscellaneous settings</string>
+            <string name="revanced_layout_screen_title">Hide elements</string>
+            <string name="revanced_layout_screen_summary">Hide layout elements</string>
+            <string name="revanced_override_screen_title">Override values</string>
+            <string name="revanced_override_screen_summary">Override channel and content flags</string>
             <string name="revanced_general_category_title">General settings</string>
             <string name="revanced_other_category_title">Other settings</string>
             <string name="revanced_client_ads_category_title">Client-side ads</string>
             <string name="revanced_surestream_ads_category_title">Server-side surestream ads</string>
+            <string name="revanced_channel_category_title">Channel</string>
+            <string name="revanced_content_category_title">Content</string>
+            <string name="revanced_moderation_category_title">Moderation</string>
+            <string name="revanced_rewards_category_title">Channel points rewards</string>
             <string name="revanced_twitch_debug_title">Debug logging</string>
             <string name="revanced_twitch_debug_summary_on">Debug logs are enabled</string>
             <string name="revanced_twitch_debug_summary_off">Debug logs are disabled</string>
+        </patch>
+        <patch id="misc.hide.hideElementsPatch">
+            <string name="revanced_hide_gift_leaderboards_title">Hide gift leaderboard</string>
+            <string name="revanced_hide_gift_leaderboards_summary_on">Gift leaderboard is hidden</string>
+            <string name="revanced_hide_gift_leaderboards_summary_off">Gift leaderboard is shown</string>
+            <string name="revanced_hide_bits_button_title">Hide send bits button</string>
+            <string name="revanced_hide_bits_button_summary_on">Send bits button is hidden</string>
+            <string name="revanced_hide_bits_button_summary_off">Send bits button is shown</string>
+            <string name="revanced_hide_emotes_button_title">Hide emotes button</string>
+            <string name="revanced_hide_emotes_button_summary_on">Emotes button is hidden</string>
+            <string name="revanced_hide_emotes_button_summary_off">Emotes button is shown</string>
+            <string name="revanced_hide_chat_header_title">Hide chat header</string>
+            <string name="revanced_hide_chat_header_summary_on">Chat header is hidden</string>
+            <string name="revanced_hide_chat_header_summary_off">Chat header is shown</string>
+            <string name="revanced_hide_community_points_button_title">Hide channel points button</string>
+            <string name="revanced_hide_community_points_button_summary_on">Channel points button is hidden</string>
+            <string name="revanced_hide_community_points_button_summary_off">Channel points button is shown</string>
+            <string name="revanced_hide_chat_restrictions_title">Hide chat restrictions</string>
+            <string name="revanced_hide_chat_restrictions_summary_on">Chat restrictions banner is hidden</string>
+            <string name="revanced_hide_chat_restrictions_summary_off">Chat restrictions banner is shown</string>
+            <string name="revanced_hide_ad_container_title">Hide ad container</string>
+            <string name="revanced_hide_ad_container_summary_on">Ad container is hidden</string>
+            <string name="revanced_hide_ad_container_summary_off">Ad container is shown</string>
+            <string name="revanced_hide_clip_button_title">Hide clip button</string>
+            <string name="revanced_hide_clip_button_summary_on">Clip button is hidden</string>
+            <string name="revanced_hide_clip_button_summary_off">Clip button is shown</string>
+            <string name="revanced_hide_cast_button_title">Hide cast button</string>
+            <string name="revanced_hide_cast_button_summary_on">Cast button is hidden</string>
+            <string name="revanced_hide_cast_button_summary_off">Cast button is shown</string>
+            <string name="revanced_hide_share_button_title">Hide share button</string>
+            <string name="revanced_hide_share_button_summary_on">Share button is hidden</string>
+            <string name="revanced_hide_share_button_summary_off">Share button is shown</string>
+            <string name="revanced_hide_subscribe_follow_bar_title">Hide subscribe/follow bar</string>
+            <string name="revanced_hide_subscribe_follow_bar_summary_on">Subscribe and follow bar is hidden</string>
+            <string name="revanced_hide_subscribe_follow_bar_summary_off">Subscribe and follow bar is shown</string>
+            <string name="revanced_hide_upsell_banners_title">Hide Turbo/upsell banners</string>
+            <string name="revanced_hide_upsell_banners_summary_on">Turbo and upsell banners are hidden</string>
+            <string name="revanced_hide_upsell_banners_summary_off">Turbo and upsell banners are shown</string>
+            <string name="revanced_hide_stories_title">Hide stories</string>
+            <string name="revanced_hide_stories_summary_on">Stories shelf is hidden</string>
+            <string name="revanced_hide_stories_summary_off">Stories shelf is shown</string>
+            <string name="revanced_hide_predictions_title">Hide predictions</string>
+            <string name="revanced_hide_predictions_summary_on">Predictions are hidden</string>
+            <string name="revanced_hide_predictions_summary_off">Predictions are shown</string>
+            <string name="revanced_hide_polls_title">Hide polls</string>
+            <string name="revanced_hide_polls_summary_on">Polls are hidden</string>
+            <string name="revanced_hide_polls_summary_off">Polls are shown</string>
+            <string name="revanced_hide_goals_title">Hide creator goals</string>
+            <string name="revanced_hide_goals_summary_on">Creator goals are hidden</string>
+            <string name="revanced_hide_goals_summary_off">Creator goals are shown</string>
+            <string name="revanced_hide_drops_title">Hide drops</string>
+            <string name="revanced_hide_drops_summary_on">Drops are hidden</string>
+            <string name="revanced_hide_drops_summary_off">Drops are shown</string>
+            <string name="revanced_hide_celebrations_title">Hide sub celebrations</string>
+            <string name="revanced_hide_celebrations_summary_on">Subscription celebrations are hidden</string>
+            <string name="revanced_hide_celebrations_summary_off">Subscription celebrations are shown</string>
+            <string name="revanced_hide_raids_title">Hide raids</string>
+            <string name="revanced_hide_raids_summary_on">Raid UI is hidden</string>
+            <string name="revanced_hide_raids_summary_off">Raid UI is shown</string>
+            <string name="revanced_hide_whispers_title">Hide whispers button</string>
+            <string name="revanced_hide_whispers_summary_on">Whispers button is hidden</string>
+            <string name="revanced_hide_whispers_summary_off">Whispers button is shown</string>
+            <string name="revanced_hide_tooltips_title">Hide tooltips and coachmarks</string>
+            <string name="revanced_hide_tooltips_summary_on">Tooltips and onboarding callouts are hidden</string>
+            <string name="revanced_hide_tooltips_summary_off">Tooltips and onboarding callouts are shown</string>
+            <string name="revanced_hide_pbyp_ad_title">Hide picture-by-picture ad</string>
+            <string name="revanced_hide_pbyp_ad_summary_on">Picture-by-picture ad is hidden</string>
+            <string name="revanced_hide_pbyp_ad_summary_off">Picture-by-picture ad is shown</string>
+            <string name="revanced_hide_viewer_count_title">Hide viewer count</string>
+            <string name="revanced_hide_viewer_count_summary_on">Viewer count is hidden</string>
+            <string name="revanced_hide_viewer_count_summary_off">Viewer count is shown</string>
+        </patch>
+        <patch id="misc.upsell.hideUpsellsPatch">
+            <string name="revanced_hide_upsell_dialogs_title">Hide upsell dialogs</string>
+            <string name="revanced_hide_upsell_dialogs_summary_on">Turbo and add-email upsell dialogs are dismissed at startup</string>
+            <string name="revanced_hide_upsell_dialogs_summary_off">Turbo and add-email upsell dialogs are shown</string>
+        </patch>
+        <patch id="misc.override.overrideValuesPatch">
+            <string name="revanced_override_entry_1">Default</string>
+            <string name="revanced_override_entry_2">Force enabled</string>
+            <string name="revanced_override_entry_3">Force disabled</string>
+            <string name="revanced_override_channel_affiliate_title">Affiliate status</string>
+            <string name="revanced_override_channel_monetized_title">Monetized status</string>
+            <string name="revanced_override_channel_partner_title">Partner status</string>
+            <string name="revanced_override_channel_participating_dj_title">DJ status</string>
+            <string name="revanced_override_channel_has_turbo_title">Turbo status</string>
+            <string name="revanced_override_channel_email_verified_title">Email verified status</string>
+            <string name="revanced_override_channel_clips_creation_title">Clips creation enabled</string>
+            <string name="revanced_override_content_mature_title">Mature content flag</string>
+            <string name="revanced_override_content_gambling_title">Gambling content flag</string>
+            <string name="revanced_override_content_restricted_title">Restricted content flag</string>
+            <string name="revanced_override_chat_broadcaster_title">Broadcaster status</string>
+            <string name="revanced_override_chat_mod_title">Moderator status</string>
+            <string name="revanced_override_chat_vip_title">VIP status</string>
+            <string name="revanced_override_chat_subscribed_title">Subscribed status</string>
+            <string name="revanced_override_chat_verified_title">Verified status</string>
+            <string name="revanced_override_chat_following_title">Following status</string>
+            <string name="revanced_override_chat_bypass_restrictions_title">Bypass chat restrictions</string>
+            <string name="revanced_override_chat_follow_required_title">Follow required to chat</string>
+            <string name="revanced_override_chat_subscription_required_title">Subscription required to chat</string>
+            <string name="revanced_override_chat_verification_required_title">Verification required to chat</string>
+            <string name="revanced_override_chat_emote_only_title">Emote-only chat</string>
+            <string name="revanced_override_reward_enabled_title">Reward enabled</string>
+            <string name="revanced_override_reward_in_stock_title">Reward in stock</string>
+            <string name="revanced_override_reward_paused_title">Reward paused</string>
+            <string name="revanced_override_reward_sub_only_title">Reward subscriber-only</string>
+        </patch>
+        <patch id="chat.style.chatMessageStylePatch">
+            <string name="revanced_chat_message_custom_padding_title">Custom chat message padding</string>
+            <string name="revanced_chat_message_custom_padding_summary_on">Chat messages use custom padding</string>
+            <string name="revanced_chat_message_custom_padding_summary_off">Chat messages use default padding</string>
+            <string name="revanced_chat_message_padding_top_title">Chat message padding top</string>
+            <string name="revanced_chat_message_padding_top_summary">Top padding of chat messages, in dp</string>
+            <string name="revanced_chat_message_padding_bottom_title">Chat message padding bottom</string>
+            <string name="revanced_chat_message_padding_bottom_summary">Bottom padding of chat messages, in dp</string>
+            <string name="revanced_chat_message_padding_left_title">Chat message padding left</string>
+            <string name="revanced_chat_message_padding_left_summary">Left padding of chat messages, in dp</string>
+            <string name="revanced_chat_message_padding_right_title">Chat message padding right</string>
+            <string name="revanced_chat_message_padding_right_summary">Right padding of chat messages, in dp</string>
+        </patch>
+        <patch id="raids.disableRaidRedirectPatch">
+            <string name="revanced_disable_raid_redirect_title">Disable raid redirect</string>
+            <string name="revanced_disable_raid_redirect_summary_on">You are not auto-redirected on raids</string>
+            <string name="revanced_disable_raid_redirect_summary_off">You are auto-redirected on raids</string>
+        </patch>
+        <patch id="player.quality.forceQualityPatch">
+            <string name="revanced_force_max_quality_title">Force max video quality</string>
+            <string name="revanced_force_max_quality_summary_on">Streams always play at the highest quality</string>
+            <string name="revanced_force_max_quality_summary_off">Twitch chooses the video quality</string>
+        </patch>
+        <patch id="ad.experimental.remover">
+            <string name="revanced_block_display_ads_title">Experimental Ad Remover</string>
+            <string name="revanced_block_display_ads_summary_on">Display ads are blocked</string>
+            <string name="revanced_block_display_ads_summary_off">Display ads are shown</string>
         </patch>
     </app>
 </resources>

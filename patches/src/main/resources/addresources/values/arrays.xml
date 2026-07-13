@@ -653,29 +653,17 @@
         </patch>
     </app>
     <app id="twitch">
-        <patch id="chat.antidelete.showDeletedMessagesPatch">
-            <string-array name="revanced_show_deleted_messages_entries">
-                <item>@string/revanced_show_deleted_messages_entry_1</item>
-                <item>@string/revanced_show_deleted_messages_entry_2</item>
-                <item>@string/revanced_show_deleted_messages_entry_3</item>
-            </string-array>
-            <string-array name="revanced_show_deleted_messages_entry_values">
-                <item>hide</item>
-                <item>spoiler</item>
-                <item>cross-out</item>
-            </string-array>
-        </patch>
         <patch id="chat.autoclaim.autoClaimChannelPointsPatch"></patch>
-        <patch id="ad.embedded.embeddedAdsPatch">
-            <string-array name="revanced_block_embedded_ads_entries">
-                <item>@string/revanced_block_embedded_ads_entry_1</item>
-                <item>@string/revanced_block_embedded_ads_entry_2</item>
-                <item>@string/revanced_block_embedded_ads_entry_3</item>
+        <patch id="misc.override.overrideValuesPatch">
+            <string-array name="revanced_override_entries">
+                <item>@string/revanced_override_entry_1</item>
+                <item>@string/revanced_override_entry_2</item>
+                <item>@string/revanced_override_entry_3</item>
             </string-array>
-            <string-array name="revanced_block_embedded_ads_entry_values">
-                <item>disabled</item>
-                <item>luminous</item>
-                <item>purpleadblock</item>
+            <string-array name="revanced_override_entry_values">
+                <item>default</item>
+                <item>true</item>
+                <item>false</item>
             </string-array>
         </patch>
     </app>
