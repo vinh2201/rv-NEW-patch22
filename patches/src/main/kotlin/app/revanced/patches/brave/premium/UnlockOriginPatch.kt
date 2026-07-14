@@ -43,8 +43,8 @@ val unlockOriginPatch =
                 isOriginSubscriptionActiveMethod.getInstruction(factoryMethodIndex).methodReference!!
 
             val clonedIsOriginSubscriptionActiveMethod = isOriginSubscriptionActiveMethod.cloneMutable(additionalRegisters = 4)
-            val originClass = classDefs.getOrReplaceMutable(isOriginSubscriptionActiveMethod.classDef)
-            originClass.methods.apply {
+            val originClassDef = classDefs.getOrReplaceMutable(isOriginSubscriptionActiveMethod.classDef)
+            originClassDef.methods.apply {
                 remove(isOriginSubscriptionActiveMethod)
                 add(clonedIsOriginSubscriptionActiveMethod)
             }
@@ -62,13 +62,13 @@ val unlockOriginPatch =
                     
                     const-string v1, "brave.origin.subscription_active_android"
                     const/4 v0, 0x1
-                    invoke-virtual {v2, v1, v0}, Lorg/chromium/components/prefs/PrefService;->f(Ljava/lang/String;Z)V
+                    invoke-virtual { v2, v1, v0 }, Lorg/chromium/components/prefs/PrefService;->f(Ljava/lang/String;Z)V
                     
                     invoke-static {}, ${braveLocalStateGetMethod.definingClass}->${braveLocalStateGetMethod.name}()Lorg/chromium/components/prefs/PrefService;
                     move-result-object v2
                     
                     const-string v1, "brave.origin.purchase_validated"
-                    invoke-virtual {v2, v1, v0}, Lorg/chromium/components/prefs/PrefService;->f(Ljava/lang/String;Z)V
+                    invoke-virtual { v2, v1, v0 }, Lorg/chromium/components/prefs/PrefService;->f(Ljava/lang/String;Z)V
                     
                     const/4 v0, 0x1
                     return v0
@@ -90,7 +90,7 @@ val unlockOriginPatch =
                     const/4 v0, 0x1
                     invoke-static { v0 }, Ljava/lang/Boolean;->valueOf(Z)Ljava/lang/Boolean;
                     move-result-object v0
-                    invoke-interface {p1, v0}, Lorg/chromium/base/Callback;->onResult(Ljava/lang/Object;)V
+                    invoke-interface { p1, v0 }, Lorg/chromium/base/Callback;->onResult(Ljava/lang/Object;)V
                     :cond_end
                     return-void
                 """,
@@ -133,19 +133,17 @@ val unlockOriginPatch =
                                     )
                                 }
 
-                                else -> {
-                                    error("Unknown instruction format for invoke-interface")
-                                }
+                                else -> error("Unknown instruction format for invoke-interface")
                             }
 
                         addInstructions(
                             invokeInterfaceIndex + 1,
                             """
-                                invoke-static { }, ${"$"}{braveLocalStateGetMethod.definingClass}->${"$"}{braveLocalStateGetMethod.name}()Lorg/chromium/components/prefs/PrefService;
+                                invoke-static {}, ${"$"}{braveLocalStateGetMethod.definingClass}->${"$"}{braveLocalStateGetMethod.name}()Lorg/chromium/components/prefs/PrefService;
                                 move-result-object v$vA
                                 const-string v$vB, "brave.origin.purchase_validated"
                                 const/4 v$vC, 0x1
-                                invoke-virtual {v$vA, v$vB, v$vC}, Lorg/chromium/components/prefs/PrefService;->f(Ljava/lang/String;Z)V
+                                invoke-virtual { v$vA, v$vB, v$vC }, Lorg/chromium/components/prefs/PrefService;->f(Ljava/lang/String;Z)V
                             """,
                         )
                     }

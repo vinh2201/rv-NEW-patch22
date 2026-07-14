@@ -29,7 +29,7 @@ val spoofBraveEnterprisePoliciesPatch =
             val onRestrictionsReceivedMethodMatch =
                 classDef.getAppRestrictionsProviderOnRestrictionsReceivedMethodMatch(appRestrictionsMethod)
             val onRestrictionsReceivedMethod =
-                classDef.methods.firstMethod(onRestrictionsReceivedMethodMatch.method)
+                classDef.firstMethod(onRestrictionsReceivedMethodMatch.method)
 
             val onRestrictionsReceivedCallbackMethodName =
                 onRestrictionsReceivedMethodMatch.let { match ->
@@ -46,7 +46,7 @@ val spoofBraveEnterprisePoliciesPatch =
                     iget-object v0, p0, $className->$contextField:Landroid/content/Context;
                     invoke-static {v0}, Lapp/revanced/extension/brave/premium/SpoofBraveEnterprisePoliciesPatch;->getSpoofedRestrictions(Landroid/content/Context;)Landroid/os/Bundle;
                     move-result-object v0
-                    invoke-virtual {p0, v0}, $superClassName->$onRestrictionsReceivedCallbackMethodName(Landroid/os/Bundle;)V
+                    invoke-virtual { p0, v0 }, $superClassName->$onRestrictionsReceivedCallbackMethodName(Landroid/os/Bundle;)V
                     return-void
                 """,
             )

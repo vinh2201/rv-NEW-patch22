@@ -62,11 +62,11 @@ internal val BytecodePatchContext.walletPolicyMethod by gettingFirstMethodDeclar
 internal val BytecodePatchContext.leoPolicyMethod by gettingFirstMethodDeclaratively("brave.ai_chat.enabled_by_policy")
 
 internal val BytecodePatchContext.settingsPromoCardPreferenceClassDef
-    get() = firstClassDefOrNull("Lorg/chromium/chrome/browser/ui/settings_promo_card/SettingsPromoCardPreference;")
+    get() = firstClassDef("Lorg/chromium/chrome/browser/ui/settings_promo_card/SettingsPromoCardPreference;")
 
 context(_: BytecodePatchContext)
-internal val com.android.tools.smali.dexlib2.iface.ClassDef.promoInitMethod
-    get() = firstMethodOrNull { name == "<init>" }
+internal fun com.android.tools.smali.dexlib2.iface.ClassDef.getPromoInitMethod() =
+    firstMethod { name == "<init>" }
 
 internal fun com.android.tools.smali.dexlib2.iface.ClassDef.getPromoBindMethodMatch() =
     firstMethodComposite {
@@ -78,7 +78,7 @@ internal fun com.android.tools.smali.dexlib2.iface.ClassDef.getPromoBindMethodMa
                 method {
                     definingClass == "Landroidx/preference/Preference;" &&
                         returnType == "V" &&
-                        parameterTypes == listOf("Z")
+                        parameterTypes.size == 1 && parameterTypes[0] == "Z"
                 },
             ),
         )
@@ -106,7 +106,7 @@ internal fun com.android.tools.smali.dexlib2.iface.ClassDef.getAppRestrictionsPr
             Opcode.INVOKE_VIRTUAL(),
             method {
                 returnType == "V" &&
-                    parameterTypes == listOf("Landroid/os/Bundle;")
+                    parameterTypes.size == 1 && parameterTypes[0] == "Landroid/os/Bundle;"
             },
         ),
     )

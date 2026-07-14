@@ -18,32 +18,25 @@ val removeSettingsPromoCardFlickerPatch =
 
         apply {
             // Fix the 500ms flicker for SettingsPromoCardPreference (Sign in to sync banner).
-            val promoCardClassDef = settingsPromoCardPreferenceClassDef
+            val promoCardClass = classDefs.getOrReplaceMutable(settingsPromoCardPreferenceClassDef)
 
-            if (promoCardClassDef != null) {
-                val promoCardClass = classDefs.getOrReplaceMutable(promoCardClassDef)
+            val promoBindMatch = promoCardClass.getPromoBindMethodMatch()
 
-                val promoInit = promoCardClass.promoInitMethod
-                val promoBindMatch = promoCardClass.getPromoBindMethodMatch()
+            // Dynamically find the obfuscated setVisible(boolean) method name from onBindViewHolder
+            val setVisibleIndex = promoBindMatch[0]
+            val setVisibleMethodName =
+                promoBindMatch.method
+                    .getInstruction<ReferenceInstruction>(setVisibleIndex)
+                    .methodReference!!
+                    .name
 
-                // Dynamically find the obfuscated setVisible(boolean) method name from onBindViewHolder
-                val setVisibleMethodName =
-                    promoBindMatch.let { match ->
-                        val setVisibleIndex = match[0]
-                        match.method
-                            .getInstruction<ReferenceInstruction>(setVisibleIndex)
-                            .methodReference!!
-                            .name
-                    }
-
-                if (promoInit != null) {
-                    val setVisibleSmali = """
+            promoCardClass.getPromoInitMethod().apply {
+                val setVisibleSmali = """
                     const/4 p1, 0x0
                     invoke-virtual { p0, p1 }, Landroidx/preference/Preference;->$setVisibleMethodName(Z)V
                 """
 
-                    promoInit.addInstructions(1, setVisibleSmali)
-                }
+                addInstructions(1, setVisibleSmali)
             }
         }
     }
