@@ -1,11 +1,7 @@
 package app.revanced.patches.instagram.misc.removeBuildExpiredPopup
 
-import app.revanced.patcher.extensions.addInstruction
-import app.revanced.patcher.extensions.getInstruction
-import app.revanced.patcher.extensions.instructions
 import app.revanced.patcher.patch.bytecodePatch
-import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
+import app.revanced.util.returnEarly
 
 @Suppress("unused")
 val removeBuildExpiredPopupPatch = bytecodePatch(
@@ -15,12 +11,9 @@ val removeBuildExpiredPopupPatch = bytecodePatch(
     compatibleWith("com.instagram.android")
 
     apply {
-        appUpdateLockoutBuilderMethod.apply {
-            val longToIntIndex = instructions.first { it.opcode == Opcode.LONG_TO_INT }.location.index
-            val appAgeRegister = getInstruction<TwoRegisterInstruction>(longToIntIndex).registerA
-
-            // Set app age to 0 days old such that the build expired popup doesn't appear.
-            addInstruction(longToIntIndex + 1, "const v$appAgeRegister, 0x0")
-        }
+        // Newer builds route the stale-build warning through a dedicated
+        // lockout presenter method, so skipping that presenter cleanly
+        // suppresses the popup.
+        appUpdateLockoutPresenterMethod.returnEarly()
     }
 }
