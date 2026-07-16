@@ -11,7 +11,6 @@ import app.revanced.util.indexOfFirstInstructionOrThrow
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
-import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 
 private const val EXTENSION_CLASS_DESCRIPTOR =
@@ -37,6 +36,7 @@ val downloadMediaPatch = bytecodePatch(
         // Append a download row once per menu build. p2 = creator, p4 = the row list.
         addOptionRowMethod.apply {
             val returnIndex = indexOfFirstInstructionOrThrow(Opcode.RETURN_VOID)
+
             addInstructionsWithLabels(
                 returnIndex,
                 """
@@ -80,9 +80,10 @@ val downloadMediaPatch = bytecodePatch(
         // The story dialog builder's 3rd parameter type is the story helper class.
         val storyHelperClass = storyDialogMethod.parameterTypes[2].toString()
 
-        storyOptionsMethod(storyHelperClass).apply {
+        getStoryOptionsMethod(storyHelperClass).apply {
             val returnIndex = indexOfFirstInstructionOrThrow(Opcode.RETURN_OBJECT)
             val register = getInstruction<OneRegisterInstruction>(returnIndex).registerA
+
             addInstructions(
                 returnIndex,
                 """
@@ -92,7 +93,7 @@ val downloadMediaPatch = bytecodePatch(
             )
         }
 
-        val storyClickMethod = storyOptionClickMethod(storyHelperClass)
+        val storyClickMethod = getStoryOptionClickMethod(storyHelperClass)
         storyClickMethod.addInstructionsWithLabels(
             0,
             """
@@ -107,7 +108,7 @@ val downloadMediaPatch = bytecodePatch(
         )
 
         // Story bottom-sheet/context-menu variants each have their own dispatcher, hook every one.
-        storyOptionsMethod(storyHelperClass).classDef.methods
+        getStoryOptionsMethod(storyHelperClass).classDef.methods
             .filter { method ->
                 method.accessFlags and AccessFlags.STATIC.value != 0 &&
                     method.returnType == "V" &&
@@ -117,7 +118,7 @@ val downloadMediaPatch = bytecodePatch(
             }
             .map { it.name }
             .forEach { dispatchName ->
-                val dispatchMethod = storyOptionDispatchMethod(storyHelperClass, dispatchName)
+                val dispatchMethod = getStoryOptionDispatchMethod(storyHelperClass, dispatchName)
                 val helperParam = "p${dispatchMethod.parameterTypes.indexOf(storyHelperClass)}"
                 val labelParam = "p${dispatchMethod.parameterTypes.size - 1}"
                 dispatchMethod.addInstructionsWithLabels(
@@ -142,14 +143,7 @@ val downloadMediaPatch = bytecodePatch(
         val clipsActivityField = clipsHelperClassDef.fields.first { it.type == ACTIVITY_CLASS_DESCRIPTOR }
         val optionsConfigClass = clipsShowMethod.parameterTypes[1].toString()
 
-        // Two row-adders differ only by the destructive/"red" boolean (const 1 vs 0), pick the normal one.
-        val clipsRowAdder = clipsRowAdderMethod(optionsConfigClass).classDef.methods
-            .filter { it.isClipsRowAdder() }
-            .minByOrNull { method ->
-                method.implementation!!.instructions.count {
-                    it.opcode == Opcode.CONST_4 && (it as NarrowLiteralInstruction).narrowLiteral == 1
-                }
-            }!!
+        val clipsRowAdder = getClipsRowAdderMethod(optionsConfigClass)
 
         // The show method has trailing params, so p0 (helper) and p2 (config) are >v15 — move low first.
         clipsShowMethod.addInstructions(
