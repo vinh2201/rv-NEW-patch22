@@ -42,38 +42,38 @@ val unlockOriginPatch =
             val factoryMethodReference =
                 isOriginSubscriptionActiveMethod.getInstruction(factoryMethodIndex).methodReference!!
 
-            val clonedIsOriginSubscriptionActiveMethod = isOriginSubscriptionActiveMethod.cloneMutable(additionalRegisters = 4)
             val originClassDef = classDefs.getOrReplaceMutable(isOriginSubscriptionActiveMethod.classDef)
-            originClassDef.methods.apply {
-                remove(isOriginSubscriptionActiveMethod)
-                add(clonedIsOriginSubscriptionActiveMethod)
-            }
 
-            clonedIsOriginSubscriptionActiveMethod.addInstructions(
-                0,
-                """
-                    if-nez p0, :cond_patched
-                    const/4 v0, 0x1
-                    return v0
-                    
-                    :cond_patched
-                    invoke-static {p0}, ${factoryMethodReference.definingClass}->${factoryMethodReference.name}(Lorg/chromium/content_public/browser/BrowserContextHandle;)Lorg/chromium/components/prefs/PrefService;
-                    move-result-object v2
-                    
-                    const-string v1, "brave.origin.subscription_active_android"
-                    const/4 v0, 0x1
-                    invoke-virtual { v2, v1, v0 }, Lorg/chromium/components/prefs/PrefService;->f(Ljava/lang/String;Z)V
-                    
-                    invoke-static {}, ${braveLocalStateGetMethod.definingClass}->${braveLocalStateGetMethod.name}()Lorg/chromium/components/prefs/PrefService;
-                    move-result-object v2
-                    
-                    const-string v1, "brave.origin.purchase_validated"
-                    invoke-virtual { v2, v1, v0 }, Lorg/chromium/components/prefs/PrefService;->f(Ljava/lang/String;Z)V
-                    
-                    const/4 v0, 0x1
-                    return v0
-                """,
-            )
+            isOriginSubscriptionActiveMethod.cloneMutable(additionalRegisters = 4).apply {
+                addInstructions(
+                    0,
+                    """
+                        if-nez p0, :cond_patched
+                        const/4 v0, 0x1
+                        return v0
+                        
+                        :cond_patched
+                        invoke-static {p0}, ${factoryMethodReference.definingClass}->${factoryMethodReference.name}(Lorg/chromium/content_public/browser/BrowserContextHandle;)Lorg/chromium/components/prefs/PrefService;
+                        move-result-object v2
+                        
+                        const-string v1, "brave.origin.subscription_active_android"
+                        const/4 v0, 0x1
+                        invoke-virtual { v2, v1, v0 }, Lorg/chromium/components/prefs/PrefService;->f(Ljava/lang/String;Z)V
+                        
+                        invoke-static {}, ${braveLocalStateGetMethod.definingClass}->${braveLocalStateGetMethod.name}()Lorg/chromium/components/prefs/PrefService;
+                        move-result-object v2
+                        
+                        const-string v1, "brave.origin.purchase_validated"
+                        invoke-virtual { v2, v1, v0 }, Lorg/chromium/components/prefs/PrefService;->f(Ljava/lang/String;Z)V
+                        
+                        const/4 v0, 0x1
+                        return v0
+                    """,
+                )
+            }.let {
+                originClassDef.methods -= isOriginSubscriptionActiveMethod
+                originClassDef.methods += it
+            }
 
             // 4. Bypass infinite loading spinner in the UI directly.
             onCreatePreferencesMethod.apply {

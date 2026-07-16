@@ -8,8 +8,8 @@ import app.revanced.patcher.opcodes
 import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patcher.returnType
-import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 internal val BytecodePatchContext.hasOriginCachedMethod by gettingFirstMethodDeclaratively("brave_origin_credential_summary_cached") {
@@ -48,27 +48,20 @@ internal val BytecodePatchContext.requestCredentialSummaryMethod by gettingFirst
 )
 
 internal val BytecodePatchContext.braveLocalStateGetMethod by gettingFirstMethodDeclaratively {
-    custom {
-        immutableClassDef.type == "Lorg/chromium/chrome/browser/prefs/LocalStatePrefs;"
-    }
+    definingClass("Lorg/chromium/chrome/browser/prefs/LocalStatePrefs;")
     returnType("Lorg/chromium/components/prefs/PrefService;")
     parameterTypes()
 }
 
-internal val BytecodePatchContext.vpnPolicyMethod by gettingFirstMethodDeclaratively("brave.brave_vpn.disabled_by_policy")
-internal val BytecodePatchContext.newsPolicyMethod by gettingFirstMethodDeclaratively("brave.news.disabled_by_policy")
-internal val BytecodePatchContext.rewardsPolicyMethod by gettingFirstMethodDeclaratively("brave.rewards.disabled_by_policy")
-internal val BytecodePatchContext.walletPolicyMethod by gettingFirstMethodDeclaratively("brave.wallet.disabled_by_policy")
-internal val BytecodePatchContext.leoPolicyMethod by gettingFirstMethodDeclaratively("brave.ai_chat.enabled_by_policy")
 
 internal val BytecodePatchContext.settingsPromoCardPreferenceClassDef
     get() = firstClassDef("Lorg/chromium/chrome/browser/ui/settings_promo_card/SettingsPromoCardPreference;")
 
 context(_: BytecodePatchContext)
-internal fun com.android.tools.smali.dexlib2.iface.ClassDef.getPromoInitMethod() =
+internal fun ClassDef.getPromoInitMethod() =
     firstMethod { name == "<init>" }
 
-internal fun com.android.tools.smali.dexlib2.iface.ClassDef.getPromoBindMethodMatch() =
+internal fun ClassDef.getPromoBindMethodMatch() =
     firstMethodComposite {
         returnType("V")
         parameterTypes("L")
@@ -90,13 +83,13 @@ internal val BytecodePatchContext.appRestrictionsMethod by gettingFirstMethodDec
 }
 
 
-internal val com.android.tools.smali.dexlib2.iface.ClassDef.contextFieldName
+internal val ClassDef.contextFieldName
     get() = fields.first { it.type == "Landroid/content/Context;" }.name
 
-internal val com.android.tools.smali.dexlib2.iface.ClassDef.userManagerFieldName
+internal val ClassDef.userManagerFieldName
     get() = fields.first { it.type == "Landroid/os/UserManager;" }.name
 
-internal fun com.android.tools.smali.dexlib2.iface.ClassDef.getAppRestrictionsProviderOnRestrictionsReceivedMethodMatch(
+internal fun ClassDef.getAppRestrictionsProviderOnRestrictionsReceivedMethodMatch(
     appRestrictionsMethod: MethodReference,
 ) = firstMethodComposite {
     returnType("V")
