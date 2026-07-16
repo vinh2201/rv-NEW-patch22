@@ -10,7 +10,6 @@ import app.revanced.patches.instagram.misc.extension.sharedExtensionPatch
 import app.revanced.util.indexOfFirstInstructionOrThrow
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 
 private const val EXTENSION_CLASS_DESCRIPTOR =
@@ -18,9 +17,6 @@ private const val EXTENSION_CLASS_DESCRIPTOR =
 
 private const val MEDIA_CLASS_DESCRIPTOR = "Lcom/instagram/feed/media/Media;"
 private const val ACTIVITY_CLASS_DESCRIPTOR = "Landroidx/fragment/app/FragmentActivity;"
-
-private val Method.descriptor
-    get() = "$definingClass->$name(${parameterTypes.joinToString("")})$returnType"
 
 @Suppress("unused")
 val downloadMediaPatch = bytecodePatch(
@@ -47,7 +43,7 @@ val downloadMediaPatch = bytecodePatch(
                     sget-object p1, $MEDIA_OPTION_CLASS_DESCRIPTOR->DOWNLOAD:$MEDIA_OPTION_CLASS_DESCRIPTOR
                     const-string p3, "Download"
                     const/4 p5, 0x0
-                    invoke-static/range { p0 .. p5 }, $descriptor
+                    invoke-static/range { p0 .. p5 }, $addOptionRowMethod
                 """,
                 ExternalLabel("ig_dl_skip", getInstruction(returnIndex)),
             )
@@ -159,7 +155,7 @@ val downloadMediaPatch = bytecodePatch(
                 move-result-object v0
                 iget-object v2, v4, $clipsActivityField
                 const-string v3, "Download"
-                invoke-virtual { v5, v2, v0, v3, v1 }, ${clipsRowAdder.descriptor}
+                invoke-virtual { v5, v2, v0, v3, v1 }, $clipsRowAdder
             """,
         )
     }
