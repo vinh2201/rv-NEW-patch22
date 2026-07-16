@@ -18,7 +18,7 @@ val removeSettingsPromoCardFlickerPatch =
 
         apply {
             // Fix the 500ms flicker for SettingsPromoCardPreference (Sign in to sync banner).
-            val promoCardClass = classDefs.getOrReplaceMutable(settingsPromoCardPreferenceClassDef)
+            val promoCardClassDef = classDefs.getOrReplaceMutable(settingsPromoCardPreferenceClassDef)
 
             val promoBindMatch = promoCardClass.getPromoBindMethodMatch()
 
