@@ -57,9 +57,8 @@ internal val BytecodePatchContext.braveLocalStateGetMethod by gettingFirstMethod
 internal val BytecodePatchContext.settingsPromoCardPreferenceClassDef
     get() = firstClassDef("Lorg/chromium/chrome/browser/ui/settings_promo_card/SettingsPromoCardPreference;")
 
-context(_: BytecodePatchContext)
-internal fun ClassDef.getPromoInitMethod() =
-    firstMethod { name == "<init>" }
+internal fun ClassDef.getConstructorMethod() =
+    methods.first { it.name == "<init>" }
 
 internal fun ClassDef.getPromoBindMethodMatch() =
     firstMethodComposite {
@@ -93,7 +92,7 @@ internal fun ClassDef.getAppRestrictionsProviderOnRestrictionsReceivedMethodMatc
     appRestrictionsMethod: MethodReference,
 ) = firstMethodComposite {
     returnType("V")
-    custom { name != "<init>" && name != appRestrictionsMethod.name }
+    name { this != "<init>" && this != appRestrictionsMethod.name }
     instructions(
         allOf(
             Opcode.INVOKE_VIRTUAL(),

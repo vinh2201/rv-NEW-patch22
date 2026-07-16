@@ -3,6 +3,7 @@ package app.revanced.patches.brave.premium
 import app.revanced.patcher.extensions.addInstructions
 import app.revanced.patcher.extensions.getInstruction
 import app.revanced.patcher.extensions.methodReference
+import app.revanced.patcher.firstMethod
 import app.revanced.patcher.patch.bytecodePatch
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 
@@ -30,7 +31,7 @@ val removeSettingsPromoCardFlickerPatch =
                         .name
                 }
 
-            promoCardClassDef.getPromoInitMethod().apply {
+            promoCardClassDef.firstMethod(promoCardClassDef.getConstructorMethod()).apply {
                 val setVisibleSmali = """
                     const/4 p1, 0x0
                     invoke-virtual { p0, p1 }, Landroidx/preference/Preference;->$setVisibleMethodName(Z)V

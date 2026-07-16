@@ -27,6 +27,16 @@ val unlockOriginPatch =
         compatibleWith("com.brave.browser")
 
         apply {
+            // Find setBoolean method name dynamically in PrefService
+            val prefServiceClass = classDefs.first { it.type == "Lorg/chromium/components/prefs/PrefService;" }
+            val setBooleanMethod = prefServiceClass.methods.first { method ->
+                method.returnType == "V" &&
+                    method.parameterTypes.size == 2 &&
+                    method.parameterTypes[0].toString() == "Ljava/lang/String;" &&
+                    method.parameterTypes[1].toString() == "Z"
+            }
+            val setBooleanMethodName = setBooleanMethod.name
+
             // 1. Force cached credential summary to true.
             hasOriginCachedMethod.returnEarly(true)
 
@@ -58,13 +68,13 @@ val unlockOriginPatch =
                         
                         const-string v1, "brave.origin.subscription_active_android"
                         const/4 v0, 0x1
-                        invoke-virtual { v2, v1, v0 }, Lorg/chromium/components/prefs/PrefService;->f(Ljava/lang/String;Z)V
+                        invoke-virtual { v2, v1, v0 }, Lorg/chromium/components/prefs/PrefService;->$setBooleanMethodName(Ljava/lang/String;Z)V
                         
                         invoke-static {}, ${braveLocalStateGetMethod.definingClass}->${braveLocalStateGetMethod.name}()Lorg/chromium/components/prefs/PrefService;
                         move-result-object v2
                         
                         const-string v1, "brave.origin.purchase_validated"
-                        invoke-virtual { v2, v1, v0 }, Lorg/chromium/components/prefs/PrefService;->f(Ljava/lang/String;Z)V
+                        invoke-virtual { v2, v1, v0 }, Lorg/chromium/components/prefs/PrefService;->$setBooleanMethodName(Ljava/lang/String;Z)V
                         
                         const/4 v0, 0x1
                         return v0
@@ -114,7 +124,7 @@ val unlockOriginPatch =
 
                     if (invokeInterfaceIndex != -1) {
                         val invokeInterfaceInstruction =
-                            getInstruction<Instruction>(invokeInterfaceIndex)
+                            getInstruction(invokeInterfaceIndex)
                         val (vA, vB, vC) =
                             when (invokeInterfaceInstruction) {
                                 is FiveRegisterInstruction -> {
@@ -143,7 +153,7 @@ val unlockOriginPatch =
                                 move-result-object v$vA
                                 const-string v$vB, "brave.origin.purchase_validated"
                                 const/4 v$vC, 0x1
-                                invoke-virtual { v$vA, v$vB, v$vC }, Lorg/chromium/components/prefs/PrefService;->f(Ljava/lang/String;Z)V
+                                invoke-virtual { v$vA, v$vB, v$vC }, Lorg/chromium/components/prefs/PrefService;->$setBooleanMethodName(Ljava/lang/String;Z)V
                             """,
                         )
                     }

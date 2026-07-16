@@ -5,36 +5,44 @@ import android.os.Bundle;
 import android.os.StrictMode;
 import android.preference.PreferenceManager;
 import android.content.SharedPreferences;
+import java.util.HashMap;
+import java.util.Map;
 
 public class SpoofBraveEnterprisePoliciesPatch {
+    private static final Map<String, String> DISABLED_POLICIES = new HashMap<>();
+    private static final Map<String, String> ENABLED_POLICIES = new HashMap<>();
+
+    static {
+        // Disabled-style policies: toggle OFF (false) -> inject policy as true
+        DISABLED_POLICIES.put("news_switch", "BraveNewsDisabled");
+        DISABLED_POLICIES.put("rewards_switch", "BraveRewardsDisabled");
+        DISABLED_POLICIES.put("vpn_switch", "BraveVPNDisabled");
+        DISABLED_POLICIES.put("wallet_switch", "BraveWalletDisabled");
+
+        // Enabled-style policies: toggle OFF (false) -> inject policy as false
+        ENABLED_POLICIES.put("leo_ai_switch", "BraveAIChatEnabled");
+        ENABLED_POLICIES.put("web_discovery_project_switch", "BraveWebDiscoveryEnabled");
+        ENABLED_POLICIES.put("privacy_preserving_analytics_switch", "BraveP3AEnabled");
+        ENABLED_POLICIES.put("statistics_reporting_switch", "MetricsReportingEnabled");
+    }
+
     public static Bundle getSpoofedRestrictions(Context context) {
         StrictMode.ThreadPolicy oldPolicy = StrictMode.allowThreadDiskReads();
         try {
             Bundle bundle = new Bundle();
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
 
-            // Disabled-style policies: only inject the key when the user has explicitly turned the toggle OFF.
-            // When the toggle is ON (or the pref is absent / default=false), omit the key so
-            // Chromium's native default (enabled) takes effect on restart.
-            if (!prefs.getBoolean("news_switch", false))
-                bundle.putBoolean("BraveNewsDisabled", true);
-            if (!prefs.getBoolean("rewards_switch", false))
-                bundle.putBoolean("BraveRewardsDisabled", true);
-            if (!prefs.getBoolean("vpn_switch", false))
-                bundle.putBoolean("BraveVPNDisabled", true);
-            if (!prefs.getBoolean("wallet_switch", false))
-                bundle.putBoolean("BraveWalletDisabled", true);
+            for (Map.Entry<String, String> entry : DISABLED_POLICIES.entrySet()) {
+                if (!prefs.getBoolean(entry.getKey(), false)) {
+                    bundle.putBoolean(entry.getValue(), true);
+                }
+            }
 
-            // Enabled-style policies: only inject the key (as false) when the user has turned the toggle OFF.
-            // When ON (or absent), omit the key so Chromium's native default (enabled) applies.
-            if (!prefs.getBoolean("leo_ai_switch", false))
-                bundle.putBoolean("BraveAIChatEnabled", false);
-            if (!prefs.getBoolean("web_discovery_project_switch", false))
-                bundle.putBoolean("BraveWebDiscoveryEnabled", false);
-            if (!prefs.getBoolean("privacy_preserving_analytics_switch", false))
-                bundle.putBoolean("BraveP3AEnabled", false);
-            if (!prefs.getBoolean("statistics_reporting_switch", false))
-                bundle.putBoolean("MetricsReportingEnabled", false);
+            for (Map.Entry<String, String> entry : ENABLED_POLICIES.entrySet()) {
+                if (!prefs.getBoolean(entry.getKey(), false)) {
+                    bundle.putBoolean(entry.getValue(), false);
+                }
+            }
 
             return bundle;
         } finally {
