@@ -1,5 +1,7 @@
 package app.revanced.extension.shared;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Dialog;
@@ -34,6 +36,7 @@ import static app.revanced.extension.shared.requests.Route.Method.GET;
 
 @SuppressWarnings("unused")
 public class GmsCoreSupport {
+    private static final String GOOGLE_ONE_ACCOUNT_FEATURE = "service_googleone";
     private static GmsCore gmsCore = GmsCore.UNKNOWN;
 
     static {
@@ -50,6 +53,18 @@ public class GmsCoreSupport {
      */
     public static void checkGmsCore(Activity context) {
         gmsCore.check(context);
+    }
+
+    public static Account[] getGoogleAccounts(Context context) {
+        return AccountManager.get(context).getAccountsByType(getGmsCoreVendorGroupId());
+    }
+
+    @Nullable
+    public static Account[] getGoogleAccountsForFeatures(Context context, String[] features) {
+        return features != null && features.length == 1
+                && GOOGLE_ONE_ACCOUNT_FEATURE.equals(features[0])
+                ? getGoogleAccounts(context)
+                : null;
     }
 
     private static String getOriginalPackageName() {
