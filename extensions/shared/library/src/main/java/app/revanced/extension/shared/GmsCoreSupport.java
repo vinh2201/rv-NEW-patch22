@@ -52,6 +52,10 @@ public class GmsCoreSupport {
         gmsCore.check(context);
     }
 
+    public static String getGmsCoreAccountType() {
+        return getGmsCoreVendorGroupId();
+    }
+
     private static String getOriginalPackageName() {
         return null; // Modified during patching.
     }
