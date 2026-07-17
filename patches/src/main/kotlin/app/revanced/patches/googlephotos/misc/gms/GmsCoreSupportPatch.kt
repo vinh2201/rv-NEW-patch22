@@ -11,7 +11,6 @@ import app.revanced.patcher.patch.Option
 import app.revanced.patches.googlephotos.misc.extension.extensionPatch
 import app.revanced.patches.googlephotos.misc.gms.Constants.PHOTOS_PACKAGE_NAME
 import app.revanced.patches.googlephotos.misc.gms.Constants.REVANCED_PHOTOS_PACKAGE_NAME
-import app.revanced.patches.shared.misc.gms.EXTENSION_CLASS_DESCRIPTOR
 import app.revanced.patches.shared.misc.gms.gmsCoreSupportPatch
 import app.revanced.util.findFreeRegister
 import app.revanced.util.indexOfFirstInstructionOrThrow
@@ -60,6 +59,9 @@ val gmsCoreSupportPatch = gmsCoreSupportPatch(
 ) {
     compatibleWith(PHOTOS_PACKAGE_NAME)
 }
+
+private const val EXTENSION_CLASS_DESCRIPTOR =
+    "Lapp/revanced/extension/googlephotos/GmsCoreSupportPatch;"
 
 private fun gmsCoreSupportResourcePatch(
     gmsCoreVendorGroupIdOption: Option<String>,
