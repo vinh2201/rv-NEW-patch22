@@ -10,7 +10,7 @@ internal const val POSITION_CONFIG_CLASS_DESCRIPTOR =
     "Lcom/instagram/ui/swipenavigation/container/PositionConfig;"
 
 // Re-asserts the nav ViewPager2's user-input flag on every touch.
-internal val BytecodePatchContext.swipeContainerOnInterceptTouchEventMethod by gettingFirstMethodDeclaratively {
+internal val BytecodePatchContext.onInterceptTouchEventMethod by gettingFirstMethodDeclaratively {
     definingClass(SWIPE_NAVIGATION_CONTAINER_CLASS_DESCRIPTOR)
     name("onInterceptTouchEvent")
 }

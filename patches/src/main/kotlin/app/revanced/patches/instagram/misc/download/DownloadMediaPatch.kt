@@ -137,9 +137,9 @@ val downloadMediaPatch = bytecodePatch(
         val clipsHelperClassDef = clipsOrganicMoreOptionsMethod.classDef
         val clipsMediaField = clipsHelperClassDef.fields.first { it.type == MEDIA_CLASS_DESCRIPTOR }
         val clipsActivityField = clipsHelperClassDef.fields.first { it.type == ACTIVITY_CLASS_DESCRIPTOR }
-        val optionsConfigClass = clipsShowMethod.parameterTypes[1].toString()
+        val optionsConfigType = clipsShowMethod.parameterTypes[1].toString()
 
-        val clipsRowAdder = getClipsRowAdderMethod(optionsConfigClass)
+        val addClipsRowMethod = getAddClipsRowMethod(optionsConfigType)
 
         // The show method has trailing params, so p0 (helper) and p2 (config) are >v15 — move low first.
         clipsShowMethod.addInstructions(
@@ -155,7 +155,7 @@ val downloadMediaPatch = bytecodePatch(
                 move-result-object v0
                 iget-object v2, v4, $clipsActivityField
                 const-string v3, "Download"
-                invoke-virtual { v5, v2, v0, v3, v1 }, $clipsRowAdder
+                invoke-virtual { v5, v2, v0, v3, v1 }, $addClipsRowMethod
             """,
         )
     }

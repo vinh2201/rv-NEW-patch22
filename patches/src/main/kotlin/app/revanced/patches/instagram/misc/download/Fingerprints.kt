@@ -15,15 +15,22 @@ internal const val MEDIA_OPTION_CLASS_DESCRIPTOR =
 private const val MEDIA_CLASS_DESCRIPTOR = "Lcom/instagram/feed/media/Media;"
 private const val CHAR_SEQUENCE = "Ljava/lang/CharSequence;"
 
-/** A reel options row-adder: `(Context, click listener, label, icon)`. */
-internal fun Method.isClipsRowAdder() =
-    returnType == "V" &&
-        accessFlags and AccessFlags.STATIC.value == 0 &&
-        parameterTypes.size == 4 &&
-        parameterTypes[0] == "Landroid/content/Context;" &&
-        parameterTypes[1] == "Landroid/view/View\$OnClickListener;" &&
-        parameterTypes[2] == "Ljava/lang/String;" &&
-        parameterTypes[3] == "I"
+// Both reel row methods share this signature and differ only by the destructive/"red" boolean they forward.
+private fun MutablePredicateList<Method>.addClipsRowSignature() {
+    returnType("V")
+    parameterTypes(
+        "Landroid/content/Context;",
+        "Landroid/view/View\$OnClickListener;",
+        "Ljava/lang/String;",
+        "I",
+    )
+}
+
+// The destructive variant forwards the flag as const 1, the normal one as const 0.
+private fun Method.forwardsDestructiveFlag() =
+    implementation!!.instructions.any {
+        it.opcode == Opcode.CONST_4 && (it as NarrowLiteralInstruction).narrowLiteral == 1
+    }
 
 // Marks the class that builds a post "..." menu's option rows.
 internal val BytecodePatchContext.mediaOptionsMenuCreatorMethod by
@@ -109,12 +116,16 @@ internal val BytecodePatchContext.clipsShowMethod by getting {
     }
 } using { clipsOrganicMoreOptionsMethod }
 
-// The two row-adders differ only by the destructive/"red" boolean (const 1 vs 0); return the normal one.
-internal fun BytecodePatchContext.getClipsRowAdderMethod(optionsConfigClass: String) =
-    firstImmutableClassDef(optionsConfigClass).methods
-        .filter { it.isClipsRowAdder() }
-        .minByOrNull { method ->
-            method.implementation!!.instructions.count {
-                it.opcode == Opcode.CONST_4 && (it as NarrowLiteralInstruction).narrowLiteral == 1
-            }
-        }!!
+// Adds a normal (non-destructive) row to the reel "..." options sheet.
+internal fun BytecodePatchContext.getAddClipsRowMethod(optionsConfigType: String) =
+    firstImmutableClassDef(optionsConfigType).firstMethodDeclaratively {
+        addClipsRowSignature()
+        custom { !forwardsDestructiveFlag() }
+    }
+
+// Adds a destructive ("red") row to the reel "..." options sheet.
+internal fun BytecodePatchContext.getAddDestructiveClipsRowMethod(optionsConfigType: String) =
+    firstImmutableClassDef(optionsConfigType).firstMethodDeclaratively {
+        addClipsRowSignature()
+        custom { forwardsDestructiveFlag() }
+    }

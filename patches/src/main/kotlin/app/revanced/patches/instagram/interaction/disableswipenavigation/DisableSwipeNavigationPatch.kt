@@ -22,7 +22,7 @@ val disableSwipeNavigationPatch = bytecodePatch(
 
     apply {
         // The container re-asserts the nav pager's setUserInputEnabled on every touch, force it false.
-        swipeContainerOnInterceptTouchEventMethod.apply {
+        onInterceptTouchEventMethod.apply {
             val callIndex = indexOfFirstInstructionOrThrow {
                 opcode == Opcode.INVOKE_VIRTUAL && methodReference?.name == "setUserInputEnabled"
             }
