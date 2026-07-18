@@ -13,7 +13,7 @@ internal const val MEDIA_OPTION_CLASS_DESCRIPTOR =
     "Lcom/instagram/feed/media/mediaoption/MediaOption\$Option;"
 
 private const val MEDIA_CLASS_DESCRIPTOR = "Lcom/instagram/feed/media/Media;"
-private const val CHAR_SEQUENCE = "Ljava/lang/CharSequence;"
+private const val CHAR_SEQUENCE_CLASS_DESCRIPTOR = "Ljava/lang/CharSequence;"
 
 // Both reel row methods share this signature and differ only by the destructive/"red" boolean they forward.
 private fun MutablePredicateList<Method>.addClipsRowSignature() {
@@ -51,7 +51,7 @@ internal val BytecodePatchContext.addOptionRowMethod by getting {
     firstMethodDeclaratively {
         accessFlags(AccessFlags.STATIC)
         returnType("V")
-        parameterTypes("L", MEDIA_OPTION_CLASS_DESCRIPTOR, "L", CHAR_SEQUENCE, "Ljava/util/ArrayList;", "Z")
+        parameterTypes("L", MEDIA_OPTION_CLASS_DESCRIPTOR, "L", CHAR_SEQUENCE_CLASS_DESCRIPTOR, "Ljava/util/ArrayList;", "Z")
     }
 } using { mediaOptionsMenuCreatorMethod }
 
@@ -77,9 +77,9 @@ internal val BytecodePatchContext.storyDialogMethod by gettingFirstMethodDeclara
 }
 
 // Returns the story "..." option labels.
-internal fun BytecodePatchContext.getStoryOptionsMethod(storyHelperClass: String) =
+internal fun BytecodePatchContext.getStoryOptionsMethod(storyHelperType: String) =
     firstMethod(
-        firstImmutableClassDef(storyHelperClass).firstMethodDeclaratively {
+        firstImmutableClassDef(storyHelperType).firstMethodDeclaratively {
             accessFlags(AccessFlags.STATIC)
             returnType("[Ljava/lang/CharSequence;")
             parameterTypes("L")
@@ -87,23 +87,23 @@ internal fun BytecodePatchContext.getStoryOptionsMethod(storyHelperClass: String
     )
 
 // Dispatches a tapped story dialog option: `(helper, selected label)`.
-internal fun BytecodePatchContext.getStoryOptionClickMethod(storyHelperClass: String) =
+internal fun BytecodePatchContext.getStoryOptionClickMethod(storyHelperType: String) =
     firstMethod(
-        firstImmutableClassDef(storyHelperClass).firstMethodDeclaratively {
+        firstImmutableClassDef(storyHelperType).firstMethodDeclaratively {
             accessFlags(AccessFlags.STATIC)
             returnType("V")
-            parameterTypes(storyHelperClass, "Ljava/lang/String;")
+            parameterTypes(storyHelperType, "Ljava/lang/String;")
         },
     )
 
 // A story bottom-sheet/context-menu row dispatcher whose last parameter is the selected label.
-internal fun BytecodePatchContext.getStoryOptionDispatchMethod(storyHelperClass: String, methodName: String) =
+internal fun BytecodePatchContext.getStoryOptionDispatchMethod(storyHelperType: String, methodName: String) =
     firstMethod(
-        firstImmutableClassDef(storyHelperClass).firstMethodDeclaratively {
+        firstImmutableClassDef(storyHelperType).firstMethodDeclaratively {
             name(methodName)
             accessFlags(AccessFlags.STATIC)
             returnType("V")
-            custom { parameterTypes.last() == CHAR_SEQUENCE }
+            custom { parameterTypes.last() == CHAR_SEQUENCE_CLASS_DESCRIPTOR }
         },
     )
 

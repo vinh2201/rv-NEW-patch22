@@ -74,9 +74,9 @@ val downloadMediaPatch = bytecodePatch(
         )
 
         // The story dialog builder's 3rd parameter type is the story helper class.
-        val storyHelperClass = storyDialogMethod.parameterTypes[2].toString()
+        val storyHelperType = storyDialogMethod.parameterTypes[2].toString()
 
-        getStoryOptionsMethod(storyHelperClass).apply {
+        getStoryOptionsMethod(storyHelperType).apply {
             val returnIndex = indexOfFirstInstructionOrThrow(Opcode.RETURN_OBJECT)
             val register = getInstruction<OneRegisterInstruction>(returnIndex).registerA
 
@@ -89,7 +89,7 @@ val downloadMediaPatch = bytecodePatch(
             )
         }
 
-        val storyClickMethod = getStoryOptionClickMethod(storyHelperClass)
+        val storyClickMethod = getStoryOptionClickMethod(storyHelperType)
         storyClickMethod.addInstructionsWithLabels(
             0,
             """
@@ -104,18 +104,18 @@ val downloadMediaPatch = bytecodePatch(
         )
 
         // Story bottom-sheet/context-menu variants each have their own dispatcher, hook every one.
-        getStoryOptionsMethod(storyHelperClass).classDef.methods
+        getStoryOptionsMethod(storyHelperType).classDef.methods
             .filter { method ->
                 method.accessFlags and AccessFlags.STATIC.value != 0 &&
                     method.returnType == "V" &&
                     method.parameterTypes.size > 2 &&
                     method.parameterTypes.last() == "Ljava/lang/CharSequence;" &&
-                    method.parameterTypes.any { it == storyHelperClass }
+                    method.parameterTypes.any { it == storyHelperType }
             }
             .map { it.name }
             .forEach { dispatchName ->
-                val dispatchMethod = getStoryOptionDispatchMethod(storyHelperClass, dispatchName)
-                val helperParam = "p${dispatchMethod.parameterTypes.indexOf(storyHelperClass)}"
+                val dispatchMethod = getStoryOptionDispatchMethod(storyHelperType, dispatchName)
+                val helperParam = "p${dispatchMethod.parameterTypes.indexOf(storyHelperType)}"
                 val labelParam = "p${dispatchMethod.parameterTypes.size - 1}"
                 dispatchMethod.addInstructionsWithLabels(
                     0,
