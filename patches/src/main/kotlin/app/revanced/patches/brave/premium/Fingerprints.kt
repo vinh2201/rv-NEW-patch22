@@ -1,9 +1,9 @@
 package app.revanced.patches.brave.premium
 
 import app.revanced.patcher.*
-import app.revanced.patcher.accessFlags
-import app.revanced.patcher.composingFirstMethod
-import app.revanced.patcher.gettingFirstMethodDeclaratively
+import app.revanced.patcher.firstClassDef
+import app.revanced.patcher.firstMethod
+import app.revanced.patcher.firstMethodDeclaratively
 import app.revanced.patcher.opcodes
 import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.BytecodePatchContext
@@ -12,7 +12,7 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
-internal val BytecodePatchContext.hasOriginCachedMethod by gettingFirstMethodDeclaratively("brave_origin_credential_summary_cached") {
+internal fun BytecodePatchContext.getHasOriginCachedMethod() = firstMethodDeclaratively("brave_origin_credential_summary_cached") {
     returnType("Z")
 }
 
@@ -28,34 +28,28 @@ internal val BytecodePatchContext.onCreatePreferencesMethod by composingFirstMet
     )
 }
 
-internal val BytecodePatchContext.onOriginSubscriptionMethod by gettingFirstMethodDeclaratively("brave.origin.package_name_android") {
-    returnType("V")
-    parameterTypes("Ljava/lang/Object;")
-}
-
-internal val BytecodePatchContext.isOriginSubscriptionActiveMethod by gettingFirstMethodDeclaratively(
+internal fun BytecodePatchContext.getIsOriginSubscriptionActiveMethod() = firstMethodDeclaratively(
     "brave.origin.subscription_active_android",
 ) {
     returnType("Z")
 }
 
-internal val BytecodePatchContext.isFetchingCredentialsMethod by gettingFirstMethodDeclaratively("brave.origin.order_id_android") {
+internal fun BytecodePatchContext.getIsFetchingCredentialsMethod() = firstMethodDeclaratively("brave.origin.order_id_android") {
     returnType("Z")
 }
 
-internal val BytecodePatchContext.requestCredentialSummaryMethod by gettingFirstMethodDeclaratively(
+internal fun BytecodePatchContext.getRequestCredentialSummaryMethod() = firstMethodDeclaratively(
     "requestCredentialSummary profile is null",
 )
 
-internal val BytecodePatchContext.braveLocalStateGetMethod by gettingFirstMethodDeclaratively {
+internal fun BytecodePatchContext.getBraveLocalStateGetMethod() = firstMethodDeclaratively {
     definingClass("Lorg/chromium/chrome/browser/prefs/LocalStatePrefs;")
     returnType("Lorg/chromium/components/prefs/PrefService;")
     parameterTypes()
 }
 
-
-internal val BytecodePatchContext.settingsPromoCardPreferenceClassDef
-    get() = firstClassDef("Lorg/chromium/chrome/browser/ui/settings_promo_card/SettingsPromoCardPreference;")
+internal fun BytecodePatchContext.getSettingsPromoCardPreferenceClassDef() =
+    firstClassDef("Lorg/chromium/chrome/browser/ui/settings_promo_card/SettingsPromoCardPreference;")
 
 internal fun ClassDef.getConstructorMethod() =
     methods.first { it.name == "<init>" }
@@ -76,17 +70,13 @@ internal fun ClassDef.getPromoBindMethodMatch() =
         )
     }
 
-internal val BytecodePatchContext.appRestrictionsMethod by gettingFirstMethodDeclaratively("cr_AppResProvider") {
+internal fun BytecodePatchContext.getAppRestrictionsMethod() = firstMethodDeclaratively("cr_AppResProvider") {
     returnType("Landroid/os/Bundle;")
     parameterTypes("Landroid/os/UserManager;", "Ljava/lang/String;")
 }
 
-
-internal val ClassDef.contextFieldName
-    get() = fields.first { it.type == "Landroid/content/Context;" }.name
-
-internal val ClassDef.userManagerFieldName
-    get() = fields.first { it.type == "Landroid/os/UserManager;" }.name
+internal fun ClassDef.getContextField() =
+    fields.first { it.type == "Landroid/content/Context;" }
 
 internal fun ClassDef.getAppRestrictionsProviderOnRestrictionsReceivedMethodMatch(
     appRestrictionsMethod: MethodReference,
@@ -104,13 +94,13 @@ internal fun ClassDef.getAppRestrictionsProviderOnRestrictionsReceivedMethodMatc
     )
 }
 
-internal val BytecodePatchContext.braveOriginPreferencesOnPreferenceChangeMethod by gettingFirstMethodDeclaratively {
+internal fun BytecodePatchContext.getBraveOriginPreferencesOnPreferenceChangeMethod() = firstMethodDeclaratively {
     definingClass("Lorg/chromium/chrome/browser/settings/BraveOriginPreferences;")
     returnType("Z")
     parameterTypes("Landroidx/preference/Preference;", "Ljava/lang/Object;")
 }
 
-internal val BytecodePatchContext.showOriginSettingsForRestartMethod by gettingFirstMethodDeclaratively {
+internal fun BytecodePatchContext.getShowOriginSettingsForRestartMethod() = firstMethodDeclaratively {
     definingClass("Lorg/chromium/chrome/browser/brave_origin/BraveOriginSettingsLauncherHelper;")
     returnType("V")
     parameterTypes()

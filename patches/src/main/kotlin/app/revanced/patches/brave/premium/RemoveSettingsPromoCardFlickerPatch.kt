@@ -19,25 +19,24 @@ val removeSettingsPromoCardFlickerPatch =
 
         apply {
             // Fix the 500ms flicker for SettingsPromoCardPreference (Sign in to sync banner).
-            val promoCardClassDef = classDefs.getOrReplaceMutable(settingsPromoCardPreferenceClassDef)
-
-            // Dynamically find the obfuscated setVisible(boolean) method name from onBindViewHolder
-            val setVisibleMethodName =
-                promoCardClassDef.getPromoBindMethodMatch().let { match ->
-                    val setVisibleIndex = match[0]
-                    match.method
-                        .getInstruction<ReferenceInstruction>(setVisibleIndex)
-                        .methodReference!!
-                        .name
-                }
+            val promoCardClassDef = classDefs.getOrReplaceMutable(getSettingsPromoCardPreferenceClassDef())
 
             promoCardClassDef.firstMethod(promoCardClassDef.getConstructorMethod()).apply {
-                val setVisibleSmali = """
-                    const/4 p1, 0x0
-                    invoke-virtual { p0, p1 }, Landroidx/preference/Preference;->$setVisibleMethodName(Z)V
-                """
-
-                addInstructions(1, setVisibleSmali)
+                addInstructions(
+                    1,
+                    """
+                        const/4 p1, 0x0
+                        invoke-virtual { p0, p1 }, Landroidx/preference/Preference;->${
+                            promoCardClassDef.getPromoBindMethodMatch().let { match ->
+                                val setVisibleIndex = match[0]
+                                match.method
+                                    .getInstruction<ReferenceInstruction>(setVisibleIndex)
+                                    .methodReference!!
+                                    .name
+                            }
+                        }(Z)V
+                    """,
+                )
             }
         }
     }

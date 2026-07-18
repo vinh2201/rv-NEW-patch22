@@ -1,6 +1,5 @@
 package app.revanced.patches.brave.premium
 
-import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
 import app.revanced.patcher.classDef
 import app.revanced.patcher.extensions.*
 import app.revanced.patcher.patch.bytecodePatch
@@ -9,14 +8,9 @@ import app.revanced.util.indexOfFirstInstruction
 import app.revanced.util.indexOfFirstInstructionOrThrow
 import app.revanced.util.returnEarly
 import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
-import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
-import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
-import com.android.tools.smali.dexlib2.iface.reference.MethodReference
-import com.android.tools.smali.dexlib2.iface.reference.StringReference
 
 @Suppress("unused")
 val unlockOriginPatch =
@@ -38,12 +32,13 @@ val unlockOriginPatch =
             val setBooleanMethodName = setBooleanMethod.name
 
             // 1. Force cached credential summary to true.
-            hasOriginCachedMethod.returnEarly(true)
+            getHasOriginCachedMethod().returnEarly(true)
 
             // 2. Bypass "fetching credentials" infinite spinner.
-            isFetchingCredentialsMethod.returnEarly(false)
+            getIsFetchingCredentialsMethod().returnEarly(false)
 
             // 3. Spoof PrefService to make C++ engine believe purchase is fully validated.
+            val isOriginSubscriptionActiveMethod = getIsOriginSubscriptionActiveMethod()
             val factoryMethodIndex =
                 isOriginSubscriptionActiveMethod.indexOfFirstInstructionOrThrow {
                     opcode == Opcode.INVOKE_STATIC &&
@@ -63,14 +58,14 @@ val unlockOriginPatch =
                         return v0
                         
                         :cond_patched
-                        invoke-static {p0}, ${factoryMethodReference.definingClass}->${factoryMethodReference.name}(Lorg/chromium/content_public/browser/BrowserContextHandle;)Lorg/chromium/components/prefs/PrefService;
+                        invoke-static {p0}, $factoryMethodReference
                         move-result-object v2
                         
                         const-string v1, "brave.origin.subscription_active_android"
                         const/4 v0, 0x1
                         invoke-virtual { v2, v1, v0 }, Lorg/chromium/components/prefs/PrefService;->$setBooleanMethodName(Ljava/lang/String;Z)V
                         
-                        invoke-static {}, ${braveLocalStateGetMethod.definingClass}->${braveLocalStateGetMethod.name}()Lorg/chromium/components/prefs/PrefService;
+                        invoke-static {}, ${getBraveLocalStateGetMethod()}
                         move-result-object v2
                         
                         const-string v1, "brave.origin.purchase_validated"
@@ -93,7 +88,7 @@ val unlockOriginPatch =
             }
 
             // 5. Force requestCredentialSummary to return true so the UI asks C++ for policy values.
-            requestCredentialSummaryMethod.addInstructions(
+            getRequestCredentialSummaryMethod().addInstructions(
                 0,
                 """
                     if-eqz p1, :cond_end
@@ -107,7 +102,7 @@ val unlockOriginPatch =
             )
 
             // 6. Intercept BraveOriginPreferences.onPreferenceChange to spoof purchase state before Mojo IPC.
-            braveOriginPreferencesOnPreferenceChangeMethod.apply {
+            getBraveOriginPreferencesOnPreferenceChangeMethod().apply {
                 val invokeDirectIndex =
                     indexOfFirstInstruction {
                         opcode == Opcode.INVOKE_DIRECT &&
@@ -125,7 +120,7 @@ val unlockOriginPatch =
                     if (invokeInterfaceIndex != -1) {
                         val invokeInterfaceInstruction =
                             getInstruction(invokeInterfaceIndex)
-                        val (vA, vB, vC) =
+                        val (registerC, registerD, registerE) =
                             when (invokeInterfaceInstruction) {
                                 is FiveRegisterInstruction -> {
                                     Triple(
@@ -149,11 +144,11 @@ val unlockOriginPatch =
                         addInstructions(
                             invokeInterfaceIndex + 1,
                             """
-                                invoke-static {}, ${"$"}{braveLocalStateGetMethod.definingClass}->${"$"}{braveLocalStateGetMethod.name}()Lorg/chromium/components/prefs/PrefService;
-                                move-result-object v$vA
-                                const-string v$vB, "brave.origin.purchase_validated"
-                                const/4 v$vC, 0x1
-                                invoke-virtual { v$vA, v$vB, v$vC }, Lorg/chromium/components/prefs/PrefService;->$setBooleanMethodName(Ljava/lang/String;Z)V
+                                invoke-static {}, ${getBraveLocalStateGetMethod()}
+                                move-result-object v$registerC
+                                const-string v$registerD, "brave.origin.purchase_validated"
+                                const/4 v$registerE, 1
+                                invoke-virtual { v$registerC, v$registerD, v$registerE }, Lorg/chromium/components/prefs/PrefService;->$setBooleanMethodName(Ljava/lang/String;Z)V
                             """,
                         )
                     }
@@ -161,6 +156,6 @@ val unlockOriginPatch =
             }
 
             // 7. Disable showOriginSettingsForRestart to prevent settings page from auto-opening on startup.
-            showOriginSettingsForRestartMethod.returnEarly()
+            getShowOriginSettingsForRestartMethod().returnEarly()
         }
     }
