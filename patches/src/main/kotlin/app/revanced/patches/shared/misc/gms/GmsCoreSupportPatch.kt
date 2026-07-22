@@ -259,9 +259,9 @@ fun gmsCoreSupportResourcePatch(
                 }
             }
 
-            document.getElementsByTagName("*").asSequence().forEach { node ->
+            document.getElementsByTagName("receiver").asSequence().forEach { node ->
                 node.attributes.getNamedItem("android:permission")?.apply {
-                    if (textContent in GMS_PERMISSIONS) {
+                    if (textContent == "com.google.android.c2dm.permission.SEND") {
                         textContent = textContent.replace("com.google", gmsCoreVendorGroupId)
                     }
                 }
