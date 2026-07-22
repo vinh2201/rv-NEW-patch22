@@ -3,6 +3,7 @@ package app.revanced.patches.shared.misc.gms
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
 import app.revanced.patcher.extensions.addInstruction
 import app.revanced.patcher.extensions.getInstruction
+import app.revanced.patcher.extensions.methodReference
 import app.revanced.patcher.extensions.replaceInstruction
 import app.revanced.patcher.extensions.string
 import app.revanced.patcher.patch.BytecodePatchBuilder
@@ -166,6 +167,15 @@ fun gmsCoreSupportPatch(
             )
         }
 
+        // GNP registration targets must use the original package name.
+        gnpRegistrationTargetMethod?.apply {
+            val getPackageNameResultIndex = indexOfFirstInstructionOrThrow {
+                methodReference?.toString() == "Landroid/content/Context;->getPackageName()Ljava/lang/String;"
+            } + 1
+            val register = getInstruction<OneRegisterInstruction>(getPackageNameResultIndex).registerA
+
+            replaceInstruction(getPackageNameResultIndex, "const-string v$register, \"$fromPackageName\"")
+        }
 
         // Return these methods early to prevent the app from crashing.
         getEarlyReturnMethods.forEach { it().returnEarly() }
@@ -242,9 +252,17 @@ fun gmsCoreSupportResourcePatch(
             document.getElementsByTagName("uses-permission").asSequence().forEach { node ->
                 node.attributes.getNamedItem("android:name").apply {
                     if (textContent in GMS_PERMISSIONS) {
-                        textContent.replace("com.google", gmsCoreVendorGroupId)
+                        textContent = textContent.replace("com.google", gmsCoreVendorGroupId)
                     } else if (textContent in APP_PERMISSIONS) {
                         textContent = textContent.prefixOrReplace(fromPackageName, toPackageName)
+                    }
+                }
+            }
+
+            document.getElementsByTagName("receiver").asSequence().forEach { node ->
+                node.attributes.getNamedItem("android:permission")?.apply {
+                    if (textContent == "com.google.android.c2dm.permission.SEND") {
+                        textContent = textContent.replace("com.google", gmsCoreVendorGroupId)
                     }
                 }
             }

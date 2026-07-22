@@ -36,6 +36,11 @@ internal val BytecodePatchContext.serviceCheckMethod by gettingFirstMethodDeclar
     parameterTypes("L", "I")
 }
 
+internal val BytecodePatchContext.gnpRegistrationTargetMethod by gettingFirstMethodDeclarativelyOrNull(
+    "Failed to get android ID.",
+    "Exception reading GServices key.",
+)
+
 internal val BytecodePatchContext.getGmsCoreVendorGroupIdMethod by gettingFirstMethodDeclaratively {
     name("getGmsCoreVendorGroupId")
     definingClass(EXTENSION_CLASS_DESCRIPTOR)
