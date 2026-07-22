@@ -252,9 +252,17 @@ fun gmsCoreSupportResourcePatch(
             document.getElementsByTagName("uses-permission").asSequence().forEach { node ->
                 node.attributes.getNamedItem("android:name").apply {
                     if (textContent in GMS_PERMISSIONS) {
-                        textContent.replace("com.google", gmsCoreVendorGroupId)
+                        textContent = textContent.replace("com.google", gmsCoreVendorGroupId)
                     } else if (textContent in APP_PERMISSIONS) {
                         textContent = textContent.prefixOrReplace(fromPackageName, toPackageName)
+                    }
+                }
+            }
+
+            document.getElementsByTagName("*").asSequence().forEach { node ->
+                node.attributes.getNamedItem("android:permission")?.apply {
+                    if (textContent in GMS_PERMISSIONS) {
+                        textContent = textContent.replace("com.google", gmsCoreVendorGroupId)
                     }
                 }
             }
