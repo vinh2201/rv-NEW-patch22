@@ -1728,6 +1728,10 @@ public final class app/revanced/patches/youtube/layout/toolbar/ToolbarHookPatchK
 	public static final fun getToolbarHookPatch ()Lapp/revanced/patcher/patch/Patch;
 }
 
+public final class app/revanced/patches/youtube/misc/updatescreen/DisableUpdateScreenPatchKt {
+	public static final fun getDisableUpdateScreen ()Lapp/revanced/patcher/patch/BytecodePatch;
+}
+
 public final class app/revanced/patches/youtube/misc/announcements/AnnouncementsPatchKt {
 	public static final fun getAnnouncementsPatch ()Lapp/revanced/patcher/patch/Patch;
 }
