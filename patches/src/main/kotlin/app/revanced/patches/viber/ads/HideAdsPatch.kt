@@ -12,8 +12,8 @@ import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 
 @Suppress("unused")
 val hideAdsPatch = bytecodePatch(
-    name = "Remove Ads",
-    description = "Disables ads in Viber.",
+    name = "Hide Ads",
+    description = "Hides ad banners between chats.",
 ) {
     // Chỉnh sửa lại version tương thích tùy theo project của bạn
     compatibleWith("com.viber.voip")
