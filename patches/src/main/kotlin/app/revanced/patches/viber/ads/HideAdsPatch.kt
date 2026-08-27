@@ -6,6 +6,12 @@ import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patcher.returnType
 import app.revanced.util.returnEarly
+import app.revanced.patcher.util.proxy.mutableTypes.MutableMethod
+import app.revanced.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
+import app.revanced.util.fingerprint.mutableClassOrThrow
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
+import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
+import com.android.tools.smali.dexlib2.util.MethodUtil
 
 @Suppress("unused")
 val hideAdsPatch = bytecodePatch(
