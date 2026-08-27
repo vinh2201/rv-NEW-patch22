@@ -5,6 +5,7 @@ import app.revanced.patcher.firstMethodDeclarativelyOrNull
 import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patcher.returnType
+import app.revanced.patcher.extensions.typeReference
 import app.revanced.util.returnEarly
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
