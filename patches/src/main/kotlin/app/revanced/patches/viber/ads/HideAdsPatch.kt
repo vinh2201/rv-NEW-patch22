@@ -6,25 +6,24 @@ import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patcher.returnType
 import app.revanced.util.returnEarly
-import app.revanced.patcher.util.proxy.mutableTypes.MutableMethod
-import app.revanced.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
-import app.revanced.util.fingerprint.mutableClassOrThrow
-import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
-import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
-import com.android.tools.smali.dexlib2.util.MethodUtil
+import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 
 @Suppress("unused")
 val hideAdsPatch = bytecodePatch(
     name = "Hide Ads",
-    description = "Enable native Viber Plus flag to clean ad containers and fix screen freeze.",
+    description = "Enables native Viber Plus main flag to remove ad containers.",
 ) {
     compatibleWith("com.viber.voip")
 
     apply {
-        // Lấy class chứa phương thức khởi tạo cờ vPlus_Main
-        val targetClass = findVPlusMainMatch.immutableClass.type
+        // Lấy class cờ (B.smali hoặc Llj/B;) trực tiếp từ lệnh NEW_INSTANCE
+        val targetClass = findVPlusMainMatch.immutableMethod.implementation?.instructions
+            ?.filterIsInstance<ReferenceInstruction>()
+            ?.firstOrNull { it.opcode == Opcode.NEW_INSTANCE }
+            ?.typeReference?.type ?: return@apply
 
-        // Can thiệp tất cả các hàm kiểm tra trạng thái (isEnabled / boolean value)
+        // Ép hàm boolean của class đó luôn trả về true
         firstMethodDeclarativelyOrNull {
             definingClass(targetClass)
             returnType("Z")
