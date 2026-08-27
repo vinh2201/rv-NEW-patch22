@@ -1,25 +1,28 @@
 package app.revanced.patches.viber.ads
 
 import app.revanced.patcher.definingClass
-import app.revanced.patcher.extensions.getInstruction
-import app.revanced.patcher.extensions.typeReference
-import app.revanced.patcher.firstMethodDeclaratively
+import app.revanced.patcher.firstMethodDeclarativelyOrNull
 import app.revanced.patcher.parameterTypes
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patcher.returnType
 import app.revanced.util.returnEarly
-import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 
 @Suppress("unused")
 val hideAdsPatch = bytecodePatch(
     name = "Hide Ads",
-    description = "Hides ad banners between chats.",
+    description = "Enable native Viber Plus flag to clean ad containers and fix screen freeze.",
 ) {
-    // Chỉnh sửa lại version tương thích tùy theo project của bạn
     compatibleWith("com.viber.voip")
 
     apply {
-        // Gọi fingerprint đã tạo ở trên và ép nó luôn trả về true (1)
-        isAdsFreeMethodMatch.returnEarly(1)
+        // Lấy class chứa phương thức khởi tạo cờ vPlus_Main
+        val targetClass = findVPlusMainMatch.immutableClass.type
+
+        // Can thiệp tất cả các hàm kiểm tra trạng thái (isEnabled / boolean value)
+        firstMethodDeclarativelyOrNull {
+            definingClass(targetClass)
+            returnType("Z")
+            parameterTypes()
+        }?.returnEarly(true)
     }
 }
