@@ -5,6 +5,7 @@ import app.revanced.patcher.instructions
 import app.revanced.patcher.invoke
 import app.revanced.patcher.patch.BytecodePatchContext
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 
 internal val BytecodePatchContext.findVPlusMainMatch by composingFirstMethod {
     // Tìm trực tiếp chuỗi định danh "vPlus_Main" trong khối khởi tạo cờ
