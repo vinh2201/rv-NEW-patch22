@@ -36,7 +36,7 @@ val hideAdsPatch = bytecodePatch(
         for (i in stringIndex downTo 0) {
             val instr = instructions[i]
             if (instr.opcode == Opcode.NEW_INSTANCE) {
-                targetClass = (instr as ReferenceInstruction).typeReference.type
+                targetClass = (instr as ReferenceInstruction).typeReference?.type
                 break
             }
         }
