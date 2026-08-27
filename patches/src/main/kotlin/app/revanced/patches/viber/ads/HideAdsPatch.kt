@@ -12,21 +12,14 @@ import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 
 @Suppress("unused")
 val hideAdsPatch = bytecodePatch(
-    name = "Hide Ads",
-    description = "Hides ad banners between chats.",
+    name = "Remove Ads",
+    description = "Disables ads in Viber.",
 ) {
-    compatibleWith("com.viber.voip"("25.9.2.0", "26.1.2.0"))
+    // Chỉnh sửa lại version tương thích tùy theo project của bạn
+    compatibleWith("com.viber.voip")
 
     apply {
-        val referenceIndex = findAdStringMethodMatch[0]
-
-        val targetClass =
-            findAdStringMethodMatch.immutableMethod.getInstruction<ReferenceInstruction>(referenceIndex).typeReference
-
-        val adFreeMethod = firstMethodDeclaratively {
-            definingClass(targetClass!!.type)
-            returnType("I")
-            parameterTypes()
-        }.returnEarly(1)
+        // Gọi fingerprint đã tạo ở trên và ép nó luôn trả về true (1)
+        isAdsFreeMethodMatch.returnEarly(1)
     }
 }
