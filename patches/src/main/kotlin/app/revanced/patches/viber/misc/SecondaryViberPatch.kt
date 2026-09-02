@@ -1,37 +1,36 @@
 package app.revanced.patches.viber.misc
 
-import app.revanced.patcher.Fingerprint
 import app.revanced.patcher.extensions.InstructionExtensions.addInstructions
-import app.revanced.patcher.fieldAccess
-import app.revanced.patcher.literal
-import app.revanced.patcher.methodCall
-import app.revanced.patcher.opcode
-import app.revanced.patcher.string
-import com.android.tools.smali.dexlib2.AccessFlags
-import com.android.tools.smali.dexlib2.Opcode
+import app.revanced.patcher.fingerprint.method.impl.BytecodeFingerprint.Companion.bytecodeFingerprint
 import app.revanced.patcher.patch.bytecodePatch
+import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
-object ResourcesFingerprint : Fingerprint(
-    definingClass = "Landroid/content/res/Resources;",
-    name = "getConfiguration",
-    accessFlags = listOf(AccessFlags.PUBLIC),
+private val resourcesFingerprint = bytecodeFingerprint(
     returnType = "Landroid/content/res/Configuration;",
     parameters = emptyList(),
-    filters = listOf(
-        opcode(Opcode.INVOKE_VIRTUAL),
-        methodCall(
-            definingClass = "Landroid/content/res/Resources;",
-            name = "getConfiguration"
-        )
-    )
-)
+    opcodes = listOf(Opcode.INVOKE_VIRTUAL),
+) { method, _ ->
+    method.implementation?.instructions?.any { instruction ->
+        if (instruction.opcode != Opcode.INVOKE_VIRTUAL) return@any false
+        val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return@any false
+        reference.definingClass == "Landroid/content/res/Resources;" && reference.name == "getConfiguration"
+    } ?: false
+}
 
+@Suppress("unused")
 val secondaryViberDevicePatch = bytecodePatch(
     name = "Secondary Viber Device",
     description = "Forces Viber to detect the device as a tablet, enabling the 'Link as secondary device' flow.",
 ) {
+    fingerprints(resourcesFingerprint)
+
     execute {
-        ResourcesFingerprint.method.addInstructions(
+        val method = resourcesFingerprint.result?.mutableMethod
+            ?: error("ResourcesFingerprint not found in target APK")
+
+        method.addInstructions(
             2,
             """
             const/16 v1, 0x258
