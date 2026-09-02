@@ -1,33 +1,35 @@
 package app.revanced.patches.viber.misc
 
 import app.revanced.patcher.extensions.InstructionExtensions.addInstructions
-import app.revanced.patcher.fingerprint.method.impl.BytecodeFingerprint.Companion.bytecodeFingerprint
+import app.revanced.patcher.fingerprint.method.impl.MethodFingerprint
 import app.revanced.patcher.patch.bytecodePatch
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
-private val resourcesFingerprint = bytecodeFingerprint(
+// Chuyển sang kế thừa MethodFingerprint chuẩn của Patcher v4
+object ResourcesFingerprint : MethodFingerprint(
     returnType = "Landroid/content/res/Configuration;",
-    parameters = emptyList(),
     opcodes = listOf(Opcode.INVOKE_VIRTUAL),
-) { method, _ ->
-    method.implementation?.instructions?.any { instruction ->
-        if (instruction.opcode != Opcode.INVOKE_VIRTUAL) return@any false
-        val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return@any false
-        reference.definingClass == "Landroid/content/res/Resources;" && reference.name == "getConfiguration"
-    } ?: false
-}
+    custom = { method, _ ->
+        method.implementation?.instructions?.any { instruction ->
+            if (instruction.opcode != Opcode.INVOKE_VIRTUAL) return@any false
+            val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return@any false
+            reference.definingClass == "Landroid/content/res/Resources;" && reference.name == "getConfiguration"
+        } ?: false
+    }
+)
 
 @Suppress("unused")
 val secondaryViberDevicePatch = bytecodePatch(
     name = "Secondary Viber Device",
     description = "Forces Viber to detect the device as a tablet, enabling the 'Link as secondary device' flow.",
 ) {
-    fingerprints(resourcesFingerprint)
-
     execute {
-        val method = resourcesFingerprint.result?.mutableMethod
+        // Trong v4, bắt buộc gọi hàm resolve() để kích hoạt Fingerprint đi tìm hàm
+        ResourcesFingerprint.resolve(classes)
+
+        val method = ResourcesFingerprint.result?.mutableMethod
             ?: error("ResourcesFingerprint not found in target APK")
 
         method.addInstructions(
