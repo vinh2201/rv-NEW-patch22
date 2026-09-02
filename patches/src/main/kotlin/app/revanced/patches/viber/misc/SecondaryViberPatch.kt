@@ -6,6 +6,14 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
+import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
+import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod.Companion.toMutable
+import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
+import com.android.tools.smali.dexlib2.immutable.reference.ImmutableMethodReference
+
+
 @Suppress("unused")
 val secondaryViberDevicePatch = bytecodePatch(
     name = "Secondary Viber Device",
