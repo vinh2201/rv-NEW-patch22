@@ -1,8 +1,9 @@
 package app.revanced.patches.viber.misc
 
-import app.revanced.patcher.extensions.InstructionExtensions.replaceInstructions
+import app.revanced.patcher.extensions.InstructionExtensions.addInstructions
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
+import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
 
 @Suppress("unused")
 val secondaryViberDevicePatch = bytecodePatch(
@@ -15,16 +16,17 @@ val secondaryViberDevicePatch = bytecodePatch(
         var hookedCount = 0
 
         classes.forEach { classDef ->
-            // Tìm đúng class ViewUtils của Viber
-            if (!classDef.type.endsWith("/ViewUtils;")) return@forEach
+            // Mở rộng bộ lọc sang mọi class chứa ViewUtils để tránh lệch package path
+            if (!classDef.type.contains("ViewUtils")) return@forEach
 
             classDef.methods.forEach { method ->
-                // Tìm hàm isRunningOnTablet
                 if (method.name == "isRunningOnTablet") {
                     val mutableMethod = method as? MutableMethod ?: return@forEach
+                    val impl = mutableMethod.implementation as? MutableMethodImplementation ?: return@forEach
 
-                    // Đã thêm index 0 vào làm tham số đầu tiên
-                    mutableMethod.replaceInstructions(
+                    // Xóa sạch logic đo đạc cũ, ép trả về true tuyệt đối
+                    impl.instructions.clear()
+                    mutableMethod.addInstructions(
                         0,
                         """
                         const/4 v0, 0x1
