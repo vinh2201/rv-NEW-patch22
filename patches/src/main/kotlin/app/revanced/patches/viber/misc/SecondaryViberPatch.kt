@@ -5,6 +5,7 @@ import app.revanced.patcher.patch.bytecodePatch
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
@@ -26,10 +27,10 @@ val secondaryViberDevicePatch = bytecodePatch(
                 val instructions = implementation.instructions
                 val registerCount = implementation.registerCount
 
-                // Lấy một thanh ghi tạm an toàn ở đỉnh khung local registers
-                val safeTempReg = if (registerCount > 1) registerCount - 1 else 0
+                // Ép thanh ghi tạm nằm an toàn trong dải v0 - v15 để tương thích tuyệt đối với lệnh 4-bit
+                val safeTempReg = if (registerCount > 0) minOf(registerCount - 1, 15) else 0
 
-                // Chiến lược 1: Quét tất cả các instruction tham chiếu trực tiếp đến field của Configuration
+                // Chiến lược 1: Quét trực tiếp các instruction tham chiếu đến field Configuration
                 val fieldTargetIndices = instructions.mapIndexedNotNull { index, instr ->
                     val ref = (instr as? ReferenceInstruction)?.reference as? FieldReference
                     if (ref?.definingClass == "Landroid/content/res/Configuration;") {
@@ -43,22 +44,26 @@ val secondaryViberDevicePatch = bytecodePatch(
 
                 if (fieldTargetIndices.isNotEmpty()) {
                     fieldTargetIndices.forEach { (idx, type) ->
+                        val igetInstr = instructions[idx] as TwoRegisterInstruction
+                        val destReg = igetInstr.registerA
+                        val objReg = igetInstr.registerB
+                        val regToUse = if (destReg <= 15) destReg else safeTempReg
+
                         if (type == "smallestWidth") {
                             m.addInstructions(
                                 idx + 1,
                                 """
-                                const/16 v$safeTempReg, 0x258
-                                iput v$safeTempReg, v$safeTempReg, Landroid/content/res/Configuration;->smallestScreenWidthDp:I
+                                const/16 v$regToUse, 0x258
+                                iput v$regToUse, v$objReg, Landroid/content/res/Configuration;->smallestScreenWidthDp:I
                                 """.trimIndent()
                             )
                         } else if (type == "screenLayout") {
                             m.addInstructions(
                                 idx + 1,
                                 """
-                                iget v$safeTempReg, v$safeTempReg, Landroid/content/res/Configuration;->screenLayout:I
-                                and-int/lit8 v$safeTempReg, v$safeTempReg, -0x10
-                                or-int/lit8 v$safeTempReg, v$safeTempReg, 0x04
-                                iput v$safeTempReg, v$safeTempReg, Landroid/content/res/Configuration;->screenLayout:I
+                                and-int/lit8 v$regToUse, v$destReg, -0x10
+                                or-int/lit8 v$regToUse, v$regToUse, 0x04
+                                iput v$regToUse, v$objReg, Landroid/content/res/Configuration;->screenLayout:I
                                 """.trimIndent()
                             )
                         }
@@ -66,7 +71,7 @@ val secondaryViberDevicePatch = bytecodePatch(
                     patchedCount++
                 }
 
-                // Chiến lược 2: Quét mọi điểm gọi Resources->getConfiguration() để bẫy object Configuration trả về
+                // Chiến lược 2: Quét mọi điểm gọi Resources->getConfiguration() để bẫy object trả về
                 val getConfigIndices = instructions.mapIndexedNotNull { index, instr ->
                     val ref = (instr as? ReferenceInstruction)?.reference as? MethodReference
                     if (instr.opcode == Opcode.INVOKE_VIRTUAL && 
