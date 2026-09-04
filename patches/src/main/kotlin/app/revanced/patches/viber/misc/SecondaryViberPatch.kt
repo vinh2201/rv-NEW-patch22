@@ -42,11 +42,21 @@ val secondaryViberDevicePatch = bytecodePatch(
             // 3. Xóa sạch bytecode cũ và ép trả về true
             impl.instructions.clear()
             mutableMethod.addInstructions(
-                0,
+                2,
                 """
-                const/4 v0, 0x1
-                return v0
-                """.trimIndent()
+                const/16 v1, 0x258
+                iput v1, v0, Landroid/content/res/Configuration;->smallestScreenWidthDp:I
+            
+                const/4 v1, 0x0f
+                iget v2, v0, Landroid/content/res/Configuration;->screenLayout:I
+                and-int/2addr v2, v1
+                if-gez v2, :cond_viber_tablet_0
+                not-int v1, v1
+                and-int/2addr v0, v1
+                const/4 v1, 0x02
+                or-int/2addr v0, v1
+                :cond_viber_tablet_0
+                """
             )
         }
     }
