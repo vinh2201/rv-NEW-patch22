@@ -4,8 +4,9 @@ import app.revanced.patcher.extensions.InstructionExtensions.addInstructions
 import app.revanced.patcher.patch.bytecodePatch
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
-import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
 
 @Suppress("unused")
@@ -16,28 +17,20 @@ val secondaryViberDevicePatch = bytecodePatch(
     compatibleWith("com.viber.voip")
 
     execute {
-        // 1. Quét tìm TẤT CẢ các method có lệnh lấy smallestScreenWidthDp hoặc screenLayout
-        val methods = classes.flatMap { it.methods }
+        var patchedCount = 0
+
+        classes.flatMap { it.methods }
             .filterIsInstance<MutableMethod>()
-            .filter { m ->
-                m.implementation?.instructions?.any {
-                    it.opcode == Opcode.IGET &&
-                    (it as? ReferenceInstruction)?.reference?.let { ref ->
-                        ref is FieldReference && ref.definingClass == "Landroid/content/res/Configuration;" &&
-                        (ref.name == "smallestScreenWidthDp" || ref.name == "screenLayout")
-                    } == true
-                } == true
-            }
+            .forEach { m ->
+                val implementation = m.implementation ?: return@forEach
+                val instructions = implementation.instructions
+                val registerCount = implementation.registerCount
 
-        if (methods.isEmpty()) error("Target methods for device configuration not found in Viber APK")
+                // Lấy một thanh ghi tạm an toàn ở đỉnh khung local registers
+                val safeTempReg = if (registerCount > 1) registerCount - 1 else 0
 
-        // 2. Chèn lệnh giả mạo thông số vào ngay sau mỗi lần đọc
-        methods.forEach { m ->
-            val instructions = m.implementation!!.instructions
-            
-            // Duyệt danh sách index ngược (reversed) để khi chèn instruction mới vào sẽ không làm sai lệch index của các instruction phía trên
-            val targetIndices = instructions.mapIndexedNotNull { index, instr ->
-                if (instr.opcode == Opcode.IGET) {
+                // Chiến lược 1: Quét tất cả các instruction tham chiếu trực tiếp đến field của Configuration
+                val fieldTargetIndices = instructions.mapIndexedNotNull { index, instr ->
                     val ref = (instr as? ReferenceInstruction)?.reference as? FieldReference
                     if (ref?.definingClass == "Landroid/content/res/Configuration;") {
                         when (ref.name) {
@@ -46,32 +39,65 @@ val secondaryViberDevicePatch = bytecodePatch(
                             else -> null
                         }
                     } else null
-                } else null
-            }.reversed()
+                }.reversed()
 
-            targetIndices.forEach { (idx, type) ->
-                val igetInstr = instructions[idx] as TwoRegisterInstruction
-                val destReg = igetInstr.registerA // Lấy thanh ghi đích mà Viber vừa dùng để chứa thông số
+                if (fieldTargetIndices.isNotEmpty()) {
+                    fieldTargetIndices.forEach { (idx, type) ->
+                        if (type == "smallestWidth") {
+                            m.addInstructions(
+                                idx + 1,
+                                """
+                                const/16 v$safeTempReg, 0x258
+                                iput v$safeTempReg, v$safeTempReg, Landroid/content/res/Configuration;->smallestScreenWidthDp:I
+                                """.trimIndent()
+                            )
+                        } else if (type == "screenLayout") {
+                            m.addInstructions(
+                                idx + 1,
+                                """
+                                iget v$safeTempReg, v$safeTempReg, Landroid/content/res/Configuration;->screenLayout:I
+                                and-int/lit8 v$safeTempReg, v$safeTempReg, -0x10
+                                or-int/lit8 v$safeTempReg, v$safeTempReg, 0x04
+                                iput v$safeTempReg, v$safeTempReg, Landroid/content/res/Configuration;->screenLayout:I
+                                """.trimIndent()
+                            )
+                        }
+                    }
+                    patchedCount++
+                }
 
-                if (type == "smallestWidth") {
-                    // Ép thông số DPI thành 600 ngay trong thanh ghi đích
-                    m.addInstructions(
-                        idx + 1,
-                        """
-                        const/16 v$destReg, 0x258
-                        """.trimIndent()
-                    )
-                } else if (type == "screenLayout") {
-                    // Xóa mask size cũ (-16) và đè cờ XLARGE (0x04) qua toán tử bitwise để không làm hỏng cờ xoay màn hình (orientation)
-                    m.addInstructions(
-                        idx + 1,
-                        """
-                        and-int/lit8 v$destReg, v$destReg, -0x10
-                        or-int/lit8 v$destReg, v$destReg, 0x04
-                        """.trimIndent()
-                    )
+                // Chiến lược 2: Quét mọi điểm gọi Resources->getConfiguration() để bẫy object Configuration trả về
+                val getConfigIndices = instructions.mapIndexedNotNull { index, instr ->
+                    val ref = (instr as? ReferenceInstruction)?.reference as? MethodReference
+                    if (instr.opcode == Opcode.INVOKE_VIRTUAL && 
+                        ref?.definingClass == "Landroid/content/res/Resources;" && 
+                        ref.name == "getConfiguration") {
+                        index
+                    } else null
+                }.reversed()
+
+                getConfigIndices.forEach { idx ->
+                    val moveResult = instructions.getOrNull(idx + 1) as? OneRegisterInstruction
+                    if (moveResult != null) {
+                        val configReg = moveResult.registerA
+                        m.addInstructions(
+                            idx + 2,
+                            """
+                            const/16 v$safeTempReg, 0x258
+                            iput v$safeTempReg, v$configReg, Landroid/content/res/Configuration;->smallestScreenWidthDp:I
+                            iget v$safeTempReg, v$configReg, Landroid/content/res/Configuration;->screenLayout:I
+                            and-int/lit8 v$safeTempReg, v$safeTempReg, -0x10
+                            or-int/lit8 v$safeTempReg, v$safeTempReg, 0x04
+                            iput v$safeTempReg, v$configReg, Landroid/content/res/Configuration;->screenLayout:I
+                            """.trimIndent()
+                        )
+                        patchedCount++
+                    }
                 }
             }
+
+        if (patchedCount == 0) {
+            error("Target methods or configuration hooks not found in Viber APK (viber version mismatch or obfuscated)")
         }
     }
 }
