@@ -2,17 +2,16 @@ package app.revanced.patches.viber.misc
 
 import app.revanced.patcher.extensions.InstructionExtensions.addInstructions
 import app.revanced.patcher.patch.bytecodePatch
-import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
-import app.revanced.com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
-import app.revanced.com.android.tools.smali.dexlib2.Opcode
-import app.revanced.com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
-import app.revanced.com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
-import app.revanced.com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
-import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod.Companion.toMutable
-import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
-import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
-import com.android.tools.smali.dexlib2.immutable.reference.ImmutableMethodReference
+// Class duy nhất thuộc wrapper của ReVanced
+import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
+
+// Tất cả các class/interface dexlib2 gốc
+import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 @Suppress("unused")
 val secondaryViberDevicePatch = bytecodePatch(
@@ -22,30 +21,32 @@ val secondaryViberDevicePatch = bytecodePatch(
     compatibleWith("com.viber.voip")
 
     execute {
-        // LỚP 1: Ép DeviceProperties.isTablet() luôn trả về true
-        val devicePropertiesClassName = "Lcom/google/android/gms/common/util/DeviceProperties;"
-        val devicePropertiesClass = classes.firstOrNull { it.type == devicePropertiesClassName }
-
-        devicePropertiesClass?.methods?.filter {
-            it.name == "isTablet" && it.returnType == "Z"
-        }?.forEach { method ->
-            val mutableMethod = method as? MutableMethod ?: return@forEach
-            val impl = mutableMethod.implementation as? MutableMethodImplementation ?: return@forEach
-            impl.instructions.clear()
-            mutableMethod.addInstructions(
-                0,
-                """
-                const/4 v0, 0x1
-                return v0
-                """.trimIndent()
-            )
+        // LỚP 1: Ép tất cả hàm isTablet trong com.viber và com.google luôn trả về true
+        classes.filter { 
+            it.type.startsWith("Lcom/viber/") || it.type.startsWith("Lcom/google/")
+        }.forEach { classDef ->
+            classDef.methods.filter { 
+                (it.name.contains("isTablet", ignoreCase = true) || it.name == "isTablet") && 
+                it.returnType == "Z" 
+            }.forEach { method ->
+                val mutableMethod = method as? MutableMethod ?: return@forEach
+                val impl = mutableMethod.implementation as? MutableMethodImplementation ?: return@forEach
+                
+                impl.instructions.clear()
+                mutableMethod.addInstructions(
+                    0,
+                    """
+                    const/4 v0, 0x1
+                    return v0
+                    """.trimIndent()
+                )
+            }
         }
 
-        // LỚP 2: Quét toàn bộ mã nguồn Viber và tiêm logic Morphe đè Configuration sang Tablet
+        // LỚP 2: Can thiệp vào kết quả trả về của getConfiguration()
         var configHookCount = 0
 
         classes.forEach { classDef ->
-            // Tối ưu tốc độ quét: Chỉ quét các class thuộc Viber hoặc Google Play Services
             if (!classDef.type.startsWith("Lcom/viber/") && !classDef.type.startsWith("Lcom/google/")) return@forEach
 
             classDef.methods.forEach { method ->
@@ -57,7 +58,6 @@ val secondaryViberDevicePatch = bytecodePatch(
                 while (i < instructions.size) {
                     val insn = instructions[i]
 
-                    // Tìm lệnh invoke-virtual gọi getConfiguration()
                     if (insn.opcode == Opcode.INVOKE_VIRTUAL || insn.opcode == Opcode.INVOKE_VIRTUAL_RANGE) {
                         val methodRef = (insn as? ReferenceInstruction)?.reference as? MethodReference
                         
@@ -65,7 +65,6 @@ val secondaryViberDevicePatch = bytecodePatch(
                             methodRef.name == "getConfiguration" &&
                             methodRef.returnType == "Landroid/content/res/Configuration;"
                         ) {
-                            // Kiểm tra lệnh ngay sau đó có phải là move-result-object không
                             if (i + 1 < instructions.size) {
                                 val nextInsn = instructions[i + 1]
                                 if (nextInsn.opcode == Opcode.MOVE_RESULT_OBJECT) {
@@ -73,17 +72,19 @@ val secondaryViberDevicePatch = bytecodePatch(
                                     if (regInsn != null) {
                                         val targetReg = regInsn.registerNumber
                                         
-                                        // Tiêm mã giả lập Tablet của Morphe vào ngay sau move-result-object
+                                        // Chọn thanh ghi tạm an toàn: Nếu targetReg là v0 thì dùng v1, ngược lại dùng v0
+                                        val tempReg = if (targetReg == 0) 1 else 0
+
                                         mutableMethod.addInstructions(
                                             i + 2,
                                             """
                                             if-nez v$targetReg, :cond_viber_tablet_$configHookCount
-                                            const/16 v0, 0x258
-                                            iput v0, v$targetReg, Landroid/content/res/Configuration;->smallestScreenWidthDp:I
-                                            iget v0, v$targetReg, Landroid/content/res/Configuration;->screenLayout:I
-                                            and-int/lit8 v0, v0, -0x10
-                                            or-int/lit8 v0, v0, 0x3
-                                            iput v0, v$targetReg, Landroid/content/res/Configuration;->screenLayout:I
+                                            const/16 v$tempReg, 0x258
+                                            iput v$tempReg, v$targetReg, Landroid/content/res/Configuration;->smallestScreenWidthDp:I
+                                            iget v$tempReg, v$targetReg, Landroid/content/res/Configuration;->screenLayout:I
+                                            and-int/lit8 v$tempReg, v$tempReg, -0x10
+                                            or-int/lit8 v$tempReg, v$tempReg, 0x3
+                                            iput v$tempReg, v$targetReg, Landroid/content/res/Configuration;->screenLayout:I
                                             :cond_viber_tablet_$configHookCount
                                             """.trimIndent()
                                         )
