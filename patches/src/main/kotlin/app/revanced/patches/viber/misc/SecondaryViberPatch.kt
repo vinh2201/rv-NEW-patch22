@@ -46,7 +46,7 @@ val secondaryViberDevicePatch = bytecodePatch(
         // 2. Tìm instruction gọi getConfiguration và trích xuất thanh ghi chứa object trả về
         val getConfigIdx = instructions.indexOfFirst {
             it.opcode == Opcode.INVOKE_VIRTUAL &&
-            (it as? ReferenceInstruction)?.reference?.name == "getConfiguration"
+            ((it as? ReferenceInstruction)?.reference as? MethodReference)?.name == "getConfiguration"
         }
 
         val moveResultInstr = instructions.getOrNull(getConfigIdx + 1) as? OneRegisterInstruction
@@ -56,7 +56,7 @@ val secondaryViberDevicePatch = bytecodePatch(
         // 3. Mượn tạm thanh ghi đích của lệnh iget để xử lý math (đảm bảo an toàn không ghi đè data khác)
         val igetIdx = instructions.indexOfFirst {
             it.opcode == Opcode.IGET &&
-            (it as? ReferenceInstruction)?.reference?.name == "smallestScreenWidthDp"
+            ((it as? ReferenceInstruction)?.reference as? FieldReference)?.name == "smallestScreenWidthDp"
         }
         val igetInstr = instructions[igetIdx] as TwoRegisterInstruction
         val tempReg = igetInstr.registerA
