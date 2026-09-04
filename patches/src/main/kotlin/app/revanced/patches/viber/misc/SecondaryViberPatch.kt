@@ -18,16 +18,13 @@ val secondaryViberDevicePatch = bytecodePatch(
     compatibleWith("com.viber.voip")
 
     execute {
-        // Trỏ chính xác vào class chứa logic check thiết bị mà bạn đã decompile được
         val targetClassName = "Lcom/google/android/gms/common/util/DeviceProperties;"
-        
-        // Sửa lỗi 1: Dùng `it.type` thay vì `it.name`
+
         val targetClass = classes.firstOrNull { it.type == targetClassName }
             ?: error("Target class $targetClassName not found in Viber APK")
 
-        // Tìm tất cả các hàm tên là isTablet và trả về Boolean (Z) trong class này
-        val tabletMethods = targetClass.methods.filter { 
-            it.name == "isTablet" && it.returnType == "Z" 
+        val tabletMethods = targetClass.methods.filter {
+            it.name == "isTablet" && it.returnType == "Z"
         }.filterIsInstance<MutableMethod>()
 
         if (tabletMethods.isEmpty()) {
@@ -35,15 +32,9 @@ val secondaryViberDevicePatch = bytecodePatch(
         }
 
         tabletMethods.forEach { method ->
-            // Sửa lỗi 2: Ép kiểu sang MutableMethodImplementation để có thể thay đổi registerCount
-            val impl = method.implementation as? MutableMethodImplementation ?: return@forEach
-            
-            // Đảm bảo method có đủ register để chạy biến v0
-            if (impl.registerCount < 1) {
-                impl.registerCount = 1
-            }
-            
-            // Xóa sạch mã cũ và ép nó trả về true ngay lập tức
+            val impl = method.implementation ?: return@forEach
+
+            // Xóa sạch bytecode cũ và ép trả về true
             impl.instructions.clear()
             method.addInstructions(
                 0,
