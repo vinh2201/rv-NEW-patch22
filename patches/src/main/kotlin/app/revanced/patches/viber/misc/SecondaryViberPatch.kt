@@ -23,16 +23,18 @@ val secondaryViberDevicePatch = bytecodePatch(
         val targetClass = classes.firstOrNull { it.type == targetClassName }
             ?: error("Target class $targetClassName not found in Viber APK")
 
+        // Chỉ filter theo tên và kiểu trả về, BỎ .filterIsInstance đi
         val tabletMethods = targetClass.methods.filter {
             it.name == "isTablet" && it.returnType == "Z"
-        }.filterIsInstance<MutableMethod>()
+        }
 
         if (tabletMethods.isEmpty()) {
             error("Target tablet detection methods not found in $targetClassName")
         }
 
         tabletMethods.forEach { method ->
-            val impl = method.implementation ?: return@forEach
+            // Ép kiểu chuẩn sang Class Builder của ReVanced
+            val impl = method.implementation as? MutableMethodImplementation ?: return@forEach
 
             // Xóa sạch bytecode cũ và ép trả về true
             impl.instructions.clear()
