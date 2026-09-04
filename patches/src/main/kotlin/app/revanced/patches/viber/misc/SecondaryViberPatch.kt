@@ -5,14 +5,14 @@ import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
-import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 
 @Suppress("unused")
 val secondaryViberDevicePatch = bytecodePatch(
     name = "Secondary Viber Device",
-    description = "Global screen width spoofing via smallestScreenWidthDp field interception.",
+    description = "Global screen width spoofing via smallestScreenWidthDp field interception using TwoRegisterInstruction.",
 ) {
     compatibleWith("com.viber.voip")
 
@@ -31,7 +31,6 @@ val secondaryViberDevicePatch = bytecodePatch(
                 while (i < instructions.size) {
                     val insn = instructions[i]
 
-                    // Bắt mọi lệnh đọc trường smallestScreenWidthDp của Android Configuration
                     if (insn.opcode == Opcode.IGET || insn.opcode == Opcode.IGET_OBJECT) {
                         val fieldRef = (insn as? ReferenceInstruction)?.reference as? FieldReference
                         
@@ -39,11 +38,11 @@ val secondaryViberDevicePatch = bytecodePatch(
                             fieldRef.name == "smallestScreenWidthDp" &&
                             fieldRef.type == "I"
                         ) {
-                            val regInsn = insn as? OneRegisterInstruction
-                            if (regInsn != null) {
-                                val targetReg = regInsn.registerA
+                            // Dùng TwoRegisterInstruction để bắt chính xác thanh ghi đích vA của lệnh iget
+                            val twoRegInsn = insn as? TwoRegisterInstruction
+                            if (twoRegInsn != null) {
+                                val targetReg = twoRegInsn.registerA
 
-                                // Ngay sau khi app vừa lấy giá trị smallestScreenWidthDp, ta đè luôn thành 800dp (0x320)
                                 mutableMethod.addInstructions(
                                     i + 1,
                                     """
