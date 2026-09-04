@@ -23,8 +23,9 @@ val secondaryViberDevicePatch = bytecodePatch(
                 if (method.name == "isRunningOnTablet") {
                     val mutableMethod = method as? MutableMethod ?: return@forEach
 
-                    // Thay thế toàn bộ thân hàm bằng duy nhất 2 dòng: return true
+                    // Đã thêm index 0 vào làm tham số đầu tiên
                     mutableMethod.replaceInstructions(
+                        0,
                         """
                         const/4 v0, 0x1
                         return v0
