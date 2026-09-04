@@ -70,7 +70,7 @@ val secondaryViberDevicePatch = bytecodePatch(
                                 if (nextInsn.opcode == Opcode.MOVE_RESULT_OBJECT) {
                                     val regInsn = nextInsn as? OneRegisterInstruction
                                     if (regInsn != null) {
-                                        val targetReg = regInsn.registerNumber
+                                        val targetReg = regInsn.registerA
                                         
                                         // Chọn thanh ghi tạm an toàn: Nếu targetReg là v0 thì dùng v1, ngược lại dùng v0
                                         val tempReg = if (targetReg == 0) 1 else 0
