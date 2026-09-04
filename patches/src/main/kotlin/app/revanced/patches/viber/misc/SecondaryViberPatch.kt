@@ -32,11 +32,6 @@ val secondaryViberDevicePatch = bytecodePatch(
             .forEach { m ->
                 val impl = m.implementation ?: return@forEach
 
-                // Đảm bảo method có tối thiểu 1 register để chứa v0
-                if (impl.registerCount < 1) {
-                    impl.registerCount = 1
-                }
-
                 // Xóa toàn bộ byteCode cũ bên trong hàm và ép trả về true
                 impl.instructions.clear()
                 m.addInstructions(
