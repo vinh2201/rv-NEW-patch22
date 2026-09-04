@@ -3,11 +3,9 @@ package app.revanced.patches.viber.misc
 import app.revanced.patcher.extensions.InstructionExtensions.addInstructions
 import app.revanced.patcher.patch.bytecodePatch
 import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
-import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
 
 @Suppress("unused")
@@ -18,63 +16,62 @@ val secondaryViberDevicePatch = bytecodePatch(
     compatibleWith("com.viber.voip")
 
     execute {
-        // 1. Tìm method dựa trên hành vi (truy cập getConfiguration và smallestScreenWidthDp)
-        val method = classes.flatMap { it.methods }
+        // 1. Quét tìm TẤT CẢ các method có lệnh lấy smallestScreenWidthDp hoặc screenLayout
+        val methods = classes.flatMap { it.methods }
             .filterIsInstance<MutableMethod>()
-            .firstOrNull { m ->
-                val instrs = m.implementation?.instructions ?: return@firstOrNull false
-
-                val hasGetConfig = instrs.any {
-                    it.opcode == Opcode.INVOKE_VIRTUAL &&
-                    (it as? ReferenceInstruction)?.reference?.let { ref ->
-                        ref is MethodReference && ref.name == "getConfiguration" && ref.definingClass == "Landroid/content/res/Resources;"
-                    } == true
-                }
-
-                val hasSmallestWidth = instrs.any {
+            .filter { m ->
+                m.implementation?.instructions?.any {
                     it.opcode == Opcode.IGET &&
                     (it as? ReferenceInstruction)?.reference?.let { ref ->
-                        ref is FieldReference && ref.name == "smallestScreenWidthDp" && ref.definingClass == "Landroid/content/res/Configuration;"
+                        ref is FieldReference && ref.definingClass == "Landroid/content/res/Configuration;" &&
+                        (ref.name == "smallestScreenWidthDp" || ref.name == "screenLayout")
                     } == true
-                }
+                } == true
+            }
 
-                hasGetConfig && hasSmallestWidth
-            } ?: error("Target method for device configuration not found in Viber APK")
+        if (methods.isEmpty()) error("Target methods for device configuration not found in Viber APK")
 
-        val instructions = method.implementation!!.instructions
-
-        // 2. Tìm instruction gọi getConfiguration và trích xuất thanh ghi chứa object trả về
-        val getConfigIdx = instructions.indexOfFirst {
-            it.opcode == Opcode.INVOKE_VIRTUAL &&
-            ((it as? ReferenceInstruction)?.reference as? MethodReference)?.name == "getConfiguration"
-        }
-
-        val moveResultInstr = instructions.getOrNull(getConfigIdx + 1) as? OneRegisterInstruction
-            ?: error("move-result-object instruction not found after getConfiguration")
-        val configReg = moveResultInstr.registerA
-
-        // 3. Mượn tạm thanh ghi đích của lệnh iget để xử lý math (đảm bảo an toàn không ghi đè data khác)
-        val igetIdx = instructions.indexOfFirst {
-            it.opcode == Opcode.IGET &&
-            ((it as? ReferenceInstruction)?.reference as? FieldReference)?.name == "smallestScreenWidthDp"
-        }
-        val igetInstr = instructions[igetIdx] as TwoRegisterInstruction
-        val tempReg = igetInstr.registerA
-
-        // 4. Inject Smali đã fix lỗi logic bytecode
-        method.addInstructions(
-            getConfigIdx + 2,
-            """
-            # Ép smallestScreenWidthDp thành 600 (0x258)
-            const/16 v$tempReg, 0x258
-            iput v$tempReg, v$configReg, Landroid/content/res/Configuration;->smallestScreenWidthDp:I
+        // 2. Chèn lệnh giả mạo thông số vào ngay sau mỗi lần đọc
+        methods.forEach { m ->
+            val instructions = m.implementation!!.instructions
             
-            # Ép screenLayout thành XLarge (0x04)
-            iget v$tempReg, v$configReg, Landroid/content/res/Configuration;->screenLayout:I
-            and-int/lit8 v$tempReg, v$tempReg, -0x10
-            or-int/lit8 v$tempReg, v$tempReg, 0x04
-            iput v$tempReg, v$configReg, Landroid/content/res/Configuration;->screenLayout:I
-            """.trimIndent()
-        )
+            // Duyệt danh sách index ngược (reversed) để khi chèn instruction mới vào sẽ không làm sai lệch index của các instruction phía trên
+            val targetIndices = instructions.mapIndexedNotNull { index, instr ->
+                if (instr.opcode == Opcode.IGET) {
+                    val ref = (instr as? ReferenceInstruction)?.reference as? FieldReference
+                    if (ref?.definingClass == "Landroid/content/res/Configuration;") {
+                        when (ref.name) {
+                            "smallestScreenWidthDp" -> Pair(index, "smallestWidth")
+                            "screenLayout" -> Pair(index, "screenLayout")
+                            else -> null
+                        }
+                    } else null
+                } else null
+            }.reversed()
+
+            targetIndices.forEach { (idx, type) ->
+                val igetInstr = instructions[idx] as TwoRegisterInstruction
+                val destReg = igetInstr.registerA // Lấy thanh ghi đích mà Viber vừa dùng để chứa thông số
+
+                if (type == "smallestWidth") {
+                    // Ép thông số DPI thành 600 ngay trong thanh ghi đích
+                    m.addInstructions(
+                        idx + 1,
+                        """
+                        const/16 v$destReg, 0x258
+                        """.trimIndent()
+                    )
+                } else if (type == "screenLayout") {
+                    // Xóa mask size cũ (-16) và đè cờ XLARGE (0x04) qua toán tử bitwise để không làm hỏng cờ xoay màn hình (orientation)
+                    m.addInstructions(
+                        idx + 1,
+                        """
+                        and-int/lit8 v$destReg, v$destReg, -0x10
+                        or-int/lit8 v$destReg, v$destReg, 0x04
+                        """.trimIndent()
+                    )
+                }
+            }
+        }
     }
 }
