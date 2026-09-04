@@ -2,9 +2,6 @@ package app.revanced.patches.viber.misc
 
 import app.revanced.patcher.extensions.InstructionExtensions.addInstructions
 import app.revanced.patcher.patch.bytecodePatch
-import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
-import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
 
 @Suppress("unused")
@@ -15,37 +12,38 @@ val secondaryViberDevicePatch = bytecodePatch(
     compatibleWith("com.viber.voip")
 
     execute {
-        var patchedCount = 0
+        // Trỏ chính xác vào class chứa logic check thiết bị mà bạn đã decompile được
+        val targetClassName = "Lcom/google/android/gms/common/util/DeviceProperties;"
+        
+        val targetClass = classes.firstOrNull { it.name == targetClassName }
+            ?: error("Target class $targetClassName not found in Viber APK")
 
-        classes.flatMap { it.methods }
-            .filterIsInstance<MutableMethod>()
-            .filter { m ->
-                // Chỉ nhắm vào các method trả về Boolean (Z) và có đọc thông số màn hình
-                m.returnType == "Z" && m.implementation?.instructions?.any { instr ->
-                    instr.opcode == Opcode.IGET && (instr as? ReferenceInstruction)?.reference?.let { ref ->
-                        ref is FieldReference &&
-                        ref.definingClass == "Landroid/content/res/Configuration;" &&
-                        (ref.name == "smallestScreenWidthDp" || ref.name == "screenLayout")
-                    } == true
-                } == true
+        // Tìm tất cả các hàm tên là isTablet và trả về Boolean (Z) trong class này
+        val tabletMethods = targetClass.methods.filter { 
+            it.name == "isTablet" && it.returnType == "Z" 
+        }.filterIsInstance<MutableMethod>()
+
+        if (tabletMethods.isEmpty()) {
+            error("Target tablet detection methods not found in $targetClassName")
+        }
+
+        tabletMethods.forEach { method ->
+            val impl = method.implementation ?: return@forEach
+            
+            // Đảm bảo method có đủ register để chạy biến v0
+            if (impl.registerCount < 1) {
+                impl.registerCount = 1
             }
-            .forEach { m ->
-                val impl = m.implementation ?: return@forEach
-
-                // Xóa toàn bộ byteCode cũ bên trong hàm và ép trả về true
-                impl.instructions.clear()
-                m.addInstructions(
-                    0,
-                    """
-                    const/4 v0, 0x1
-                    return v0
-                    """.trimIndent()
-                )
-                patchedCount++
-            }
-
-        if (patchedCount == 0) {
-            error("Target tablet detection methods not found in Viber APK")
+            
+            // Xóa sạch mã cũ và ép nó trả về true ngay lập tức
+            impl.instructions.clear()
+            method.addInstructions(
+                0,
+                """
+                const/4 v0, 0x1
+                return v0
+                """.trimIndent()
+            )
         }
     }
 }
