@@ -59,7 +59,7 @@ val secondaryViberDevicePatch = bytecodePatch(
                                                 i + offset + 1,
                                                 """
                                                 if-nez v$targetReg, :cond_viber_tablet_$configHookCount
-                                                const/16 v$tempReg, 0x258
+                                                const/16 v$tempReg, 0xc8
                                                 iput v$tempReg, v$targetReg, Landroid/content/res/Configuration;->smallestScreenWidthDp:I
                                                 iget v$tempReg, v$targetReg, Landroid/content/res/Configuration;->screenLayout:I
                                                 and-int/lit8 v$tempReg, v$tempReg, -0x10
