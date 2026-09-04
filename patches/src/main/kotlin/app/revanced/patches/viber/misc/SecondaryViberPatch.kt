@@ -33,12 +33,15 @@ val secondaryViberDevicePatch = bytecodePatch(
         }
 
         tabletMethods.forEach { method ->
-            // Ép kiểu chuẩn sang Class Builder của ReVanced
-            val impl = method.implementation as? MutableMethodImplementation ?: return@forEach
+            // 1. Ép method về MutableMethod để dùng được addInstructions
+            val mutableMethod = method as? MutableMethod ?: return@forEach
+            
+            // 2. Lấy implementation như cũ
+            val impl = mutableMethod.implementation as? MutableMethodImplementation ?: return@forEach
 
-            // Xóa sạch bytecode cũ và ép trả về true
+            // 3. Xóa sạch bytecode cũ và ép trả về true
             impl.instructions.clear()
-            method.addInstructions(
+            mutableMethod.addInstructions(
                 0,
                 """
                 const/4 v0, 0x1
