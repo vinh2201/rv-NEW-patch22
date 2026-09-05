@@ -1,18 +1,15 @@
 package app.revanced.patches.viber.misc
 
+import app.revanced.patcher.extensions.InstructionExtensions.addInstructions
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
-import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
-import com.android.tools.smali.dexlib2.iface.reference.StringReference
-import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction21c
-import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 
 @Suppress("unused")
 val forceTabletRegistrationPatch = bytecodePatch(
     name = "Secondary Viber Device",
-    description = "Forces registration by globally overriding the device type string from 'phone' to 'tablet'.",
+    description = "Forces the registration payload to explicitly report 'tablet' device type by overriding registration resource checks.",
 ) {
     compatibleWith("com.viber.voip")
 
@@ -25,43 +22,47 @@ val forceTabletRegistrationPatch = bytecodePatch(
                 val impl = mutableMethod.implementation as? MutableMethodImplementation ?: return@forEach
                 val instructions = impl.instructions
 
-                var tabletStringRef: StringReference? = null
-                val phoneInsnIndices = mutableListOf<Int>()
+                var i = 0
+                while (i < instructions.size) {
+                    val insn = instructions[i]
+                    val insnStr = insn.toString().lowercase()
 
-                // Quét xem method này có chứa cả "tablet" và "phone" không
-                instructions.forEachIndexed { index, insn ->
-                    if (insn is ReferenceInstruction) {
-                        val ref = insn.reference
-                        if (ref is StringReference) {
-                            if (ref.string == "tablet") {
-                                tabletStringRef = ref
-                            } else if (ref.string == "phone" && insn.opcode == Opcode.CONST_STRING) {
-                                phoneInsnIndices.add(index)
+                    // Bắt trọn gói hằng số chứa ID resource 0x7f050021 bất kể định dạng opcode
+                    if (insnStr.contains("7f050021")) {
+                        var moveResultIndex = -1
+                        var targetReg = 0
+
+                        val scanLimit = minOf(i + 6, instructions.size)
+                        for (j in (i + 1) until scanLimit) {
+                            val candidate = instructions[j]
+                            val candStr = candidate.opcode.name.lowercase()
+                            if (candStr.contains("move_result")) {
+                                moveResultIndex = j
+                                if (candidate is OneRegisterInstruction) {
+                                    targetReg = candidate.registerA
+                                }
+                                break
                             }
                         }
-                    }
-                }
 
-                // Nếu đúng là method xử lý phân loại thiết bị, tiến hành hoán đổi triệt để
-                if (tabletStringRef != null && phoneInsnIndices.isNotEmpty()) {
-                    phoneInsnIndices.forEach { idx ->
-                        val oldInsn = instructions[idx] as ReferenceInstruction
-                        val registerA = (oldInsn as OneRegisterInstruction).registerA
-                        
-                        // Thay thế lệnh gán "phone" thành "tablet" bằng BuilderInstruction21c tương thích tuyệt đối
-                        instructions[idx] = BuilderInstruction21c(
-                            Opcode.CONST_STRING,
-                            registerA,
-                            tabletStringRef!!
-                        )
-                        hookedCount++
+                        if (moveResultIndex != -1) {
+                            mutableMethod.addInstructions(
+                                moveResultIndex + 1,
+                                """
+                                # Ép kết quả getBoolean đăng ký tablet luôn là true
+                                const/4 v$targetReg, 0x1
+                                """.trimIndent()
+                            )
+                            hookedCount++
+                        }
                     }
+                    i++
                 }
             }
         }
 
         check(hookedCount > 0) {
-            "Patch thất bại: Không tìm thấy phương thức chứa chuỗi định danh device type để ép kiểu!"
+            "Patch thất bại: Không tìm thấy điểm check resource 0x7f050021 trong APK!"
         }
     }
 }
