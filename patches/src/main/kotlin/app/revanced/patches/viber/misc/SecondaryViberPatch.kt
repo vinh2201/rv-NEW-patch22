@@ -10,7 +10,7 @@ import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 
 @Suppress("unused")
 val forceTabletRegistrationPatch = bytecodePatch(
-    name = "Force Viber Tablet Registration",
+    name = "Secondary Viber Device",
     description = "Forces the registration payload to explicitly report 'tablet' device type, bypassing resource checks.",
 ) {
     compatibleWith("com.viber.voip")
