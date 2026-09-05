@@ -12,14 +12,16 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 @Suppress("unused")
 val secondaryViberDevicePatch = bytecodePatch(
     name = "Secondary Viber Device",
-    description = "Ported and corrected from Morphe: Intercepts getConfiguration() to spoof tablet dimensions, layout, and 200 DPI.",
+    description = "Exact Morphe logic port: Forces Viber to detect device as a tablet via getConfiguration bytecode manipulation.",
 ) {
     compatibleWith("com.viber.voip")
 
     execute {
         var hookedCount = 0
+        val scannedMethodsCount = 0
 
         classes.forEach { classDef ->
+            // Chỉ quét các class nội bộ của Viber
             if (!classDef.type.startsWith("Lcom/viber/")) return@forEach
 
             classDef.methods.forEach { method ->
@@ -31,41 +33,45 @@ val secondaryViberDevicePatch = bytecodePatch(
                 while (i < instructions.size) {
                     val insn = instructions[i]
 
+                    // Săn lùng chính xác điểm Viber gọi hàm getConfiguration của Android Framework
                     if (insn.opcode == Opcode.INVOKE_VIRTUAL) {
                         val methodRef = (insn as? ReferenceInstruction)?.reference as? MethodReference
                         if (methodRef?.definingClass == "Landroid/content/res/Resources;" &&
                             methodRef.name == "getConfiguration"
                         ) {
+                            // Kiểm tra lệnh move-result-object ngay phía sau để lấy thanh ghi chứa đối tượng Configuration (v0 trong logic Morphe)
                             if (i + 1 < instructions.size) {
                                 val nextInsn = instructions[i + 1]
                                 if (nextInsn.opcode == Opcode.MOVE_RESULT_OBJECT) {
                                     val regInsn = nextInsn as? OneRegisterInstruction
                                     if (regInsn != null) {
                                         val configReg = regInsn.registerA
+                                        
+                                        // Chọn thanh ghi v1 an toàn (hoặc v2 nếu v1 bị trùng) tương đương logic v1 của Morphe
+                                        val tempReg = if (configReg == 1) 2 else 1
 
-                                        // Chọn thanh ghi tạm an toàn nằm trong giới hạn cho phép của hàm
-                                        val tempReg = if (configReg == 0) 1 else 0
-                                        if (tempReg >= impl.registerCount) {
+                                        // Đảm bảo method có đủ thanh ghi để chạy lệnh
+                                        if (impl.registerCount <= maxOf(configReg, tempReg)) {
                                             i++
                                             continue
                                         }
 
+                                        // Bơm nguyên văn bộ lệnh của Morphe nhưng đã ánh xạ linh hoạt theo thanh ghi thực tế của hàm
                                         mutableMethod.addInstructions(
                                             i + 2,
                                             """
-                                            # 1. Ép smallestScreenWidthDp thành 600dp (0x258)
                                             const/16 v$tempReg, 0x258
                                             iput v$tempReg, v$configReg, Landroid/content/res/Configuration;->smallestScreenWidthDp:I
                                             
-                                            # 2. Ép densityDpi thành 200 (0xc8) theo đúng thực tế ADB của bác
-                                            const/16 v$tempReg, 0xc8
-                                            iput v$tempReg, v$configReg, Landroid/content/res/Configuration;->densityDpi:I
-                                            
-                                            # 3. Xử lý screenLayout: Ép về kích thước Tablet (Size Large = 0x3)
-                                            iget v$tempReg, v$configReg, Landroid/content/res/Configuration;->screenLayout:I
-                                            and-int/lit8 v$tempReg, v$tempReg, -0x10
-                                            or-int/lit8 v$tempReg, v$tempReg, 0x3
-                                            iput v$tempReg, v$configReg, Landroid/content/res/Configuration;->screenLayout:I
+                                            const/4 v$tempReg, 0x0f
+                                            iget v2, v$configReg, Landroid/content/res/Configuration;->screenLayout:I
+                                            and-int/2addr v2, v$tempReg
+                                            if-gez v2, :cond_viber_tablet_0
+                                            not-int v$tempReg, v$tempReg
+                                            and-int/2addr v$configReg, v$tempReg
+                                            const/4 v$tempReg, 0x02
+                                            or-int/2addr v$configReg, v$tempReg
+                                            :cond_viber_tablet_0
                                             """.trimIndent()
                                         )
                                         hookedCount++
@@ -79,8 +85,9 @@ val secondaryViberDevicePatch = bytecodePatch(
             }
         }
 
+        // Báo cáo chi tiết nếu không khớp lệnh, giúp ta biết chính xác app viber bản này có giấu cấu trúc gọi hàm khác đi hay không
         check(hookedCount > 0) {
-            "Patch thất bại: Không tìm thấy điểm gọi getConfiguration nào trong Viber!"
+            "Patch thất bại: Không tìm thấy bất kỳ điểm gọi Resources.getConfiguration() nào trong các class của Viber để áp dụng logic Morphe!"
         }
     }
 }
