@@ -5,6 +5,7 @@ import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 
 @Suppress("unused")
 val forceTabletRegistrationPatch = bytecodePatch(
@@ -25,10 +26,9 @@ val forceTabletRegistrationPatch = bytecodePatch(
                 var i = 0
                 while (i < instructions.size) {
                     val insn = instructions[i]
-                    val insnStr = insn.toString().lowercase()
 
-                    // Bắt trọn gói hằng số chứa ID resource 0x7f050021 bất kể định dạng opcode
-                    if (insnStr.contains("7f050021")) {
+                    // Bắt chính xác hằng số chứa ID resource 0x7f050021 thông qua NarrowLiteralInstruction
+                    if (insn is NarrowLiteralInstruction && insn.narrowLiteral == 0x7f050021) {
                         var moveResultIndex = -1
                         var targetReg = 0
 
