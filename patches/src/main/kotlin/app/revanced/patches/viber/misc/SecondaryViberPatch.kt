@@ -12,7 +12,7 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 @Suppress("unused")
 val secondaryViberDevicePatch = bytecodePatch(
     name = "Secondary Viber Device",
-    description = "Exact Morphe logic port: Forces Viber to detect device as a tablet via getConfiguration bytecode manipulation.",
+    description = "Totally rewritten logic to genuinely spoof a tablet configuration (Smallest Width, Width, DPI, and XLarge Layout).",
 ) {
     compatibleWith("com.viber.voip")
 
@@ -43,6 +43,7 @@ val secondaryViberDevicePatch = bytecodePatch(
                                     if (regInsn != null) {
                                         val configReg = regInsn.registerA
                                         
+                                        // Chọn tempReg an toàn
                                         val tempReg = if (configReg == 1) 2 else 1
 
                                         if (impl.registerCount <= maxOf(configReg, tempReg)) {
@@ -50,22 +51,27 @@ val secondaryViberDevicePatch = bytecodePatch(
                                             continue
                                         }
 
-                                        // Sử dụng const/16 cho giá trị 0x0f để không bị vượt ngưỡng giới hạn của const/4
+                                        // Bơm logic chuẩn không cần chỉnh, loại bỏ hoàn toàn đống tính toán lỗi của Morphe
                                         mutableMethod.addInstructions(
                                             i + 2,
                                             """
+                                            # 1. Ép smallestScreenWidthDp thành 600dp (0x258)
                                             const/16 v$tempReg, 0x258
                                             iput v$tempReg, v$configReg, Landroid/content/res/Configuration;->smallestScreenWidthDp:I
                                             
-                                            const/16 v$tempReg, 0x0f
-                                            iget v2, v$configReg, Landroid/content/res/Configuration;->screenLayout:I
-                                            and-int/2addr v2, v$tempReg
-                                            if-gez v2, :cond_viber_tablet_0
-                                            not-int v$tempReg, v$tempReg
-                                            and-int/2addr v$configReg, v$tempReg
-                                            const/4 v$tempReg, 0x02
-                                            or-int/2addr v$configReg, v$tempReg
-                                            :cond_viber_tablet_0
+                                            # 2. Ép screenWidthDp thành 1000dp (0x3e8) khóa họng mọi bài test độ rộng
+                                            const/16 v$tempReg, 0x3e8
+                                            iput v$tempReg, v$configReg, Landroid/content/res/Configuration;->screenWidthDp:I
+                                            
+                                            # 3. Ép densityDpi thành 200 (0xc8)
+                                            const/16 v$tempReg, 0xc8
+                                            iput v$tempReg, v$configReg, Landroid/content/res/Configuration;->densityDpi:I
+                                            
+                                            # 4. Ép screenLayout chuẩn XLarge (0x04)
+                                            iget v$tempReg, v$configReg, Landroid/content/res/Configuration;->screenLayout:I
+                                            and-int/lit8 v$tempReg, v$tempReg, -0x10
+                                            or-int/lit8 v$tempReg, v$tempReg, 0x04
+                                            iput v$tempReg, v$configReg, Landroid/content/res/Configuration;->screenLayout:I
                                             """.trimIndent()
                                         )
                                         hookedCount++
@@ -80,7 +86,7 @@ val secondaryViberDevicePatch = bytecodePatch(
         }
 
         check(hookedCount > 0) {
-            "Patch thất bại: Không tìm thấy bất kỳ điểm gọi Resources.getConfiguration() nào trong các class của Viber để áp dụng logic Morphe!"
+            "Patch thất bại: Không tìm thấy bất kỳ điểm gọi Resources.getConfiguration() nào trong các class của Viber!"
         }
     }
 }
