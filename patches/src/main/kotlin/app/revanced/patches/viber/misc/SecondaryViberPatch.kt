@@ -18,10 +18,8 @@ val secondaryViberDevicePatch = bytecodePatch(
 
     execute {
         var hookedCount = 0
-        val scannedMethodsCount = 0
 
         classes.forEach { classDef ->
-            // Chỉ quét các class nội bộ của Viber
             if (!classDef.type.startsWith("Lcom/viber/")) return@forEach
 
             classDef.methods.forEach { method ->
@@ -33,13 +31,11 @@ val secondaryViberDevicePatch = bytecodePatch(
                 while (i < instructions.size) {
                     val insn = instructions[i]
 
-                    // Săn lùng chính xác điểm Viber gọi hàm getConfiguration của Android Framework
                     if (insn.opcode == Opcode.INVOKE_VIRTUAL) {
                         val methodRef = (insn as? ReferenceInstruction)?.reference as? MethodReference
                         if (methodRef?.definingClass == "Landroid/content/res/Resources;" &&
                             methodRef.name == "getConfiguration"
                         ) {
-                            // Kiểm tra lệnh move-result-object ngay phía sau để lấy thanh ghi chứa đối tượng Configuration (v0 trong logic Morphe)
                             if (i + 1 < instructions.size) {
                                 val nextInsn = instructions[i + 1]
                                 if (nextInsn.opcode == Opcode.MOVE_RESULT_OBJECT) {
@@ -47,23 +43,21 @@ val secondaryViberDevicePatch = bytecodePatch(
                                     if (regInsn != null) {
                                         val configReg = regInsn.registerA
                                         
-                                        // Chọn thanh ghi v1 an toàn (hoặc v2 nếu v1 bị trùng) tương đương logic v1 của Morphe
                                         val tempReg = if (configReg == 1) 2 else 1
 
-                                        // Đảm bảo method có đủ thanh ghi để chạy lệnh
                                         if (impl.registerCount <= maxOf(configReg, tempReg)) {
                                             i++
                                             continue
                                         }
 
-                                        // Bơm nguyên văn bộ lệnh của Morphe nhưng đã ánh xạ linh hoạt theo thanh ghi thực tế của hàm
+                                        // Sử dụng const/16 cho giá trị 0x0f để không bị vượt ngưỡng giới hạn của const/4
                                         mutableMethod.addInstructions(
                                             i + 2,
                                             """
                                             const/16 v$tempReg, 0x258
                                             iput v$tempReg, v$configReg, Landroid/content/res/Configuration;->smallestScreenWidthDp:I
                                             
-                                            const/4 v$tempReg, 0x0f
+                                            const/16 v$tempReg, 0x0f
                                             iget v2, v$configReg, Landroid/content/res/Configuration;->screenLayout:I
                                             and-int/2addr v2, v$tempReg
                                             if-gez v2, :cond_viber_tablet_0
@@ -85,7 +79,6 @@ val secondaryViberDevicePatch = bytecodePatch(
             }
         }
 
-        // Báo cáo chi tiết nếu không khớp lệnh, giúp ta biết chính xác app viber bản này có giấu cấu trúc gọi hàm khác đi hay không
         check(hookedCount > 0) {
             "Patch thất bại: Không tìm thấy bất kỳ điểm gọi Resources.getConfiguration() nào trong các class của Viber để áp dụng logic Morphe!"
         }
