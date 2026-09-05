@@ -5,11 +5,12 @@ import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 
 @Suppress("unused")
 val forceTabletRegistrationPatch = bytecodePatch(
     name = "Secondary Viber Device",
-    description = "Forces the registration payload to explicitly report 'tablet' device type, bypassing resource checks.",
+    description = "Forces the registration payload to explicitly report 'tablet' device type by globally intercepting resource checks.",
 ) {
     compatibleWith("com.viber.voip")
 
@@ -17,8 +18,6 @@ val forceTabletRegistrationPatch = bytecodePatch(
         var hookedCount = 0
 
         classes.forEach { classDef ->
-            if (!classDef.type.contains("registration/U0")) return@forEach
-
             classDef.methods.forEach { method ->
                 val mutableMethod = method as? MutableMethod ?: return@forEach
                 val impl = mutableMethod.implementation as? MutableMethodImplementation ?: return@forEach
@@ -28,15 +27,32 @@ val forceTabletRegistrationPatch = bytecodePatch(
                 while (i < instructions.size) {
                     val insn = instructions[i]
 
-                    // Kiểm tra trực tiếp hằng số 0x7f050021 an toàn tuyệt đối qua NarrowLiteralInstruction
+                    // Quét toàn cục tìm hằng số chứa resource ID 0x7f050021
                     val narrowLiteral = (insn as? NarrowLiteralInstruction)?.narrowLiteral
                     if (narrowLiteral == 0x7f050021) {
-                        if (i + 3 < instructions.size) {
+                        // Tự động tìm lệnh move-result / move-result-object ở các bước kế tiếp để tóm đúng thanh ghi chứa kết quả
+                        var moveResultIndex = -1
+                        var targetReg = 0
+
+                        val scanLimit = minOf(i + 5, instructions.size)
+                        for (j in (i + 1) until scanLimit) {
+                            val candidate = instructions[j]
+                            if (candidate.opcode.name.startsWith("MOVE_RESULT")) {
+                                moveResultIndex = j
+                                if (candidate is OneRegisterInstruction) {
+                                    targetReg = candidate.registerA
+                                }
+                                break
+                            }
+                        }
+
+                        // Nếu tìm thấy điểm hứng kết quả, bơm đè lệnh ép giá trị thành true (1) ngay lập tức
+                        if (moveResultIndex != -1) {
                             mutableMethod.addInstructions(
-                                i + 3,
+                                moveResultIndex + 1,
                                 """
-                                # Ép kết quả getBoolean luôn là true (1)
-                                const/4 v0, 0x1
+                                # Ép kết quả check resource đăng ký tablet luôn là true
+                                const/4 v$targetReg, 0x1
                                 """.trimIndent()
                             )
                             hookedCount++
@@ -48,7 +64,7 @@ val forceTabletRegistrationPatch = bytecodePatch(
         }
 
         check(hookedCount > 0) {
-            "Patch thất bại: Không tìm thấy điểm check send_tablet_device_type_on_registration trong U0!"
+            "Patch thất bại: Không tìm thấy bất kỳ điểm check resource send_tablet_device_type_on_registration nào trong APK!"
         }
     }
 }
