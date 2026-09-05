@@ -5,7 +5,7 @@ import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
-import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction21c
+import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction21c
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 
@@ -48,8 +48,8 @@ val forceTabletRegistrationPatch = bytecodePatch(
                         val oldInsn = instructions[idx] as ReferenceInstruction
                         val registerA = (oldInsn as OneRegisterInstruction).registerA
                         
-                        // Thay thế lệnh gán "phone" thành "tablet"
-                        instructions[idx] = ImmutableInstruction21c(
+                        // Thay thế lệnh gán "phone" thành "tablet" bằng BuilderInstruction21c tương thích tuyệt đối
+                        instructions[idx] = BuilderInstruction21c(
                             Opcode.CONST_STRING,
                             registerA,
                             tabletStringRef!!
