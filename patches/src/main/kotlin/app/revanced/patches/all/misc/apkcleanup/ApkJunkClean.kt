@@ -1,14 +1,14 @@
-package patches.universal.manifest
+package app.revanced.patches.all.misc.apkcleanup
 
-import app.morphe.patcher.patch.resourcePatch
-import app.morphe.patcher.patch.stringOption
+import app.revanced.patcher.patch.resourcePatch
+import app.revanced.patcher.patch.stringOption
 import java.util.logging.Logger
 
 @Suppress("unused")
 val apkJunkCleanupPatch = resourcePatch(
     name = "Apk Junk Cleanup",
     description = "Removes unused CPU libraries to shrink the APK. Keep only your device's architecture.",
-    default = false,
+    use = false,
 ) {
     val keepArch by stringOption(
         default = "armeabi-v7a",
