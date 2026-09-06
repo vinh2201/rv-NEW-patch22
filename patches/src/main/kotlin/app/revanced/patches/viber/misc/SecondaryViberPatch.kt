@@ -5,17 +5,19 @@ import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
-import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
 
 @Suppress("unused")
 val forceTabletRegistrationPatch = bytecodePatch(
     name = "Secondary Viber Device",
-    description = "Forces the registration payload to explicitly report 'tablet' device type by overriding registration resource checks.",
+    description = "Forces the registration payload to explicitly report 'tablet' device type by hard-overriding the phone string literal.",
 ) {
     compatibleWith("com.viber.voip")
 
     execute {
         var hookedCount = 0
+        var foundMethod = false
 
         classes.forEach { classDef ->
             classDef.methods.forEach { method ->
@@ -23,48 +25,54 @@ val forceTabletRegistrationPatch = bytecodePatch(
                 val impl = mutableMethod.implementation as? MutableMethodImplementation ?: return@forEach
                 val instructions = impl.instructions
 
-                var i = 0
-                while (i < instructions.size) {
-                    val insn = instructions[i]
+                // Bước 1: Fingerprint - Dò đúng method chứa cả "tablet" và "phone"
+                var hasTablet = false
+                var hasPhone = false
+                instructions.forEach { insn ->
+                    if (insn is ReferenceInstruction && insn.reference is StringReference) {
+                        val str = (insn.reference as StringReference).string
+                        if (str == "tablet") hasTablet = true
+                        if (str == "phone") hasPhone = true
+                    }
+                }
 
-                    // Bắt chính xác hằng số chứa ID resource 0x7f050021
-                    if (insn is NarrowLiteralInstruction && insn.narrowLiteral == 0x7f050021) {
-                        var moveResultIndex = -1
-                        var targetReg = 0
-
-                        val scanLimit = minOf(i + 6, instructions.size)
-                        for (j in (i + 1) until scanLimit) {
-                            val candidate = instructions[j]
-                            val candStr = candidate.opcode.name.lowercase()
+                // Bước 2: Chặn họng trực tiếp tại thanh ghi
+                if (hasTablet && hasPhone) {
+                    foundMethod = true
+                    
+                    // BẮT BUỘC quét ngược (reversed) để khi chèn lệnh không bị sai lệch index
+                    for (i in instructions.indices.reversed()) {
+                        val insn = instructions[i]
+                        
+                        if (insn is ReferenceInstruction && insn.reference is StringReference) {
+                            val str = (insn.reference as StringReference).string
                             
-                            // HẾT ẢO GIÁC: Dalvik dùng gạch nối "move-result", không phải gạch dưới!
-                            if (candStr.startsWith("move-result")) {
-                                moveResultIndex = j
-                                if (candidate is OneRegisterInstruction) {
-                                    targetReg = candidate.registerA
-                                }
-                                break
+                            // Nếu tìm thấy chỗ nó nạp chữ "phone"
+                            if (str == "phone" && insn is OneRegisterInstruction) {
+                                val targetReg = insn.registerA
+                                
+                                // Chèn lệnh đè chuỗi ngay bên dưới. 
+                                // Nghĩa là nó vừa gán "phone" xong sẽ bị gán đè ngay lập tức thành "tablet".
+                                mutableMethod.addInstructions(
+                                    i + 1,
+                                    """
+                                    # Ghi đè trực tiếp giá trị thanh ghi v$targetReg thành "tablet"
+                                    const-string v$targetReg, "tablet"
+                                    """.trimIndent()
+                                )
+                                hookedCount++
                             }
                         }
-
-                        if (moveResultIndex != -1) {
-                            mutableMethod.addInstructions(
-                                moveResultIndex + 1,
-                                """
-                                # Ép kết quả getBoolean luôn trả về true (1)
-                                const/4 v$targetReg, 0x1
-                                """.trimIndent()
-                            )
-                            hookedCount++
-                        }
                     }
-                    i++
                 }
             }
         }
 
+        check(foundMethod) {
+            "Patch thất bại: Không tìm thấy method nào chứa cả hai chuỗi 'tablet' và 'phone'!"
+        }
         check(hookedCount > 0) {
-            "Patch thất bại: Đã tìm thấy resource 0x7f050021 nhưng không tìm thấy lệnh move-result đi kèm!"
+            "Patch thất bại: Đã tìm thấy method, nhưng không chèn được mã ép kiểu 'tablet'!"
         }
     }
 }
