@@ -27,7 +27,7 @@ val forceTabletRegistrationPatch = bytecodePatch(
                 while (i < instructions.size) {
                     val insn = instructions[i]
 
-                    // Bắt chính xác hằng số chứa ID resource 0x7f050021 thông qua NarrowLiteralInstruction
+                    // Bắt chính xác hằng số chứa ID resource 0x7f050021
                     if (insn is NarrowLiteralInstruction && insn.narrowLiteral == 0x7f050021) {
                         var moveResultIndex = -1
                         var targetReg = 0
@@ -36,7 +36,9 @@ val forceTabletRegistrationPatch = bytecodePatch(
                         for (j in (i + 1) until scanLimit) {
                             val candidate = instructions[j]
                             val candStr = candidate.opcode.name.lowercase()
-                            if (candStr.contains("move_result")) {
+                            
+                            // HẾT ẢO GIÁC: Dalvik dùng gạch nối "move-result", không phải gạch dưới!
+                            if (candStr.startsWith("move-result")) {
                                 moveResultIndex = j
                                 if (candidate is OneRegisterInstruction) {
                                     targetReg = candidate.registerA
@@ -49,7 +51,7 @@ val forceTabletRegistrationPatch = bytecodePatch(
                             mutableMethod.addInstructions(
                                 moveResultIndex + 1,
                                 """
-                                # Ép kết quả getBoolean đăng ký tablet luôn là true
+                                # Ép kết quả getBoolean luôn trả về true (1)
                                 const/4 v$targetReg, 0x1
                                 """.trimIndent()
                             )
@@ -62,7 +64,7 @@ val forceTabletRegistrationPatch = bytecodePatch(
         }
 
         check(hookedCount > 0) {
-            "Patch thất bại: Không tìm thấy điểm check resource 0x7f050021 trong APK!"
+            "Patch thất bại: Đã tìm thấy resource 0x7f050021 nhưng không tìm thấy lệnh move-result đi kèm!"
         }
     }
 }
