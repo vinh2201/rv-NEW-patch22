@@ -2,6 +2,7 @@ package app.revanced.patches.all.misc.apkcleanup
 
 import app.revanced.patcher.patch.resourcePatch
 import app.revanced.patcher.patch.stringOption
+import java.io.File
 import java.util.logging.Logger
 
 @Suppress("unused")
@@ -26,9 +27,12 @@ val apkJunkCleanupPatch = resourcePatch(
         val logger = Logger.getLogger(this::class.java.name)
         val selected = keepArch?.trim().takeIf { !it.isNullOrEmpty() } ?: "arm64-v8a"
 
-        val libDir = get("lib", false)
+        // SỬ DỤNG apk.directory ĐỂ TRỎ THẲNG VỀ THƯ MỤC GỐC, KHÔNG DÙNG get() NỮA
+        val libDir = File(apk.directory, "lib")
+        
+        // Thêm đường dẫn tuyệt đối vào log để lỡ nó lỗi bác còn soi được nó đang chui vào đâu =))
         if (!libDir.isDirectory) {
-            logger.warning("No lib/ directory found (no native libs). No changes applied.")
+            logger.warning("No lib/ directory found at: ${libDir.absolutePath}. No changes applied.")
             return@execute
         }
 
