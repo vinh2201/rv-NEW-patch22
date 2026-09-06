@@ -2,29 +2,18 @@ package app.revanced.patches.all.misc.apkcleanup
 
 import app.revanced.patcher.patch.resourcePatch
 import app.revanced.patcher.patch.stringsOption
+import java.io.File
 import java.util.logging.Logger
 
 private val logger = Logger.getLogger("LangCleanPatch")
 
-// Rare 2-3 letter segments that are Android qualifiers, NOT language codes.
 private val KNOWN_NON_LANGUAGE_SEGMENTS = setOf(
-    "car",      // uiMode=car
-    "any",      // part of anydpi
+    "car",      
+    "any",      
 )
 
 private data class LangQualifier(val lang: String, val region: String?)
 
-/**
- * Extracts (language, region) pairs from an Android resource directory name.
- *
- * Android resource dirs can have language qualifiers on ANY type:
- * values-en, drawable-ru-hdpi, mipmap-fr, raw-es, xml-de, layout-ja,
- * values-zh-rCN, values-b+sr+Latn, etc.
- *
- * Language codes are ISO 639-1 (2-letter) or ISO 639-2 (3-letter).
- * A region suffix (-rXX) directly after a language is captured with it.
- * BCP 47 tags (b+<lang>+<script>+<region>) are parsed.
- */
 private fun extractLanguageQualifiers(dirName: String): List<LangQualifier> {
     val segments = dirName.split("-")
     if (segments.size < 2) return emptyList()
@@ -36,7 +25,6 @@ private fun extractLanguageQualifiers(dirName: String): List<LangQualifier> {
     while (i < rest.size) {
         val seg = rest[i]
 
-        // BCP 47 tag: values-b+sr+Latn or values-b+en+US → segment is "b+sr+Latn"
         if (seg.startsWith("b+")) {
             val parts = seg.split("+")
             if (parts.size >= 2) {
@@ -50,7 +38,6 @@ private fun extractLanguageQualifiers(dirName: String): List<LangQualifier> {
             continue
         }
 
-        // Language code: 2-3 lowercase letters, not a known non-language qualifier
         if (seg.length in 2..3 && seg.all { it.isLowerCase() } && seg !in KNOWN_NON_LANGUAGE_SEGMENTS) {
             val next = rest.getOrNull(i + 1)
             val isRegion = next != null && next.startsWith("r") && next.length == 3 &&
@@ -69,7 +56,7 @@ private fun extractLanguageQualifiers(dirName: String): List<LangQualifier> {
 
 val langCleanPatch = resourcePatch(
     name = "Remove Languages",
-    description = "Removes translations for languages you don\'t use. Only keeps the languages you pick. ",
+    description = "Removes translations for languages you don't use. Only keeps the languages you pick. ",
     use = false,
 ) {
     val keepLanguages by stringsOption(
@@ -82,6 +69,7 @@ val langCleanPatch = resourcePatch(
 
     execute {
         val resDir = get("res")
+        val apkRoot = resDir.parentFile ?: File(".")
 
         if (!resDir.isDirectory) {
             logger.warning("Language cleanup: res/ directory not found")
@@ -103,21 +91,31 @@ val langCleanPatch = resourcePatch(
         resDir.listFiles { file -> file.isDirectory }?.forEach { dir ->
             val qualifiers = extractLanguageQualifiers(dir.name)
 
-            // No language qualifier → base resource, always keep
             if (qualifiers.isEmpty()) {
                 keptDirs++
                 return@forEach
             }
 
-            // Keep only if this exact (lang, region) combo is explicitly listed
             val shouldKeep = qualifiers.any { q -> (q.lang to q.region) in keepSet }
 
             if (shouldKeep) {
                 keptDirs++
             } else {
-                val size = dir.walkTopDown().filter { it.isFile }.sumOf { it.length() }
+                val filesToDelete = dir.walkTopDown().filter { it.isFile }.toList()
+                val size = filesToDelete.sumOf { it.length() }
+                
+                filesToDelete.forEach { file ->
+                    val relativePath = file.relativeTo(apkRoot).path.replace("\\", "/")
+                    try {
+                        delete(relativePath)
+                    } catch (e: Exception) {
+                        // Bỏ qua nếu lỗi
+                    }
+                }
+                
                 dir.deleteRecursively()
                 removedDirs++
+                
                 val label = qualifiers.joinToString { q ->
                     if (q.region != null) "${q.lang}-r${q.region.uppercase()}" else q.lang
                 }
