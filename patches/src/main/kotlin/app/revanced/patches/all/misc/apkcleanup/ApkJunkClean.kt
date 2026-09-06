@@ -1,12 +1,10 @@
 package app.revanced.patches.all.misc.apkcleanup
 
-import app.revanced.patcher.patch.rawResourcePatch // BÁC NHỚ SỬA IMPORT CHỖ NÀY NHÉ
+import app.revanced.patcher.patch.rawResourcePatch
 import app.revanced.patcher.patch.stringOption
-import java.io.File
 import java.util.logging.Logger
 
 @Suppress("unused")
-// ĐỔI TỪ resourcePatch SANG rawResourcePatch
 val apkJunkCleanupPatch = rawResourcePatch(
     name = "Apk Junk Cleanup",
     description = "Removes unused CPU libraries to shrink the APK. Keep only your device's architecture.",
@@ -28,7 +26,6 @@ val apkJunkCleanupPatch = rawResourcePatch(
         val logger = Logger.getLogger(this::class.java.name)
         val selected = keepArch?.trim().takeIf { !it.isNullOrEmpty() } ?: "arm64-v8a"
 
-        // TRONG rawResourcePatch, get("lib") LÀ TRỎ THẲNG TỪ GỐC APK
         val libDir = get("lib")
 
         if (!libDir.isDirectory) {
@@ -44,16 +41,25 @@ val apkJunkCleanupPatch = rawResourcePatch(
 
         var removed = 0
         var kept = 0
+        
         for (dir in archDirs) {
-            if (dir.name == selected) {
+            val archName = dir.name
+            if (archName == selected) {
                 kept++
                 continue
             }
-            if (dir.deleteRecursively()) {
-                logger.info("Removed lib/${dir.name}/")
+            
+            // ĐỌC DANH SÁCH FILE VÀ DÙNG API delete() CỦA PATCHER ĐỂ XOÁ TRIỆT ĐỂ
+            val filenames = dir.list()
+            if (filenames != null && filenames.isNotEmpty()) {
+                filenames.forEach { filename ->
+                    // Khai báo cho Patcher biết cần gạch tên file này lúc đóng gói
+                    delete("lib/$archName/$filename")
+                }
+                logger.info("Removed all files in lib/$archName/")
                 removed++
             } else {
-                logger.warning("Could not delete lib/${dir.name}/")
+                logger.warning("Directory lib/$archName/ is empty or cannot be read.")
             }
         }
 
