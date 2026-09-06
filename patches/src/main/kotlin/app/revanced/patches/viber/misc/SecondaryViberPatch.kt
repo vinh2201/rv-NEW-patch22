@@ -6,13 +6,12 @@ import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
-import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 
 @Suppress("unused")
 val forceTabletRegistrationPatch = bytecodePatch(
     name = "Secondary Viber Device",
-    description = "Forces registration to report 'tablet' by forcing the resource boolean check to true.",
+    description = "Forces Viber registration to report device type as 'tablet' by intercepting phone string assignments.",
 ) {
     compatibleWith("com.viber.voip")
 
@@ -20,15 +19,11 @@ val forceTabletRegistrationPatch = bytecodePatch(
         var hookedCount = 0
 
         classes.forEach { classDef ->
-            // Khoanh vùng chính xác vào U0 (hoặc các class trong package registration)
-            if (!classDef.type.contains("viber/voip/registration")) return@forEach
-
             classDef.methods.forEach { method ->
                 val mutableMethod = method as? MutableMethod ?: return@forEach
                 val impl = mutableMethod.implementation as? MutableMethodImplementation ?: return@forEach
                 val instructions = impl.instructions
 
-                // Fingerprint: Tìm xem method này có chứa cả hai chuỗi "tablet" và "phone" hay không
                 var hasTablet = false
                 var hasPhone = false
                 instructions.forEach { insn ->
@@ -39,44 +34,36 @@ val forceTabletRegistrationPatch = bytecodePatch(
                     }
                 }
 
-                // Nếu đúng là hàm đăng ký chứa nhánh rẽ tablet/phone này
                 if (hasTablet && hasPhone) {
+                    val indicesToReplace = mutableListOf<Pair<Int, Int>>()
+
                     for (i in instructions.indices) {
                         val insn = instructions[i]
-                        
-                        // Quét tìm dòng gọi Resources->getBoolean(I)
-                        if (insn is ReferenceInstruction && insn.reference is MethodReference) {
-                            val ref = insn.reference as MethodReference
-                            if (ref.name == "getBoolean" && ref.definingClass.contains("android/content/res/Resources")) {
-                                // Lệnh tiếp theo sau getBoolean chính là "move-result vX"
-                                val moveResultIndex = i + 1
-                                if (moveResultIndex < instructions.size) {
-                                    val moveResultInsn = instructions[moveResultIndex]
-                                    val candStr = moveResultInsn.opcode.name.lowercase()
-                                    
-                                    if (candStr.startsWith("move-result") && moveResultInsn is OneRegisterInstruction) {
-                                        val targetReg = moveResultInsn.registerA
-                                        
-                                        // Chèn lệnh ép cứng vX = 0x1 (true) ngay sau move-result
-                                        mutableMethod.addInstructions(
-                                            moveResultIndex + 1,
-                                            """
-                                            # Ép kết quả getBoolean check tablet thành true (1)
-                                            const/4 v$targetReg, 0x1
-                                            """.trimIndent()
-                                        )
-                                        hookedCount++
-                                    }
+                        if (insn is ReferenceInstruction && insn.reference is StringReference) {
+                            val strRef = insn.reference as StringReference
+                            if (strRef.string == "phone" && insn.opcode.name.lowercase().startsWith("const-string")) {
+                                if (insn is OneRegisterInstruction) {
+                                    indicesToReplace.add(i to insn.registerA)
                                 }
                             }
                         }
+                    }
+
+                    // Thay thế từ dưới lên để không bị lệch index khi xóa/thêm
+                    for ((i, reg) in indicesToReplace.sortedByDescending { it.first }) {
+                        instructions.removeAt(i)
+                        mutableMethod.addInstructions(
+                            i,
+                            "const-string v$reg, \"tablet\""
+                        )
+                        hookedCount++
                     }
                 }
             }
         }
 
         check(hookedCount > 0) {
-            "Patch thất bại: Không tìm thấy điểm chèn lệnh ép giá trị boolean tablet trong U0!"
+            "Patch thất bại: Không tìm thấy chuỗi 'phone' trong phương thức phân loại thiết bị của Viber!"
         }
     }
 }
