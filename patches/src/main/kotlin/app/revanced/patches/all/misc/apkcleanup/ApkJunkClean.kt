@@ -1,12 +1,13 @@
 package app.revanced.patches.all.misc.apkcleanup
 
-import app.revanced.patcher.patch.resourcePatch
+import app.revanced.patcher.patch.rawResourcePatch // BÁC NHỚ SỬA IMPORT CHỖ NÀY NHÉ
 import app.revanced.patcher.patch.stringOption
 import java.io.File
 import java.util.logging.Logger
 
 @Suppress("unused")
-val apkJunkCleanupPatch = resourcePatch(
+// ĐỔI TỪ resourcePatch SANG rawResourcePatch
+val apkJunkCleanupPatch = rawResourcePatch(
     name = "Apk Junk Cleanup",
     description = "Removes unused CPU libraries to shrink the APK. Keep only your device's architecture.",
     use = false,
@@ -27,10 +28,9 @@ val apkJunkCleanupPatch = resourcePatch(
         val logger = Logger.getLogger(this::class.java.name)
         val selected = keepArch?.trim().takeIf { !it.isNullOrEmpty() } ?: "arm64-v8a"
 
-        // SỬ DỤNG apk.directory ĐỂ TRỎ THẲNG VỀ THƯ MỤC GỐC, KHÔNG DÙNG get() NỮA
-        val libDir = File(apk.directory, "lib")
-        
-        // Thêm đường dẫn tuyệt đối vào log để lỡ nó lỗi bác còn soi được nó đang chui vào đâu =))
+        // TRONG rawResourcePatch, get("lib") LÀ TRỎ THẲNG TỪ GỐC APK
+        val libDir = get("lib")
+
         if (!libDir.isDirectory) {
             logger.warning("No lib/ directory found at: ${libDir.absolutePath}. No changes applied.")
             return@execute
