@@ -1,16 +1,12 @@
 package app.revanced.patches.all.misc.apkcleanup
 
-import app.revanced.patcher.patch.rawResourcePatch
+import app.revanced.patcher.patch.resourcePatch
 import app.revanced.patcher.patch.stringsOption
 import java.io.File
 import java.util.logging.Logger
 
 private val logger = Logger.getLogger("LangCleanPatch")
-
-private val KNOWN_NON_LANGUAGE_SEGMENTS = setOf(
-    "car",      
-    "any",      
-)
+private val KNOWN_NON_LANGUAGE_SEGMENTS = setOf("car", "any")
 
 private data class LangQualifier(val lang: String, val region: String?)
 
@@ -24,7 +20,6 @@ private fun extractLanguageQualifiers(dirName: String): List<LangQualifier> {
 
     while (i < rest.size) {
         val seg = rest[i]
-
         if (seg.startsWith("b+")) {
             val parts = seg.split("+")
             if (parts.size >= 2) {
@@ -47,34 +42,27 @@ private fun extractLanguageQualifiers(dirName: String): List<LangQualifier> {
             i += if (isRegion) 2 else 1
             continue
         }
-
         i++
     }
-
     return result
 }
 
-val langCleanPatch = rawResourcePatch(
+val langCleanPatch = resourcePatch(
     name = "Remove Languages",
-    description = "Removes translations for languages you don't use. Only keeps the languages you pick.",
+    description = "Removes translations for languages you don't use.",
     use = false,
 ) {
     val keepLanguages by stringsOption(
         default = listOf("en", "vi"),
         name = "Keep languages",
-        description = "Exact resource variants to preserve. \"ru\" keeps ONLY the unqualified ru dir " +
-            "(values-ru); it does NOT pull in ru-rRU or any other region. \"en-rIN\" keeps ONLY that " +
-            "region. List every variant you want kept, e.g. en, en-rIN, ru — anything not listed is removed.",
+        description = "Exact resource variants to preserve.",
     )
 
     execute {
         val resDir = get("res")
         val apkRoot = resDir.parentFile ?: File(".")
 
-        if (!resDir.isDirectory) {
-            logger.warning("Language cleanup: res/ directory not found")
-            return@execute
-        }
+        if (!resDir.isDirectory) return@execute
 
         val keepSet: Set<Pair<String, String?>> = (keepLanguages ?: emptyList()).map { raw ->
             val parts = raw.split("-")
@@ -90,39 +78,24 @@ val langCleanPatch = rawResourcePatch(
 
         resDir.listFiles { file -> file.isDirectory }?.forEach { dir ->
             val qualifiers = extractLanguageQualifiers(dir.name)
-
             if (qualifiers.isEmpty()) {
                 keptDirs++
                 return@forEach
             }
 
-            val shouldKeep = qualifiers.any { q -> (q.lang to q.region) in keepSet }
-
-            if (shouldKeep) {
+            if (qualifiers.any { q -> (q.lang to q.region) in keepSet }) {
                 keptDirs++
             } else {
                 val filesToDelete = dir.walkTopDown().filter { it.isFile }.toList()
-                val size = filesToDelete.sumOf { it.length() }
-                
                 filesToDelete.forEach { file ->
-                    val relativePath = file.relativeTo(apkRoot).path.replace("\\", "/")
                     try {
-                        delete(relativePath)
-                    } catch (e: Exception) {
-                        // Bỏ qua nếu lỗi
-                    }
+                        delete(file.relativeTo(apkRoot).path.replace("\\", "/"))
+                    } catch (_: Exception) {}
                 }
-                
                 dir.deleteRecursively()
                 removedDirs++
-                
-                val label = qualifiers.joinToString { q ->
-                    if (q.region != null) "${q.lang}-r${q.region.uppercase()}" else q.lang
-                }
-                logger.fine("Removed ${dir.name} (${size / 1024}KB) — languages: $label")
             }
         }
-
         logger.info("Language cleanup: kept $keptDirs dirs, removed $removedDirs dirs")
     }
 }

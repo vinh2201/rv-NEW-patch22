@@ -1,6 +1,6 @@
 package app.revanced.patches.all.misc.apkcleanup
 
-import app.revanced.patcher.patch.rawResourcePatch
+import app.revanced.patcher.patch.resourcePatch
 import app.revanced.patcher.patch.stringsOption
 import java.io.File
 
@@ -14,28 +14,27 @@ private fun groupedDensityDirs(resDir: File, prefix: String): Map<String, Mutabl
         val tokens = dir.name.split("-")
         val density = tokens.last()
         if (density !in DENSITIES) return@forEach
-        val groupKey = tokens.dropLast(1).joinToString("-")
-        groups.getOrPut(groupKey) { mutableMapOf() }[density] = dir
+        groups.getOrPut(tokens.dropLast(1).joinToString("-")) { mutableMapOf() }[density] = dir
     }
     return groups
 }
 
-val drawableCleanPatch = rawResourcePatch(
+val drawableCleanPatch = resourcePatch(
     name = "Remove Duplicate Graphics",
-    description = "Keeps images for selected screen densities (e.g. xhdpi, xxhdpi) and removes copies for all other densities.",
+    description = "Keeps images for selected screen densities.",
     use = false,
 ) {
     val targetDensities by stringsOption(
         default = null,
         name = "Target densities",
-        description = "Density buckets to keep; duplicates are stripped from every other bucket.",
+        description = "Density buckets to keep.",
     )
 
     execute {
-        val resDir = get("res")
+        val resDir = get("res", false)
         val apkRoot = resDir.parentFile ?: File(".")
 
-        fun dedupeByBaselineDensities(resDir: File, prefix: String, baselines: List<String>, extensions: Set<String>) {
+        fun dedupe(prefix: String, baselines: List<String>, extensions: Set<String>) {
             groupedDensityDirs(resDir, prefix).values.forEach { densityMap ->
                 val baselineNames = mutableSetOf<String>()
                 baselines.forEach { baseline ->
@@ -48,30 +47,28 @@ val drawableCleanPatch = rawResourcePatch(
                 if (baselineNames.isEmpty()) return@forEach
 
                 densityMap.forEach { (density, dir) ->
-                    if (density in baselines) return@forEach 
+                    if (density in baselines) return@forEach
                     dir.walkTopDown()
                         .filter { it.isFile && it.extension.lowercase() in extensions && it.name in baselineNames }
                         .forEach { file ->
-                            val relativePath = file.relativeTo(apkRoot).path.replace("\\", "/")
                             try {
-                                delete(relativePath)
+                                val relPath = file.relativeTo(apkRoot).path.replace("\\", "/")
+                                delete(relPath)
                                 file.delete()
-                            } catch (e: Exception) {
-                                // Bỏ qua nếu lỗi
-                            }
+                            } catch (_: Exception) {}
                         }
                 }
             }
         }
 
         val baselines = (targetDensities ?: emptyList())
-            .flatMap { it.replace("[", "").replace("]", "").replace("\"", "").split(",") }
+            .flatMap { it.replace(Regex("[\\[\\]\"]"), "").split(",") }
             .map { it.trim().lowercase() }
             .filter { it in DENSITIES }
-            .takeIf { it.isNotEmpty() } ?: listOf("xhdpi") 
+            .takeIf { it.isNotEmpty() } ?: listOf("xhdpi")
 
-        dedupeByBaselineDensities(resDir, "drawable", baselines, DRAWABLE_EXTENSIONS)
-        dedupeByBaselineDensities(resDir, "mipmap", baselines, MIPMAP_EXTENSIONS)
+        dedupe("drawable", baselines, DRAWABLE_EXTENSIONS)
+        dedupe("mipmap", baselines, MIPMAP_EXTENSIONS)
 
         resDir.walkBottomUp()
             .filter { it.isDirectory && it.listFiles()?.isEmpty() == true }
