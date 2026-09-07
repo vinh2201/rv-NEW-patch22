@@ -94,7 +94,6 @@ val apkCleanupPatch = rawResourcePatch(
         val manifestFile = get("AndroidManifest.xml")
         val apkRoot = getApkRoot(manifestFile)
 
-        // SỬA LẠI ĐOẠN XỬ LÝ APKTOOL.YML CHO AN TOÀN CÚ PHÁP
         try {
             val ymlFile = File(apkRoot, "apktool.yml")
             if (ymlFile.exists()) {
@@ -113,9 +112,6 @@ val apkCleanupPatch = rawResourcePatch(
         } catch (e: Exception) {
             logger.warning("APK Cleanup: failed to update apktool.yml: ${e.message}")
         }
-
-        val apkRoot = getApkRoot(manifestFile)
-        // ... các logic phía dưới giữ nguyên ...
 
         var removedFiles = 0
         var freedBytes = 0L
