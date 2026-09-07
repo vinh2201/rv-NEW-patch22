@@ -25,7 +25,7 @@ private val JUNK_PATTERNS = listOf(
     Regex(""".*billing-ktx\.properties$"""),
     Regex(""".*review\.properties$"""),
     Regex(""".*hsdp\.properties$"""),
-    Regex(""".*core-common\\.properties$"""),
+    Regex(""".*core-common\.properties$"""),
     Regex(""".*user-messaging-platform\.properties$"""),
     Regex(""".*feature-delivery.*\.properties$"""),
     Regex(""".*ads-mobile-sdk\.properties$"""),
@@ -56,17 +56,6 @@ private val JUNK_PATTERNS = listOf(
 
 private val EXCLUDED_PREFIXES = listOf("assets/", "res/")
 
-private fun getApkRoot(startFile: File): File {
-    var current: File? = startFile
-    while (current != null) {
-        if (File(current, "resources.arsc").exists() && File(current, "AndroidManifest.xml").exists()) {
-            return current
-        }
-        current = current.parentFile
-    }
-    return startFile.parentFile ?: File(".")
-}
-
 val apkCleanupPatch = rawResourcePatch(
     name = "APK Junk Cleanup",
     description = "Removes junk and useless files with no runtime purpose inside apk.",
@@ -92,39 +81,7 @@ val apkCleanupPatch = rawResourcePatch(
 
     execute {
         val manifestFile = get("AndroidManifest.xml")
-        val apkRoot = getApkRoot(manifestFile)
-
-        // XỬ LÝ APKTOOL.YML: BAO TRỌN GÓI TRƯỜNG HỢP FILE CHƯA CÓ "doNotCompress"
-        try {
-            val ymlFile = File(apkRoot, "apktool.yml")
-            if (ymlFile.exists()) {
-                val lines = ymlFile.readLines().toMutableList()
-                val targetExt = "dict"
-                
-                // Tìm vị trí dòng doNotCompress
-                var doNotCompressIdx = lines.indexOfFirst { it.trim().startsWith("doNotCompress:") }
-                
-                // 1. Nếu không tìm thấy, ta tự thêm block này vào cuối file
-                if (doNotCompressIdx == -1) {
-                    lines.add("doNotCompress:")
-                    doNotCompressIdx = lines.lastIndex
-                } 
-                // 2. Nếu có mảng rỗng dạng "doNotCompress: []", dọn dẹp lại
-                else if (lines[doNotCompressIdx].contains("[]")) {
-                    lines[doNotCompressIdx] = lines[doNotCompressIdx].replace("[]", "").trimEnd()
-                }
-
-                // 3. Quét xem đã có đuôi dict chưa, chưa có thì chèn ngay dưới doNotCompress:
-                val hasDict = lines.any { it.trim() == "- $targetExt" || it.trim() == "- '$targetExt'" }
-                if (!hasDict) {
-                    lines.add(doNotCompressIdx + 1, "- $targetExt")
-                    ymlFile.writeText(lines.joinToString("\n"))
-                    logger.info("APK Cleanup: successfully added '$targetExt' to apktool.yml doNotCompress block")
-                }
-            }
-        } catch (e: Exception) {
-            logger.warning("APK Cleanup: failed to update apktool.yml: ${e.message}")
-        }
+        val apkRoot = manifestFile.parentFile ?: File(".")
 
         var removedFiles = 0
         var freedBytes = 0L
@@ -135,19 +92,28 @@ val apkCleanupPatch = rawResourcePatch(
             val entry = get(path)
             if (entry.isDirectory) {
                 val children = entry.list()
+                val preview = children?.take(5)?.joinToString()
+                // Giảm bớt log info cho đỡ rối, hoặc bác giữ nguyên cũng được
                 children?.forEach { child -> removeTree("$path/$child") }
-                entry.delete()
+                
+                // Tiện tay dọn luôn vỏ thư mục rỗng vật lý (repacker không quan tâm cái này lắm)
+                entry.delete() 
             } else if (entry.isFile) {
                 if (isProtected(path)) return
                 val size = entry.length()
+                
                 try {
+                    // DÙNG API delete(path) CỦA REVANCED ĐỂ GẠCH TÊN FILE KHỎI REPACKER
                     delete(path)
+                    
                     removedFiles++
                     freedBytes += size
                     logger.fine("Removed: $path (${size}B)")
                 } catch (e: Exception) {
                     logger.warning("APK Cleanup: failed to delete $path. Error: ${e.message}")
                 }
+            } else {
+                logger.fine("APK Cleanup: $path -> neither file nor directory")
             }
         }
 
@@ -162,8 +128,11 @@ val apkCleanupPatch = rawResourcePatch(
 
                 if (JUNK_PATTERNS.any { it.matches(relativePath) }) {
                     val size = file.length()
+                    
                     try {
+                        // SỬ DỤNG API delete TƯƠNG TỰ BÊN TRÊN
                         delete(relativePath)
+                        
                         removedFiles++
                         freedBytes += size
                         logger.fine("Removed file: $relativePath (${size}B)")
@@ -173,20 +142,41 @@ val apkCleanupPatch = rawResourcePatch(
                 }
             }
 
-        try { removeTree("kotlin") } catch (_: Exception) {}
-        try { removeTree("assets/audience_network.dex") } catch (_: Exception) {}
-        try { removeTree("assets/audience_network") } catch (_: Exception) {}
+        try {
+            removeTree("kotlin")
+        } catch (e: Exception) {
+            logger.severe("APK Cleanup: failed removing kotlin/ folder: ${e.message}")
+        }
+
+        try {
+            removeTree("assets/audience_network.dex")
+        } catch (e: Exception) {
+            logger.severe("APK Cleanup: failed removing assets/audience_network.dex: ${e.message}")
+        }
+
+        try {
+            removeTree("assets/audience_network")
+        } catch (e: Exception) {
+            logger.severe("APK Cleanup: failed removing assets/audience_network/: ${e.message}")
+        }
 
         try {
             val metaInf = get("META-INF")
             if (metaInf.isDirectory) {
                 metaInf.list()?.forEach { name ->
                     if (name.lowercase() == "services") return@forEach
-                    try { removeTree("META-INF/$name") } catch (_: Exception) {}
+                    try {
+                        removeTree("META-INF/$name")
+                    } catch (e: Exception) {
+                        logger.severe("APK Cleanup: failed removing META-INF/$name/: ${e.message}")
+                    }
                 }
             }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            logger.severe("APK Cleanup: failed scanning META-INF/: ${e.message}")
+        }
 
+        // Quét ngược để dọn dẹp các thư mục rỗng vật lý còn sót lại (không ảnh hưởng tới repacker)
         apkRoot.walkBottomUp()
             .filter { it.isDirectory && it != apkRoot && it.listFiles()?.isEmpty() == true }
             .forEach { it.delete() }
@@ -197,10 +187,22 @@ val apkCleanupPatch = rawResourcePatch(
 
             if (libDir.isDirectory) {
                 val archNames = libDir.list()?.toList() ?: emptyList()
-                if (archNames.contains(archToKeep)) {
+                val hasTarget = archNames.contains(archToKeep)
+
+                if (hasTarget) {
                     archNames.filter { it != archToKeep }.forEach { arch ->
-                        try { removeTree("lib/$arch") } catch (_: Exception) {}
+                        try {
+                            // Hàm removeTree giờ đã dùng API delete() nên sẽ hoạt động hoàn hảo cho lib/
+                            removeTree("lib/$arch")
+                        } catch (e: Exception) {
+                            logger.severe("APK Cleanup: failed removing lib/$arch/: ${e.message}")
+                        }
                     }
+                } else {
+                    logger.warning(
+                        "APK Cleanup: selected architecture \"$archToKeep\" not found in lib/. " +
+                        "Available: ${archNames.joinToString()}. Keeping all architectures."
+                    )
                 }
             }
         }

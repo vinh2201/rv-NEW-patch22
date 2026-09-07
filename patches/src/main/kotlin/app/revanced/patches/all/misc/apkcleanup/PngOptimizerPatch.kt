@@ -16,8 +16,12 @@ private val PNG_SIGNATURE = byteArrayOf(
     0x0D, 0x0A, 0x1A, 0x0A,
 )
 
+// Metadata chunks that carry no rendering information and are safe to drop.
 private val STRIPPABLE_CHUNK_TYPES = setOf(
-    "tEXt", "zTXt", "iTXt", "tIME", "pHYs", "hIST", "sPLT",
+    "tEXt", "zTXt", "iTXt", "tIME",
+    "pHYs",   // Physical pixel dimensions (DPI) — irrelevant on Android
+    "hIST",   // Histogram — purely informational
+    "sPLT",   // Suggested palette — optional
 )
 
 private class PngChunk(val type: String, val data: ByteArray)
@@ -52,11 +56,15 @@ private fun parseChunks(bytes: ByteArray): List<PngChunk>? {
         val dataEnd = dataStart + length
         if (length < 0 || dataEnd + 4 > bytes.size) return null
 
+        // Validate CRC to catch truncated or corrupted files
         val storedCrc = readInt(bytes, dataEnd)
         val computedCrc = CRC32().apply {
             update(bytes, offset + 4, 4 + length)
         }.value.toInt()
-        if (storedCrc != computedCrc) return null
+        if (storedCrc != computedCrc) {
+            logger.fine("PNG CRC mismatch at chunk $type, skipping file")
+            return null
+        }
 
         chunks += PngChunk(type, bytes.copyOfRange(dataStart, dataEnd))
         offset = dataEnd + 4
@@ -106,19 +114,37 @@ private fun deflate(data: ByteArray): ByteArray {
     }
 }
 
+/**
+ * Losslessly re-encodes a PNG: recompresses the IDAT stream at maximum zlib
+ * compression and drops metadata chunks that carry no rendering information.
+ * Unknown/private chunks (including 9-patch npTc/npLc) are always preserved
+ * untouched, since we never interpret pixel data — only the raw decompressed
+ * byte stream is round-tripped through inflate/deflate, which is lossless
+ * regardless of color type, bit depth, or interlacing.
+ *
+ * Filter bytes are left untouched since pixel data is not decoded, so savings
+ * are purely from better zlib compression and metadata stripping.
+ */
 private fun optimizePng(original: ByteArray): OptimizeResult {
-    val chunks = parseChunks(original) ?: return OptimizeResult.Skipped("parse failed")
+    val chunks = parseChunks(original)
+        ?: return OptimizeResult.Skipped("parse failed (corrupt or not a PNG)")
+
     val idatData = ByteArrayOutputStream().use { out ->
         chunks.filter { it.type == "IDAT" }.forEach { out.write(it.data) }
         out.toByteArray()
     }
     if (idatData.isEmpty()) return OptimizeResult.Skipped("no IDAT chunks")
 
-    val raw = try { inflate(idatData) } catch (_: Exception) { return OptimizeResult.Skipped("inflate failed") }
+    val raw = try {
+        inflate(idatData)
+    } catch (e: Exception) {
+        return OptimizeResult.Skipped("inflate failed: ${e.message}")
+    }
     val recompressed = deflate(raw)
 
     val out = ByteArrayOutputStream(original.size).use { baos ->
         baos.write(PNG_SIGNATURE)
+
         var idatWritten = false
         for (chunk in chunks) {
             when {
@@ -128,7 +154,7 @@ private fun optimizePng(original: ByteArray): OptimizeResult {
                         idatWritten = true
                     }
                 }
-                chunk.type in STRIPPABLE_CHUNK_TYPES -> Unit
+                chunk.type in STRIPPABLE_CHUNK_TYPES -> Unit // Drop.
                 else -> writeChunk(baos, chunk.type, chunk.data)
             }
         }
@@ -142,9 +168,10 @@ private fun optimizePng(original: ByteArray): OptimizeResult {
     }
 }
 
+// PngOptimizerPatch.kt
 val pngOptimizerPatch = resourcePatch(
     name = "Png Optimizer",
-    description = "Compresses PNG images without losing quality.",
+    description = "Compresses PNG images without losing quality and strips hidden metadata (DPI, timestamps, text) to make the app smaller. Only rewrites files when the result is actually smaller.",
     use = false,
 ) {
     execute {
@@ -174,7 +201,8 @@ val pngOptimizerPatch = resourcePatch(
             val original = file.readBytes()
             val result = try {
                 optimizePng(original)
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                logger.warning("PNG optimizer: error on ${file.name} (${e.message})")
                 null
             }
 
@@ -185,9 +213,10 @@ val pngOptimizerPatch = resourcePatch(
                     freedBytes.addAndGet(result.saved.toLong())
                 }
                 is OptimizeResult.Skipped -> {
-                    when (result.reason) {
-                        "already optimal" -> alreadyOptimalCount.incrementAndGet()
-                        else -> parseFailedCount.incrementAndGet()
+                    when {
+                        result.reason == "already optimal" -> alreadyOptimalCount.incrementAndGet()
+                        result.reason.startsWith("parse") -> parseFailedCount.incrementAndGet()
+                        else -> skippedCount.incrementAndGet()
                     }
                 }
                 null -> skippedCount.incrementAndGet()
@@ -196,7 +225,7 @@ val pngOptimizerPatch = resourcePatch(
 
         logger.info(
             "PNG optimizer: optimized=${optimizedCount.get()}, already-optimal=${alreadyOptimalCount.get()}, " +
-            "freed=${freedBytes.get() / 1024}KB"
+            "corrupt=${parseFailedCount.get()}, skipped=${skippedCount.get()}, freed=${freedBytes.get() / 1024}KB"
         )
     }
 }

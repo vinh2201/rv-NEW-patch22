@@ -8,22 +8,11 @@ import java.util.logging.Logger
 private val logger = Logger.getLogger("LangCleanPatch")
 
 private val KNOWN_NON_LANGUAGE_SEGMENTS = setOf(
-    "car",
-    "any",
+    "car",      
+    "any",      
 )
 
 private data class LangQualifier(val lang: String, val region: String?)
-
-private fun getApkRoot(startFile: File): File {
-    var current: File? = startFile
-    while (current != null) {
-        if (File(current, "resources.arsc").exists() && File(current, "AndroidManifest.xml").exists()) {
-            return current
-        }
-        current = current.parentFile
-    }
-    return startFile.parentFile ?: File(".")
-}
 
 private fun extractLanguageQualifiers(dirName: String): List<LangQualifier> {
     val segments = dirName.split("-")
@@ -73,12 +62,14 @@ val langCleanPatch = resourcePatch(
     val keepLanguages by stringsOption(
         default = listOf("en", "vi"),
         name = "Keep languages",
-        description = "Exact resource variants to preserve.",
+        description = "Exact resource variants to preserve. \"ru\" keeps ONLY the unqualified ru dir " +
+            "(values-ru); it does NOT pull in ru-rRU or any other region. \"en-rIN\" keeps ONLY that " +
+            "region. List every variant you want kept, e.g. en, en-rIN, ru — anything not listed is removed.",
     )
 
     execute {
         val resDir = get("res")
-        val apkRoot = getApkRoot(resDir)
+        val apkRoot = resDir.parentFile ?: File(".")
 
         if (!resDir.isDirectory) {
             logger.warning("Language cleanup: res/ directory not found")
@@ -112,16 +103,23 @@ val langCleanPatch = resourcePatch(
             } else {
                 val filesToDelete = dir.walkTopDown().filter { it.isFile }.toList()
                 val size = filesToDelete.sumOf { it.length() }
-
+                
                 filesToDelete.forEach { file ->
                     val relativePath = file.relativeTo(apkRoot).path.replace("\\", "/")
                     try {
                         delete(relativePath)
-                    } catch (_: Exception) {}
+                    } catch (e: Exception) {
+                        // Bỏ qua nếu lỗi
+                    }
                 }
-
+                
                 dir.deleteRecursively()
                 removedDirs++
+                
+                val label = qualifiers.joinToString { q ->
+                    if (q.region != null) "${q.lang}-r${q.region.uppercase()}" else q.lang
+                }
+                logger.fine("Removed ${dir.name} (${size / 1024}KB) — languages: $label")
             }
         }
 
