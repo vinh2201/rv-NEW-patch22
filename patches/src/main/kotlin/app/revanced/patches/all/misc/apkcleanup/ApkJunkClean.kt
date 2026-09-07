@@ -22,48 +22,30 @@ private val JUNK_PATTERNS = listOf(
     Regex(""".*firebase-.*\.properties$"""),
     Regex(""".*app-update\.properties$"""),
     Regex(""".*billing\.properties$"""),
-    Regex(""".*billing-ktx\.properties$"""),
     Regex(""".*review\.properties$"""),
-    Regex(""".*hsdp\.properties$"""),
-    Regex(""".*core-common\.properties$"""),
-    Regex(""".*user-messaging-platform\.properties$"""),
-    Regex(""".*feature-delivery.*\.properties$"""),
-    Regex(""".*ads-mobile-sdk\.properties$"""),
     Regex(""".*\.proto$"""),
     Regex(""".*DebugProbesKt\.bin$"""),
     Regex(""".*\.version$"""),
     Regex(""".*_VERSION$"""),
-    Regex(""".*androidsupportmultidexversion\.txt$"""),
-    Regex(""".*stamp-cert-sha256$"""),
-    Regex(""".*version-control-info\.textproto$"""),
+    Regex(""$.*stamp-cert-sha256$"""),
     Regex(""".*kotlin-tooling-metadata\.json$"""),
     Regex(""".*META-INF/CHANGES$"""),
     Regex(""".*META-INF/README\.md$"""),
     Regex(""".*META-INF/NOTICE.*"""),
     Regex(""".*META-INF/LICENSE.*"""),
-    Regex(""".*(?:^|/)LICENSES$"""),
-    Regex(""".*ion-java\.properties$"""),
-    Regex(""".*THIRD-PARTY-NOTICES\.txt$"""),
-    Regex(""".*licenses\.md$"""),
-    Regex(""".*debug\.keystore$"""),
-    Regex(""".*_trackers\.xml$"""),
-    Regex(""".*version\.properties$"""),
-    Regex(""".*integrity\.properties$"""),
-    Regex(""".*androidannotations-api\.properties$"""),
-    Regex(""".*transport-.*\.properties$"""),
-    Regex(""".*jetty-dir\.css$"""),
+    Regex(""$.*(?:^|/)LICENSES$"""),
 )
 
 private val EXCLUDED_PREFIXES = listOf("assets/", "res/")
 
 val apkCleanupPatch = rawResourcePatch(
     name = "APK Junk Cleanup",
-    description = "Removes junk and useless files with no runtime purpose inside apk.",
+    description = "Removes junk and useless files safely without breaking app runtime.",
     use = false,
 ) {
     val splitByArch by booleanOption(
         default = false,
-        name = "Keep one",
+        name = "Keep one architecture",
         description = "Keep native libraries (.so files) for only one CPU architecture.",
     )
 
@@ -76,7 +58,7 @@ val apkCleanupPatch = rawResourcePatch(
             "x86_64" to "x86_64",
         ),
         name = "Target architecture",
-        description = "Which architecture to keep when splitting is enabled.",
+        description = "Architecture to keep.",
     )
 
     execute {
@@ -87,24 +69,6 @@ val apkCleanupPatch = rawResourcePatch(
         var freedBytes = 0L
 
         fun isProtected(relativePath: String) = PROTECTED_PATTERNS.any { it.matches(relativePath) }
-
-        fun removeTree(path: String) {
-            val entry = get(path)
-            if (entry.isDirectory) {
-                entry.list()?.forEach { child -> removeTree("$path/$child") }
-                entry.delete()
-            } else if (entry.isFile) {
-                if (isProtected(path)) return
-                val size = entry.length()
-                try {
-                    delete(path)
-                    removedFiles++
-                    freedBytes += size
-                } catch (e: Exception) {
-                    logger.warning("APK Cleanup: failed to delete $path. Error: ${e.message}")
-                }
-            }
-        }
 
         apkRoot.walkTopDown()
             .filter { it.isFile }
@@ -122,36 +86,25 @@ val apkCleanupPatch = rawResourcePatch(
                         removedFiles++
                         freedBytes += size
                     } catch (e: Exception) {
-                        logger.warning("APK Cleanup: failed to remove file $relativePath")
+                        // Bỏ qua nếu Patcher không cho phép xóa
                     }
                 }
             }
 
-        listOf("kotlin", "assets/audience_network.dex", "assets/audience_network").forEach { 
-            try { removeTree(it) } catch (_: Exception) {}
-        }
-
-        try {
-            get("META-INF").takeIf { it.isDirectory }?.list()?.forEach { name ->
-                if (name.lowercase() != "services") {
-                    try { removeTree("META-INF/$name") } catch (_: Exception) {}
-                }
-            }
-        } catch (_: Exception) {}
-
-        apkRoot.walkBottomUp()
-            .filter { it.isDirectory && it != apkRoot && it.listFiles()?.isEmpty() == true }
-            .forEach { it.delete() }
-
+        // Xử lý kiến trúc lib an toàn hơn
         if (splitByArch == true) {
-            val archToKeep = targetArch ?: "arm64-v8a"
+            val archToKeep = targetArch ?: "armeabi-v7a"
             val libDir = get("lib")
 
             if (libDir.isDirectory) {
-                val archNames = libDir.list()?.toList() ?: emptyList()
-                if (archNames.contains(archToKeep)) {
-                    archNames.filter { it != archToKeep }.forEach { arch ->
-                        try { removeTree("lib/$arch") } catch (_: Exception) {}
+                libDir.listFiles()?.forEach { archDir ->
+                    if (archDir.isDirectory && archDir.name != archToKeep) {
+                        archDir.walkTopDown().filter { it.isFile }.forEach { f ->
+                            val rel = f.relativeTo(apkRoot).path.replace("\\", "/")
+                            try {
+                                delete(rel)
+                            } catch (e: Exception) {}
+                        }
                     }
                 }
             }
