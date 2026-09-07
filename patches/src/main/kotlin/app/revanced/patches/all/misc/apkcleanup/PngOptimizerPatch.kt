@@ -59,10 +59,7 @@ private fun parseChunks(bytes: ByteArray): List<PngChunk>? {
         val computedCrc = CRC32().apply {
             update(bytes, offset + 4, 4 + length)
         }.value.toInt()
-        if (storedCrc != computedCrc) {
-            logger.fine("PNG CRC mismatch at chunk $type, skipping file")
-            return null
-        }
+        if (storedCrc != computedCrc) return null
 
         chunks += PngChunk(type, bytes.copyOfRange(dataStart, dataEnd))
         offset = dataEnd + 4
@@ -103,7 +100,7 @@ private fun deflate(data: ByteArray): ByteArray {
     deflater.finish()
     return ByteArrayOutputStream(data.size).use { out ->
         val buffer = ByteArray(8192)
-        while (!deflater.finished()) {
+        while (!inflater.finished()) {
             val count = deflater.deflate(buffer)
             out.write(buffer, 0, count)
         }
@@ -113,25 +110,18 @@ private fun deflate(data: ByteArray): ByteArray {
 }
 
 private fun optimizePng(original: ByteArray): OptimizeResult {
-    val chunks = parseChunks(original)
-        ?: return OptimizeResult.Skipped("parse failed (corrupt or not a PNG)")
-
+    val chunks = parseChunks(original) ?: return OptimizeResult.Skipped("parse failed")
     val idatData = ByteArrayOutputStream().use { out ->
         chunks.filter { it.type == "IDAT" }.forEach { out.write(it.data) }
         out.toByteArray()
     }
     if (idatData.isEmpty()) return OptimizeResult.Skipped("no IDAT chunks")
 
-    val raw = try {
-        inflate(idatData)
-    } catch (e: Exception) {
-        return OptimizeResult.Skipped("inflate failed: ${e.message}")
-    }
+    val raw = try { inflate(idatData) } catch (e: Exception) { return OptimizeResult.Skipped("inflate failed") }
     val recompressed = deflate(raw)
 
     val out = ByteArrayOutputStream(original.size).use { baos ->
         baos.write(PNG_SIGNATURE)
-
         var idatWritten = false
         for (chunk in chunks) {
             when {
@@ -148,22 +138,17 @@ private fun optimizePng(original: ByteArray): OptimizeResult {
         baos.toByteArray()
     }
 
-    return if (out.size < original.size) {
-        OptimizeResult.Success(out, original.size - out.size)
-    } else {
-        OptimizeResult.Skipped("already optimal")
-    }
+    return if (out.size < original.size) OptimizeResult.Success(out, original.size - out.size)
+    else OptimizeResult.Skipped("already optimal")
 }
 
 val pngOptimizerPatch = rawResourcePatch(
     name = "Png Optimizer",
-    description = "Compresses PNG images without losing quality and strips hidden metadata (DPI, timestamps, text) to make the app smaller. Only rewrites files when the result is actually smaller.",
+    description = "Compresses PNG images safely without breaking 9-patch layouts.",
     use = false,
 ) {
     execute {
-        val roots = listOf("res", "assets")
-            .map { get(it) }
-            .filter { it.isDirectory }
+        val roots = listOf("res", "assets").map { get(it) }.filter { it.isDirectory }
         if (roots.isEmpty()) return@execute
 
         val pngFiles = roots.flatMap { root ->
@@ -171,6 +156,7 @@ val pngOptimizerPatch = rawResourcePatch(
                 .filter {
                     it.isFile &&
                     it.extension.equals("png", ignoreCase = true) &&
+                    !it.name.endsWith(".9.png", ignoreCase = true) && // BẮT BUỘC: Bỏ qua 9-patch chống sập UI
                     it.length() >= 512 &&
                     it.length() <= 10_000_000
                 }
@@ -178,40 +164,18 @@ val pngOptimizerPatch = rawResourcePatch(
         }
 
         val optimizedCount = AtomicInteger(0)
-        val alreadyOptimalCount = AtomicInteger(0)
-        val parseFailedCount = AtomicInteger(0)
-        val skippedCount = AtomicInteger(0)
         val freedBytes = AtomicLong(0L)
 
         pngFiles.parallelStream().forEach { file ->
             val original = file.readBytes()
-            val result = try {
-                optimizePng(original)
-            } catch (e: Exception) {
-                logger.warning("PNG optimizer: error on ${file.name} (${e.message})")
-                null
-            }
-
-            when (result) {
-                is OptimizeResult.Success -> {
-                    file.writeBytes(result.bytes)
-                    optimizedCount.incrementAndGet()
-                    freedBytes.addAndGet(result.saved.toLong())
-                }
-                is OptimizeResult.Skipped -> {
-                    when {
-                        result.reason == "already optimal" -> alreadyOptimalCount.incrementAndGet()
-                        result.reason.startsWith("parse") -> parseFailedCount.incrementAndGet()
-                        else -> skippedCount.incrementAndGet()
-                    }
-                }
-                null -> skippedCount.incrementAndGet()
+            val result = try { optimizePng(original) } catch (e: Exception) { null }
+            if (result is OptimizeResult.Success) {
+                file.writeBytes(result.bytes)
+                optimizedCount.incrementAndGet()
+                freedBytes.addAndGet(result.saved.toLong())
             }
         }
 
-        logger.info(
-            "PNG optimizer: optimized=${optimizedCount.get()}, already-optimal=${alreadyOptimalCount.get()}, " +
-            "corrupt=${parseFailedCount.get()}, skipped=${skippedCount.get()}, freed=${freedBytes.get() / 1024}KB"
-        )
+        logger.info("PNG optimizer: optimized=${optimizedCount.get()}, freed=${freedBytes.get() / 1024}KB")
     }
 }
