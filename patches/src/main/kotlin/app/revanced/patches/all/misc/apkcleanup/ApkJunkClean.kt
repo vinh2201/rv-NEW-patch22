@@ -94,6 +94,27 @@ val apkCleanupPatch = rawResourcePatch(
         val manifestFile = get("AndroidManifest.xml")
         val apkRoot = getApkRoot(manifestFile)
 
+        // BỔ SUNG ĐOẠN NÀY ĐỂ ÉP APKTOOL KHÔNG NÉN FILE TỪ ĐIỂN (.dict) VÀ CÁC FILE RAW QUAN TRỌNG
+        try {
+            val ymlFile = File(apkRoot, "apktool.yml")
+            if (ymlFile.exists()) {
+                var content = ymlFile.readText()
+                val targetExt = "dict"
+                if (!content.contains("- $targetExt") && !content.contains("-$targetExt")) {
+                    if (content.contains("doNotCompress:")) {
+                        content = content.replace("doNotCompress:", "doNotCompress:\n  - $targetExt")
+                        ymlFile.writeText(content)
+                        logger.info("APK Cleanup: successfully added '$targetExt' to apktool.yml doNotCompress")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            logger.warning("APK Cleanup: failed to update apktool.yml: ${e.message}")
+        }
+
+        val apkRoot = getApkRoot(manifestFile)
+        // ... các logic phía dưới giữ nguyên ...
+
         var removedFiles = 0
         var freedBytes = 0L
 
