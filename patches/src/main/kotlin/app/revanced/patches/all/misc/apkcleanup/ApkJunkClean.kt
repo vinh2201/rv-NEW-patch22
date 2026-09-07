@@ -94,19 +94,32 @@ val apkCleanupPatch = rawResourcePatch(
         val manifestFile = get("AndroidManifest.xml")
         val apkRoot = getApkRoot(manifestFile)
 
+        // XỬ LÝ APKTOOL.YML: BAO TRỌN GÓI TRƯỜNG HỢP FILE CHƯA CÓ "doNotCompress"
         try {
             val ymlFile = File(apkRoot, "apktool.yml")
             if (ymlFile.exists()) {
-                var content = ymlFile.readText()
+                val lines = ymlFile.readLines().toMutableList()
                 val targetExt = "dict"
-                if (!content.contains(targetExt)) {
-                    if (content.contains("doNotCompress: []")) {
-                        content = content.replace("doNotCompress: []", "doNotCompress:\n  - $targetExt")
-                    } else if (content.contains("doNotCompress:")) {
-                        content = content.replace(Regex("doNotCompress:\\s*\\r?\\n"), "doNotCompress:\n  - $targetExt\n")
-                    }
-                    ymlFile.writeText(content)
-                    logger.info("APK Cleanup: successfully added '$targetExt' to apktool.yml doNotCompress")
+                
+                // Tìm vị trí dòng doNotCompress
+                var doNotCompressIdx = lines.indexOfFirst { it.trim().startsWith("doNotCompress:") }
+                
+                // 1. Nếu không tìm thấy, ta tự thêm block này vào cuối file
+                if (doNotCompressIdx == -1) {
+                    lines.add("doNotCompress:")
+                    doNotCompressIdx = lines.lastIndex
+                } 
+                // 2. Nếu có mảng rỗng dạng "doNotCompress: []", dọn dẹp lại
+                else if (lines[doNotCompressIdx].contains("[]")) {
+                    lines[doNotCompressIdx] = lines[doNotCompressIdx].replace("[]", "").trimEnd()
+                }
+
+                // 3. Quét xem đã có đuôi dict chưa, chưa có thì chèn ngay dưới doNotCompress:
+                val hasDict = lines.any { it.trim() == "- $targetExt" || it.trim() == "- '$targetExt'" }
+                if (!hasDict) {
+                    lines.add(doNotCompressIdx + 1, "- $targetExt")
+                    ymlFile.writeText(lines.joinToString("\n"))
+                    logger.info("APK Cleanup: successfully added '$targetExt' to apktool.yml doNotCompress block")
                 }
             }
         } catch (e: Exception) {
