@@ -1,6 +1,6 @@
 package app.revanced.patches.all.misc.apkcleanup
 
-import app.revanced.patcher.patch.resourcePatch
+import app.revanced.patcher.patch.rawResourcePatch
 import app.revanced.patcher.patch.stringsOption
 import java.io.File
 import java.util.logging.Logger
@@ -54,7 +54,7 @@ private fun extractLanguageQualifiers(dirName: String): List<LangQualifier> {
     return result
 }
 
-val langCleanPatch = resourcePatch(
+val langCleanPatch = rawResourcePatch(
     name = "Remove Languages",
     description = "Removes translations for languages you don't use. Only keeps the languages you pick.",
     use = false,

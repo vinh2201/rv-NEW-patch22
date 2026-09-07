@@ -1,6 +1,6 @@
 package app.revanced.patches.all.misc.apkcleanup
 
-import app.revanced.patcher.patch.resourcePatch
+import app.revanced.patcher.patch.rawResourcePatch
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
@@ -155,14 +155,14 @@ private fun optimizePng(original: ByteArray): OptimizeResult {
     }
 }
 
-val pngOptimizerPatch = resourcePatch(
+val pngOptimizerPatch = rawResourcePatch(
     name = "Png Optimizer",
     description = "Compresses PNG images without losing quality and strips hidden metadata (DPI, timestamps, text) to make the app smaller. Only rewrites files when the result is actually smaller.",
     use = false,
 ) {
     execute {
         val roots = listOf("res", "assets")
-            .map { get(it, false) }
+            .map { get(it) }
             .filter { it.isDirectory }
         if (roots.isEmpty()) return@execute
 

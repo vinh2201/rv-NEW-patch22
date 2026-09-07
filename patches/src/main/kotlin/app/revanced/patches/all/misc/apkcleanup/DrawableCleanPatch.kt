@@ -1,6 +1,6 @@
 package app.revanced.patches.all.misc.apkcleanup
 
-import app.revanced.patcher.patch.resourcePatch
+import app.revanced.patcher.patch.rawResourcePatch
 import app.revanced.patcher.patch.stringsOption
 import java.io.File
 
@@ -20,7 +20,7 @@ private fun groupedDensityDirs(resDir: File, prefix: String): Map<String, Mutabl
     return groups
 }
 
-val drawableCleanPatch = resourcePatch(
+val drawableCleanPatch = rawResourcePatch(
     name = "Remove Duplicate Graphics",
     description = "Keeps images for selected screen densities (e.g. xhdpi, xxhdpi) and removes copies for all other densities.",
     use = false,
@@ -32,7 +32,7 @@ val drawableCleanPatch = resourcePatch(
     )
 
     execute {
-        val resDir = get("res", false)
+        val resDir = get("res")
         val apkRoot = resDir.parentFile ?: File(".")
 
         fun dedupeByBaselineDensities(resDir: File, prefix: String, baselines: List<String>, extensions: Set<String>) {
