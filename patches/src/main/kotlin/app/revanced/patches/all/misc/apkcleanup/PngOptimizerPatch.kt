@@ -100,7 +100,8 @@ private fun deflate(data: ByteArray): ByteArray {
     deflater.finish()
     return ByteArrayOutputStream(data.size).use { out ->
         val buffer = ByteArray(8192)
-        while (!inflater.finished()) {
+        // Đã sửa inflater thành deflater ở đây:
+        while (!deflater.finished()) {
             val count = deflater.deflate(buffer)
             out.write(buffer, 0, count)
         }
