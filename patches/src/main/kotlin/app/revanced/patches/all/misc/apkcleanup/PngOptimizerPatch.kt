@@ -191,6 +191,8 @@ val pngOptimizerPatch = resourcePatch(
                 .toList()
         }
 
+        val apkRoot = roots.first().parentFile ?: File(".")
+        
         val optimizedCount = AtomicInteger(0)
         val alreadyOptimalCount = AtomicInteger(0)
         val parseFailedCount = AtomicInteger(0)
@@ -198,7 +200,7 @@ val pngOptimizerPatch = resourcePatch(
         val freedBytes = AtomicLong(0L)
 
         pngFiles.parallelStream().forEach { file ->
-            val original = file.readBytes()
+            val original = file.readBytes() // Đọc nguyên thuỷ để phân tích
             val result = try {
                 optimizePng(original)
             } catch (e: Exception) {
@@ -208,9 +210,23 @@ val pngOptimizerPatch = resourcePatch(
 
             when (result) {
                 is OptimizeResult.Success -> {
-                    file.writeBytes(result.bytes)
-                    optimizedCount.incrementAndGet()
-                    freedBytes.addAndGet(result.saved.toLong())
+                    val relativePath = file.relativeTo(apkRoot).path.replace("\\", "/")
+                    
+                    try {
+                        // CẬP NHẬT TRỰC TIẾP LÊN VFS THAY VÌ GHI ĐÈ Ổ CỨNG VẬT LÝ
+                        val vfsFile = context.apk.files[relativePath]
+                        if (vfsFile != null) {
+                            // Tuỳ thuộc API của wrapper Patcher, cấu trúc chuẩn V22 sử dụng ByteArraySource
+                            vfsFile.source = app.revanced.patcher.util.io.ByteArraySource(result.bytes)
+                            
+                            optimizedCount.incrementAndGet()
+                            freedBytes.addAndGet(result.saved.toLong())
+                        } else {
+                            logger.warning("PNG optimizer: File $relativePath không tồn tại trong VFS Tracker.")
+                        }
+                    } catch (e: Exception) {
+                         logger.warning("PNG optimizer: Lỗi cập nhật VFS cho $relativePath")
+                    }
                 }
                 is OptimizeResult.Skipped -> {
                     when {

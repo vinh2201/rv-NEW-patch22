@@ -71,58 +71,52 @@ val langCleanPatch = resourcePatch(
         val resDir = get("res")
         val apkRoot = resDir.parentFile ?: File(".")
 
-        if (!resDir.isDirectory) {
-            logger.warning("Language cleanup: res/ directory not found")
-            return@execute
+        // 1. XOÁ CẤU HÌNH NGÔN NGỮ KHỎI BẢNG TÀI NGUYÊN (ARSC) TRÊN RAM
+        val resTable = context.apk.resourceTable
+        if (resTable != null) {
+            resTable.packages.forEach { pkg ->
+                pkg.types.forEach { type ->
+                    val iterator = type.configs.iterator()
+                    while (iterator.hasNext()) {
+                        val config = iterator.next()
+                        val configQualifiers = extractLanguageQualifiers(config.qualifier)
+                        
+                        if (configQualifiers.isNotEmpty()) {
+                            val shouldKeep = configQualifiers.any { q -> (q.lang to q.region) in keepSet }
+                            if (!shouldKeep) {
+                                iterator.remove() // Gỡ hẳn ánh xạ ID, ngăn app gọi nhầm và crash
+                            }
+                        }
+                    }
+                }
+            }
         }
 
-        val keepSet: Set<Pair<String, String?>> = (keepLanguages ?: emptyList()).map { raw ->
-            val parts = raw.split("-")
-            val lang = parts[0].lowercase()
-            val region = parts.getOrNull(1)
-                ?.takeIf { it.length == 3 && it.startsWith("r", ignoreCase = true) }
-                ?.drop(1)?.lowercase()
-            lang to region
-        }.toSet()
-
+        // 2. LOẠI BỎ FILE QUA VFS (KHÔNG DÙNG deleteRecursively VẬT LÝ NỮA)
         var removedDirs = 0
         var keptDirs = 0
 
         resDir.listFiles { file -> file.isDirectory }?.forEach { dir ->
             val qualifiers = extractLanguageQualifiers(dir.name)
-
             if (qualifiers.isEmpty()) {
                 keptDirs++
                 return@forEach
             }
 
             val shouldKeep = qualifiers.any { q -> (q.lang to q.region) in keepSet }
-
             if (shouldKeep) {
                 keptDirs++
             } else {
-                val filesToDelete = dir.walkTopDown().filter { it.isFile }.toList()
-                val size = filesToDelete.sumOf { it.length() }
-                
-                filesToDelete.forEach { file ->
+                dir.walkTopDown().filter { it.isFile }.forEach { file ->
                     val relativePath = file.relativeTo(apkRoot).path.replace("\\", "/")
                     try {
-                        delete(relativePath)
-                    } catch (e: Exception) {
-                        // Bỏ qua nếu lỗi
-                    }
+                        delete(relativePath) // Gạch tên khỏi VFS Repacker
+                    } catch (e: Exception) {}
                 }
-                
-                dir.deleteRecursively()
                 removedDirs++
-                
-                val label = qualifiers.joinToString { q ->
-                    if (q.region != null) "${q.lang}-r${q.region.uppercase()}" else q.lang
-                }
-                logger.fine("Removed ${dir.name} (${size / 1024}KB) — languages: $label")
             }
         }
 
-        logger.info("Language cleanup: kept $keptDirs dirs, removed $removedDirs dirs")
+        logger.info("Language cleanup: kept $keptDirs dirs, removed $removedDirs dirs and cleared ARSC entries.")
     }
 }
