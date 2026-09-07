@@ -16,9 +16,12 @@ private val PNG_SIGNATURE = byteArrayOf(
     0x0D, 0x0A, 0x1A, 0x0A,
 )
 
-private val STRIPPABLE_CHUNK_TYPES = setOf("tEXt", "zTXt", "iTXt", "tIME", "pHYs", "hIST", "sPLT")
+private val STRIPPABLE_CHUNK_TYPES = setOf(
+    "tEXt", "zTXt", "iTXt", "tIME", "pHYs", "hIST", "sPLT",
+)
 
 private class PngChunk(val type: String, val data: ByteArray)
+
 private sealed class OptimizeResult {
     data class Success(val bytes: ByteArray, val saved: Int) : OptimizeResult()
     data class Skipped(val reason: String) : OptimizeResult()
@@ -39,6 +42,7 @@ private fun writeInt(out: ByteArrayOutputStream, value: Int) {
 
 private fun parseChunks(bytes: ByteArray): List<PngChunk>? {
     if (bytes.size < 8 || !PNG_SIGNATURE.contentEquals(bytes.copyOfRange(0, 8))) return null
+
     val chunks = mutableListOf<PngChunk>()
     var offset = 8
     while (offset + 12 <= bytes.size) {
@@ -47,6 +51,13 @@ private fun parseChunks(bytes: ByteArray): List<PngChunk>? {
         val dataStart = offset + 8
         val dataEnd = dataStart + length
         if (length < 0 || dataEnd + 4 > bytes.size) return null
+
+        val storedCrc = readInt(bytes, dataEnd)
+        val computedCrc = CRC32().apply {
+            update(bytes, offset + 4, 4 + length)
+        }.value.toInt()
+        if (storedCrc != computedCrc) return null
+
         chunks += PngChunk(type, bytes.copyOfRange(dataStart, dataEnd))
         offset = dataEnd + 4
     }
@@ -65,44 +76,46 @@ private fun writeChunk(out: ByteArrayOutputStream, type: String, data: ByteArray
     writeInt(out, crc)
 }
 
+private fun inflate(data: ByteArray): ByteArray {
+    val inflater = Inflater()
+    inflater.setInput(data)
+    return ByteArrayOutputStream(data.size * 3).use { out ->
+        val buffer = ByteArray(8192)
+        while (!inflater.finished()) {
+            val count = inflater.inflate(buffer)
+            if (count == 0 && (inflater.needsInput() || inflater.needsDictionary())) break
+            out.write(buffer, 0, count)
+        }
+        inflater.end()
+        out.toByteArray()
+    }
+}
+
+private fun deflate(data: ByteArray): ByteArray {
+    val deflater = Deflater(Deflater.BEST_COMPRESSION, false)
+    deflater.setInput(data)
+    deflater.finish()
+    return ByteArrayOutputStream(data.size).use { out ->
+        val buffer = ByteArray(8192)
+        while (!deflater.finished()) {
+            val count = deflater.deflate(buffer)
+            out.write(buffer, 0, count)
+        }
+        deflater.end()
+        out.toByteArray()
+    }
+}
+
 private fun optimizePng(original: ByteArray): OptimizeResult {
     val chunks = parseChunks(original) ?: return OptimizeResult.Skipped("parse failed")
     val idatData = ByteArrayOutputStream().use { out ->
         chunks.filter { it.type == "IDAT" }.forEach { out.write(it.data) }
         out.toByteArray()
     }
-    if (idatData.isEmpty()) return OptimizeResult.Skipped("no IDAT")
+    if (idatData.isEmpty()) return OptimizeResult.Skipped("no IDAT chunks")
 
-    val raw = try {
-        Inflater().let { inf ->
-            inf.setInput(idatData)
-            ByteArrayOutputStream().use { out ->
-                val buf = ByteArray(8192)
-                while (!inf.finished()) {
-                    val count = inf.inflate(buf)
-                    if (count == 0 && inf.needsInput()) break
-                    out.write(buf, 0, count)
-                }
-                inf.end()
-                out.toByteArray()
-            }
-        }
-    } catch (e: Exception) {
-        return OptimizeResult.Skipped("inflate failed")
-    }
-
-    val recompressed = Deflater(Deflater.BEST_COMPRESSION, false).let { def ->
-        def.setInput(raw)
-        def.finish()
-        ByteArrayOutputStream().use { out ->
-            val buf = ByteArray(8192)
-            while (!def.finished()) {
-                out.write(buf, 0, def.deflate(buf))
-            }
-            def.end()
-            out.toByteArray()
-        }
-    }
+    val raw = try { inflate(idatData) } catch (_: Exception) { return OptimizeResult.Skipped("inflate failed") }
+    val recompressed = deflate(raw)
 
     val out = ByteArrayOutputStream(original.size).use { baos ->
         baos.write(PNG_SIGNATURE)
@@ -122,37 +135,68 @@ private fun optimizePng(original: ByteArray): OptimizeResult {
         baos.toByteArray()
     }
 
-    return if (out.size < original.size) OptimizeResult.Success(out, original.size - out.size)
-    else OptimizeResult.Skipped("already optimal")
+    return if (out.size < original.size) {
+        OptimizeResult.Success(out, original.size - out.size)
+    } else {
+        OptimizeResult.Skipped("already optimal")
+    }
 }
 
 val pngOptimizerPatch = resourcePatch(
     name = "Png Optimizer",
-    description = "Compresses PNG images strictly inside assets/ to prevent resource compilation crashes.",
+    description = "Compresses PNG images without losing quality.",
     use = false,
 ) {
     execute {
-        // CHỈ quét assets/ để tuyệt đối an toàn với API 22, tránh xa thư mục res/
-        val assetsDir = get("assets", false)
-        if (!assetsDir.isDirectory) return@execute
+        val roots = listOf("res", "assets")
+            .map { get(it, false) }
+            .filter { it.isDirectory }
+        if (roots.isEmpty()) return@execute
 
-        val pngFiles = assetsDir.walkTopDown()
-            .filter { it.isFile && it.extension.equals("png", ignoreCase = true) && it.length() <= 5_000_000 }
-            .toList()
+        val pngFiles = roots.flatMap { root ->
+            root.walkTopDown()
+                .filter {
+                    it.isFile &&
+                    it.extension.equals("png", ignoreCase = true) &&
+                    it.length() >= 512 &&
+                    it.length() <= 10_000_000
+                }
+                .toList()
+        }
 
         val optimizedCount = AtomicInteger(0)
+        val alreadyOptimalCount = AtomicInteger(0)
+        val parseFailedCount = AtomicInteger(0)
+        val skippedCount = AtomicInteger(0)
         val freedBytes = AtomicLong(0L)
 
         pngFiles.parallelStream().forEach { file ->
             val original = file.readBytes()
-            val result = try { optimizePng(original) } catch (e: Exception) { null }
-            if (result is OptimizeResult.Success) {
-                file.writeBytes(result.bytes)
-                optimizedCount.incrementAndGet()
-                freedBytes.addAndGet(result.saved.toLong())
+            val result = try {
+                optimizePng(original)
+            } catch (_: Exception) {
+                null
+            }
+
+            when (result) {
+                is OptimizeResult.Success -> {
+                    file.writeBytes(result.bytes)
+                    optimizedCount.incrementAndGet()
+                    freedBytes.addAndGet(result.saved.toLong())
+                }
+                is OptimizeResult.Skipped -> {
+                    when (result.reason) {
+                        "already optimal" -> alreadyOptimalCount.incrementAndGet()
+                        else -> parseFailedCount.incrementAndGet()
+                    }
+                }
+                null -> skippedCount.incrementAndGet()
             }
         }
 
-        logger.info("PNG optimizer (assets-only): optimized=${optimizedCount.get()}, freed=${freedBytes.get() / 1024}KB")
+        logger.info(
+            "PNG optimizer: optimized=${optimizedCount.get()}, already-optimal=${alreadyOptimalCount.get()}, " +
+            "freed=${freedBytes.get() / 1024}KB"
+        )
     }
 }

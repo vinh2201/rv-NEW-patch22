@@ -6,9 +6,24 @@ import java.io.File
 import java.util.logging.Logger
 
 private val logger = Logger.getLogger("LangCleanPatch")
-private val KNOWN_NON_LANGUAGE_SEGMENTS = setOf("car", "any")
+
+private val KNOWN_NON_LANGUAGE_SEGMENTS = setOf(
+    "car",
+    "any",
+)
 
 private data class LangQualifier(val lang: String, val region: String?)
+
+private fun getApkRoot(startFile: File): File {
+    var current: File? = startFile
+    while (current != null) {
+        if (File(current, "resources.arsc").exists() && File(current, "AndroidManifest.xml").exists()) {
+            return current
+        }
+        current = current.parentFile
+    }
+    return startFile.parentFile ?: File(".")
+}
 
 private fun extractLanguageQualifiers(dirName: String): List<LangQualifier> {
     val segments = dirName.split("-")
@@ -20,6 +35,7 @@ private fun extractLanguageQualifiers(dirName: String): List<LangQualifier> {
 
     while (i < rest.size) {
         val seg = rest[i]
+
         if (seg.startsWith("b+")) {
             val parts = seg.split("+")
             if (parts.size >= 2) {
@@ -42,14 +58,16 @@ private fun extractLanguageQualifiers(dirName: String): List<LangQualifier> {
             i += if (isRegion) 2 else 1
             continue
         }
+
         i++
     }
+
     return result
 }
 
 val langCleanPatch = resourcePatch(
     name = "Remove Languages",
-    description = "Removes translations for languages you don't use.",
+    description = "Removes translations for languages you don't use. Only keeps the languages you pick. ",
     use = false,
 ) {
     val keepLanguages by stringsOption(
@@ -60,9 +78,12 @@ val langCleanPatch = resourcePatch(
 
     execute {
         val resDir = get("res")
-        val apkRoot = resDir.parentFile ?: File(".")
+        val apkRoot = getApkRoot(resDir)
 
-        if (!resDir.isDirectory) return@execute
+        if (!resDir.isDirectory) {
+            logger.warning("Language cleanup: res/ directory not found")
+            return@execute
+        }
 
         val keepSet: Set<Pair<String, String?>> = (keepLanguages ?: emptyList()).map { raw ->
             val parts = raw.split("-")
@@ -78,24 +99,32 @@ val langCleanPatch = resourcePatch(
 
         resDir.listFiles { file -> file.isDirectory }?.forEach { dir ->
             val qualifiers = extractLanguageQualifiers(dir.name)
+
             if (qualifiers.isEmpty()) {
                 keptDirs++
                 return@forEach
             }
 
-            if (qualifiers.any { q -> (q.lang to q.region) in keepSet }) {
+            val shouldKeep = qualifiers.any { q -> (q.lang to q.region) in keepSet }
+
+            if (shouldKeep) {
                 keptDirs++
             } else {
                 val filesToDelete = dir.walkTopDown().filter { it.isFile }.toList()
+                val size = filesToDelete.sumOf { it.length() }
+
                 filesToDelete.forEach { file ->
+                    val relativePath = file.relativeTo(apkRoot).path.replace("\\", "/")
                     try {
-                        delete(file.relativeTo(apkRoot).path.replace("\\", "/"))
+                        delete(relativePath)
                     } catch (_: Exception) {}
                 }
+
                 dir.deleteRecursively()
                 removedDirs++
             }
         }
+
         logger.info("Language cleanup: kept $keptDirs dirs, removed $removedDirs dirs")
     }
 }
