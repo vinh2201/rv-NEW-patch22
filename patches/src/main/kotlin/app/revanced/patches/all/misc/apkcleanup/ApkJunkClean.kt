@@ -112,9 +112,6 @@ val apkCleanupPatch = rawResourcePatch(
             logger.warning("APK Cleanup: failed to update apktool.yml: ${e.message}")
         }
 
-        val apkRoot = getApkRoot(manifestFile)
-        // ... các logic phía dưới giữ nguyên ...
-
         var removedFiles = 0
         var freedBytes = 0L
 
