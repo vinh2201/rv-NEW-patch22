@@ -27,13 +27,13 @@ private val JUNK_PATTERNS = listOf(
     Regex(""".*DebugProbesKt\.bin$"""),
     Regex(""".*\.version$"""),
     Regex(""".*_VERSION$"""),
-    Regex(""$.*stamp-cert-sha256$"""),
+    Regex(""".*stamp-cert-sha256$"""),
     Regex(""".*kotlin-tooling-metadata\.json$"""),
     Regex(""".*META-INF/CHANGES$"""),
     Regex(""".*META-INF/README\.md$"""),
     Regex(""".*META-INF/NOTICE.*"""),
     Regex(""".*META-INF/LICENSE.*"""),
-    Regex(""$.*(?:^|/)LICENSES$"""),
+    Regex(""".*(?:^|/)LICENSES$"""),
 )
 
 private val EXCLUDED_PREFIXES = listOf("assets/", "res/")
@@ -91,7 +91,6 @@ val apkCleanupPatch = rawResourcePatch(
                 }
             }
 
-        // Xử lý kiến trúc lib an toàn hơn
         if (splitByArch == true) {
             val archToKeep = targetArch ?: "armeabi-v7a"
             val libDir = get("lib")
