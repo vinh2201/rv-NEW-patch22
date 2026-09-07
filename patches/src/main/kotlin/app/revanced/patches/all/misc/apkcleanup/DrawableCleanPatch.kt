@@ -34,36 +34,7 @@ val drawableCleanPatch = resourcePatch(
     execute {
         val resDir = get("res", false)
         val apkRoot = resDir.parentFile ?: File(".")
-        
-        val baselines = (targetDensities ?: emptyList())
-            .flatMap { it.replace("[", "").replace("]", "").replace("\"", "").split(",") }
-            .map { it.trim().lowercase() }
-            .filter { it in DENSITIES }
-            .takeIf { it.isNotEmpty() } ?: listOf("xhdpi") 
 
-        // 1. DỌN DẸP DENSITY KHỎI BẢNG TÀI NGUYÊN ARSC
-        val resTable = context.apk.resourceTable
-        if (resTable != null) {
-            resTable.packages.forEach { pkg ->
-                pkg.types.forEach { type ->
-                    if (type.name.startsWith("drawable") || type.name.startsWith("mipmap")) {
-                        val iterator = type.configs.iterator()
-                        while (iterator.hasNext()) {
-                            val config = iterator.next()
-                            // Kiểm tra xem qualifier của config có chứa density rác không
-                            val containsDroppedDensity = DENSITIES.any { d -> 
-                                d !in baselines && config.qualifier.contains(d)
-                            }
-                            if (containsDroppedDensity) {
-                                iterator.remove()
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // 2. XOÁ FILE HÌNH QUA VFS (BỎ LỆNH file.delete() VẬT LÝ)
         fun dedupeByBaselineDensities(resDir: File, prefix: String, baselines: List<String>, extensions: Set<String>) {
             groupedDensityDirs(resDir, prefix).values.forEach { densityMap ->
                 val baselineNames = mutableSetOf<String>()
@@ -83,14 +54,27 @@ val drawableCleanPatch = resourcePatch(
                         .forEach { file ->
                             val relativePath = file.relativeTo(apkRoot).path.replace("\\", "/")
                             try {
-                                delete(relativePath) // Cắt đuôi qua VFS
-                            } catch (e: Exception) {}
+                                delete(relativePath)
+                                file.delete()
+                            } catch (e: Exception) {
+                                // Bỏ qua nếu lỗi
+                            }
                         }
                 }
             }
         }
 
+        val baselines = (targetDensities ?: emptyList())
+            .flatMap { it.replace("[", "").replace("]", "").replace("\"", "").split(",") }
+            .map { it.trim().lowercase() }
+            .filter { it in DENSITIES }
+            .takeIf { it.isNotEmpty() } ?: listOf("xhdpi") 
+
         dedupeByBaselineDensities(resDir, "drawable", baselines, DRAWABLE_EXTENSIONS)
         dedupeByBaselineDensities(resDir, "mipmap", baselines, MIPMAP_EXTENSIONS)
+
+        resDir.walkBottomUp()
+            .filter { it.isDirectory && it.listFiles()?.isEmpty() == true }
+            .forEach { it.delete() }
     }
 }

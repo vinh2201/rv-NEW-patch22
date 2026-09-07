@@ -16,12 +16,11 @@ private val PNG_SIGNATURE = byteArrayOf(
     0x0D, 0x0A, 0x1A, 0x0A,
 )
 
-// Metadata chunks that carry no rendering information and are safe to drop.
 private val STRIPPABLE_CHUNK_TYPES = setOf(
     "tEXt", "zTXt", "iTXt", "tIME",
-    "pHYs",   // Physical pixel dimensions (DPI) — irrelevant on Android
-    "hIST",   // Histogram — purely informational
-    "sPLT",   // Suggested palette — optional
+    "pHYs",
+    "hIST",
+    "sPLT",
 )
 
 private class PngChunk(val type: String, val data: ByteArray)
@@ -56,7 +55,6 @@ private fun parseChunks(bytes: ByteArray): List<PngChunk>? {
         val dataEnd = dataStart + length
         if (length < 0 || dataEnd + 4 > bytes.size) return null
 
-        // Validate CRC to catch truncated or corrupted files
         val storedCrc = readInt(bytes, dataEnd)
         val computedCrc = CRC32().apply {
             update(bytes, offset + 4, 4 + length)
@@ -114,17 +112,6 @@ private fun deflate(data: ByteArray): ByteArray {
     }
 }
 
-/**
- * Losslessly re-encodes a PNG: recompresses the IDAT stream at maximum zlib
- * compression and drops metadata chunks that carry no rendering information.
- * Unknown/private chunks (including 9-patch npTc/npLc) are always preserved
- * untouched, since we never interpret pixel data — only the raw decompressed
- * byte stream is round-tripped through inflate/deflate, which is lossless
- * regardless of color type, bit depth, or interlacing.
- *
- * Filter bytes are left untouched since pixel data is not decoded, so savings
- * are purely from better zlib compression and metadata stripping.
- */
 private fun optimizePng(original: ByteArray): OptimizeResult {
     val chunks = parseChunks(original)
         ?: return OptimizeResult.Skipped("parse failed (corrupt or not a PNG)")
@@ -154,7 +141,7 @@ private fun optimizePng(original: ByteArray): OptimizeResult {
                         idatWritten = true
                     }
                 }
-                chunk.type in STRIPPABLE_CHUNK_TYPES -> Unit // Drop.
+                chunk.type in STRIPPABLE_CHUNK_TYPES -> Unit
                 else -> writeChunk(baos, chunk.type, chunk.data)
             }
         }
@@ -168,7 +155,6 @@ private fun optimizePng(original: ByteArray): OptimizeResult {
     }
 }
 
-// PngOptimizerPatch.kt
 val pngOptimizerPatch = resourcePatch(
     name = "Png Optimizer",
     description = "Compresses PNG images without losing quality and strips hidden metadata (DPI, timestamps, text) to make the app smaller. Only rewrites files when the result is actually smaller.",
@@ -191,8 +177,6 @@ val pngOptimizerPatch = resourcePatch(
                 .toList()
         }
 
-        val apkRoot = roots.first().parentFile ?: File(".")
-        
         val optimizedCount = AtomicInteger(0)
         val alreadyOptimalCount = AtomicInteger(0)
         val parseFailedCount = AtomicInteger(0)
@@ -200,7 +184,7 @@ val pngOptimizerPatch = resourcePatch(
         val freedBytes = AtomicLong(0L)
 
         pngFiles.parallelStream().forEach { file ->
-            val original = file.readBytes() // Đọc nguyên thuỷ để phân tích
+            val original = file.readBytes()
             val result = try {
                 optimizePng(original)
             } catch (e: Exception) {
@@ -210,23 +194,9 @@ val pngOptimizerPatch = resourcePatch(
 
             when (result) {
                 is OptimizeResult.Success -> {
-                    val relativePath = file.relativeTo(apkRoot).path.replace("\\", "/")
-                    
-                    try {
-                        // CẬP NHẬT TRỰC TIẾP LÊN VFS THAY VÌ GHI ĐÈ Ổ CỨNG VẬT LÝ
-                        val vfsFile = context.apk.files[relativePath]
-                        if (vfsFile != null) {
-                            // Tuỳ thuộc API của wrapper Patcher, cấu trúc chuẩn V22 sử dụng ByteArraySource
-                            vfsFile.source = app.revanced.patcher.util.io.ByteArraySource(result.bytes)
-                            
-                            optimizedCount.incrementAndGet()
-                            freedBytes.addAndGet(result.saved.toLong())
-                        } else {
-                            logger.warning("PNG optimizer: File $relativePath không tồn tại trong VFS Tracker.")
-                        }
-                    } catch (e: Exception) {
-                         logger.warning("PNG optimizer: Lỗi cập nhật VFS cho $relativePath")
-                    }
+                    file.writeBytes(result.bytes)
+                    optimizedCount.incrementAndGet()
+                    freedBytes.addAndGet(result.saved.toLong())
                 }
                 is OptimizeResult.Skipped -> {
                     when {
