@@ -52,6 +52,14 @@ private val JUNK_PATTERNS = listOf(
     Regex(""".*jetty-dir\.css$"""),
 )
 
+private val JUNK_DIRECTORY_PREFIXES = listOf(
+    "assets/dexopt/",
+    "com/clevertap/",
+    "org/jacoco/",
+    "org/joda/",
+    "services/",
+)
+
 private val EXACT_ROOT_JUNK = listOf(
     // === NHÓM GOOGLE PLAY SERVICES ===
     "play-services-ads.properties",
@@ -274,6 +282,15 @@ val apkCleanupPatch = rawResourcePatch(
             removeTree("assets/audience_network")
         } catch (e: Exception) {
             logger.severe("APK Cleanup: failed removing assets/audience_network/: ${e.message}")
+        }
+
+        JUNK_DIRECTORY_PREFIXES.forEach { prefix ->
+            val cleanPath = prefix.removeSuffix("/")
+            try {
+                removeTree(cleanPath)
+            } catch (e: Exception) {
+                logger.severe("APK Cleanup: failed removing $cleanPath/ folder: ${e.message}")
+            }
         }
 
         try {
