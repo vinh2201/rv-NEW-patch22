@@ -6,8 +6,6 @@ import app.revanced.patcher.patch.stringOption
 import java.io.File
 import java.util.logging.Logger
 
-private val logger = Logger.getLogger("ApkCleanupPatch")
-
 private val PROTECTED_PATTERNS = listOf(
     Regex(""".*META-INF/MANIFEST\.MF$"""),
     Regex(""".*META-INF/services/.*"""),
@@ -54,7 +52,117 @@ private val JUNK_PATTERNS = listOf(
     Regex(""".*jetty-dir\.css$"""),
 )
 
-private val EXCLUDED_PREFIXES = listOf("assets/", "res/")
+private val EXACT_ROOT_JUNK = listOf(
+    // === NHÓM GOOGLE PLAY SERVICES ===
+    "play-services-ads.properties",
+    "play-services-ads-base.properties",
+    "play-services-ads-identifier.properties",
+    "play-services-ads-lite.properties",
+    "play-services-analytics.properties",
+    "play-services-analytics-impl.properties",
+    "play-services-appset.properties",
+    "play-services-auth.properties",
+    "play-services-auth-api-phone.properties",
+    "play-services-auth-base.properties",
+    "play-services-base.properties",
+    "play-services-basement.properties",
+    "play-services-cast.properties",
+    "play-services-cast-framework.properties",
+    "play-services-clearcut.properties",
+    "play-services-cloud-messaging.properties",
+    "play-services-drive.properties",
+    "play-services-fido.properties",
+    "play-services-fitness.properties",
+    "play-services-games.properties",
+    "play-services-gcm.properties",
+    "play-services-identity.properties",
+    "play-services-location.properties",
+    "play-services-maps.properties",
+    "play-services-measurement.properties",
+    "play-services-measurement-api.properties",
+    "play-services-measurement-base.properties",
+    "play-services-measurement-impl.properties",
+    "play-services-measurement-sdk.properties",
+    "play-services-measurement-sdk-api.properties",
+    "play-services-oss-licenses.properties",
+    "play-services-pay.properties",
+    "play-services-places-placereport.properties",
+    "play-services-safetynet.properties",
+    "play-services-stats.properties",
+    "play-services-tasks.properties",
+    "play-services-vision.properties",
+    "play-services-vision-common.properties",
+    "play-services-wallet.properties",
+    "play-services-wearable.properties",
+
+    // === NHÓM FIREBASE ===
+    "firebase-analytics.properties",
+    "firebase-annotations.properties",
+    "firebase-auth.properties",
+    "firebase-auth-interop.properties",
+    "firebase-common.properties",
+    "firebase-components.properties",
+    "firebase-config.properties",
+    "firebase-core.properties",
+    "firebase-crashlytics.properties",
+    "firebase-database.properties",
+    "firebase-datatransport.properties",
+    "firebase-dynamic-links.properties",
+    "firebase-encoders.properties",
+    "firebase-encoders-proto.properties",
+    "firebase-firestore.properties",
+    "firebase-iid.properties",
+    "firebase-iid-interop.properties",
+    "firebase-inappmessaging.properties",
+    "firebase-inappmessaging-display.properties",
+    "firebase-installations.properties",
+    "firebase-installations-interop.properties",
+    "firebase-measurement-connector.properties",
+    "firebase-messaging.properties",
+    "firebase-perf.properties",
+    "firebase-storage.properties",
+
+    // === NHÓM TRANSPORT ===
+    "transport-api.properties",
+    "transport-backend-cct.properties",
+    "transport-runtime.properties",
+
+    // === BỔ SUNG CÁC MỤC BỊ SÓT SO VỚI REGEX LIST ===
+    "ion-java.properties",
+    "feature-delivery.properties",
+    "feature-delivery-base.properties",
+    "facebook_trackers.xml",
+    "google_trackers.xml",
+    "firebase_trackers.xml",
+
+    // === NHÓM RÁC LẺ & PROTO ===
+    "client_analytics.proto",
+    "messaging_event.proto",
+    "messaging_event_extension.proto",
+    "app-update.properties", 
+    "billing.properties", 
+    "billing-ktx.properties", 
+    "review.properties", 
+    "hsdp.properties", 
+    "core-common.properties", 
+    "user-messaging-platform.properties", 
+    "ads-mobile-sdk.properties", 
+    "DebugProbesKt.bin", 
+    "androidsupportmultidexversion.txt", 
+    "stamp-cert-sha256", 
+    "version-control-info.textproto", 
+    "kotlin-tooling-metadata.json",
+    "LICENSES", 
+    "THIRD-PARTY-NOTICES.txt", 
+    "licenses.md", 
+    "debug.keystore", 
+    "version.properties", 
+    "integrity.properties", 
+    "androidannotations-api.properties", 
+    "jetty-dir.css"
+)
+
+private val EXCLUDED_PREFIXES = listOf("res/")
 
 val apkCleanupPatch = rawResourcePatch(
     name = "APK Junk Cleanup",
@@ -80,6 +188,7 @@ val apkCleanupPatch = rawResourcePatch(
     )
 
     execute {
+        val logger = Logger.getLogger(this::class.java.name)
         val manifestFile = get("AndroidManifest.xml")
         val apkRoot = manifestFile.parentFile ?: File(".")
 
@@ -92,28 +201,22 @@ val apkCleanupPatch = rawResourcePatch(
             val entry = get(path)
             if (entry.isDirectory) {
                 val children = entry.list()
-                val preview = children?.take(5)?.joinToString()
-                // Giảm bớt log info cho đỡ rối, hoặc bác giữ nguyên cũng được
                 children?.forEach { child -> removeTree("$path/$child") }
-                
-                // Tiện tay dọn luôn vỏ thư mục rỗng vật lý (repacker không quan tâm cái này lắm)
                 entry.delete() 
             } else if (entry.isFile) {
                 if (isProtected(path)) return
                 val size = entry.length()
                 
                 try {
-                    // DÙNG API delete(path) CỦA REVANCED ĐỂ GẠCH TÊN FILE KHỎI REPACKER
                     delete(path)
-                    
                     removedFiles++
                     freedBytes += size
-                    logger.fine("Removed: $path (${size}B)")
+                    logger.info("Removed: $path (${size}B)")
                 } catch (e: Exception) {
                     logger.warning("APK Cleanup: failed to delete $path. Error: ${e.message}")
                 }
             } else {
-                logger.fine("APK Cleanup: $path -> neither file nor directory")
+                logger.info("APK Cleanup: $path -> neither file nor directory")
             }
         }
 
@@ -130,17 +233,30 @@ val apkCleanupPatch = rawResourcePatch(
                     val size = file.length()
                     
                     try {
-                        // SỬ DỤNG API delete TƯƠNG TỰ BÊN TRÊN
                         delete(relativePath)
-                        
                         removedFiles++
                         freedBytes += size
-                        logger.fine("Removed file: $relativePath (${size}B)")
+                        logger.info("Removed file: $relativePath (${size}B)")
                     } catch (e: Exception) {
                         logger.warning("APK Cleanup: failed to remove file $relativePath")
                     }
                 }
             }
+
+        EXACT_ROOT_JUNK.forEach { exactName ->
+            try {
+                val entry = get(exactName)
+                if (entry.isFile && !isProtected(exactName)) {
+                    val size = entry.length()
+                    delete(exactName)
+                    removedFiles++
+                    freedBytes += size
+                    logger.info("Removed Direct Target: $exactName (${size}B)")
+                }
+            } catch (_: Exception) {
+                // Bỏ qua nếu file không tồn tại trong APK này
+            }
+        }
 
         try {
             removeTree("kotlin")
@@ -176,7 +292,6 @@ val apkCleanupPatch = rawResourcePatch(
             logger.severe("APK Cleanup: failed scanning META-INF/: ${e.message}")
         }
 
-        // Quét ngược để dọn dẹp các thư mục rỗng vật lý còn sót lại (không ảnh hưởng tới repacker)
         apkRoot.walkBottomUp()
             .filter { it.isDirectory && it != apkRoot && it.listFiles()?.isEmpty() == true }
             .forEach { it.delete() }
@@ -192,7 +307,6 @@ val apkCleanupPatch = rawResourcePatch(
                 if (hasTarget) {
                     archNames.filter { it != archToKeep }.forEach { arch ->
                         try {
-                            // Hàm removeTree giờ đã dùng API delete() nên sẽ hoạt động hoàn hảo cho lib/
                             removeTree("lib/$arch")
                         } catch (e: Exception) {
                             logger.severe("APK Cleanup: failed removing lib/$arch/: ${e.message}")
