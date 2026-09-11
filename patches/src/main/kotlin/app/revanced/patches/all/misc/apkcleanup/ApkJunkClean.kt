@@ -233,22 +233,27 @@ val apkCleanupPatch = rawResourcePatch(
         val manifestFile = get("AndroidManifest.xml")
         val apkRoot = manifestFile.parentFile ?: File(".")
 
-        // === KIỂM TRA PACKAGE BẰNG CÁCH ĐỌC XUYÊN RAW MANIFEST ===
+        // === KIỂM TRA PACKAGE CHÍNH XÁC Ở ĐẦU MANIFEST ===
         var isExcludedApp = false
         var detectedPackage = "unknown"
         
         try {
-            val manifestFile = get("AndroidManifest.xml")
             if (manifestFile.isFile) {
                 val rawBytes = manifestFile.readBytes()
                 val strUtf8 = String(rawBytes, Charsets.UTF_8)
-                val strUtf16 = String(rawBytes, Charsets.UTF_16LE)
+                val text = if (strUtf8.contains("<manifest")) strUtf8 else String(rawBytes, Charsets.UTF_16LE)
                 
-                for (pkg in PACKAGE_NAME) {
-                    if (strUtf8.contains(pkg) || strUtf16.contains(pkg)) {
-                        isExcludedApp = true
-                        detectedPackage = pkg
-                        break
+                // Chỉ cắt 5 dòng đầu để tóm thẻ <manifest, triệt tiêu mọi false-positive bên dưới
+                val topLines = text.lines().take(5)
+                val manifestLine = topLines.find { it.contains("<manifest") }
+                
+                if (manifestLine != null) {
+                    for (pkg in PACKAGE_NAME) {
+                        if (manifestLine.contains("package=\"$pkg\"") || manifestLine.contains("package='$pkg'")) {
+                            isExcludedApp = true
+                            detectedPackage = pkg
+                            break
+                        }
                     }
                 }
             }
@@ -256,10 +261,7 @@ val apkCleanupPatch = rawResourcePatch(
             logger.warning("APK Cleanup: Failed to verify package from raw Manifest - ${e.message}")
         }
 
-        if (isExcludedApp) {
-            logger.info("APK Cleanup: Detected protected package ($detectedPackage). Applying EXCLUDED_ROOT_CALLS rules.")
-        }
-        // =========================================================
+        //==================================================
 
         var removedFiles = 0
         var freedBytes = 0L
