@@ -5,8 +5,6 @@ import app.revanced.patcher.patch.stringsOption
 import java.io.File
 import java.util.logging.Logger
 
-private val logger = Logger.getLogger("LangCleanPatch")
-
 private val KNOWN_NON_LANGUAGE_SEGMENTS = setOf(
     "car",      
     "any",      
@@ -54,9 +52,20 @@ private fun extractLanguageQualifiers(dirName: String): List<LangQualifier> {
     return result
 }
 
+private fun getApkRoot(startFile: File): File {
+    var current: File? = startFile
+    while (current != null) {
+        if (File(current, "resources.arsc").exists() && File(current, "AndroidManifest.xml").exists()) {
+            return current
+        }
+        current = current.parentFile
+    }
+    return startFile.parentFile ?: File(".")
+}
+
 val langCleanPatch = resourcePatch(
     name = "Remove Languages",
-    description = "Removes translations for languages you don't use. Only keeps the languages you pick. ",
+    description = "Removes translations for languages you don't use. Only keeps the languages you pick.",
     use = false,
 ) {
     val keepLanguages by stringsOption(
@@ -68,10 +77,12 @@ val langCleanPatch = resourcePatch(
     )
 
     execute {
-        val resDir = get("res")
-        val apkRoot = resDir.parentFile ?: File(".")
+        val logger = Logger.getLogger(this::class.java.name)
+        val resDirRaw = get("res", false)
+        val apkRoot = getApkRoot(resDirRaw)
+        val resDir = File(apkRoot, "res")
 
-        if (!resDir.isDirectory) {
+        if (!resDir.exists() || !resDir.isDirectory) {
             logger.warning("Language cleanup: res/ directory not found")
             return@execute
         }
@@ -108,8 +119,7 @@ val langCleanPatch = resourcePatch(
                     val relativePath = file.relativeTo(apkRoot).path.replace("\\", "/")
                     try {
                         delete(relativePath)
-                    } catch (e: Exception) {
-                        // Bỏ qua nếu lỗi
+                    } catch (_: Exception) {
                     }
                 }
                 
@@ -119,7 +129,7 @@ val langCleanPatch = resourcePatch(
                 val label = qualifiers.joinToString { q ->
                     if (q.region != null) "${q.lang}-r${q.region.uppercase()}" else q.lang
                 }
-                logger.fine("Removed ${dir.name} (${size / 1024}KB) — languages: $label")
+                logger.info("Removed ${dir.name} (${size / 1024}KB) — languages: $label")
             }
         }
 

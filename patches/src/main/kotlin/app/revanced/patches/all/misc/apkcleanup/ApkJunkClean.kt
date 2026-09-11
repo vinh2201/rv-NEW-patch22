@@ -60,6 +60,39 @@ private val JUNK_DIRECTORY_PREFIXES = listOf(
     "services/",
 )
 
+private val EXCLUDED_ROOT_CALLS = listOf(
+    // === NHÓM GOOGLE PLAY SERVICES ===
+    "play-services-auth.properties",
+    "play-services-auth-api-phone.properties",
+    "play-services-auth-base.properties",
+    "play-services-base.properties",
+    "play-services-cloud-messaging.properties",
+    "play-services-gcm.properties",
+    "play-services-tasks.properties",
+
+    // === NHÓM FIREBASE ===
+    "firebase-auth.properties",
+    "firebase-auth-interop.properties",
+    "firebase-common.properties",
+    "firebase-components.properties",
+    "firebase-core.properties",
+    "firebase-database.properties",
+    "firebase-datatransport.properties",
+    "firebase-inappmessaging.properties",
+    "firebase-inappmessaging-display.properties",
+    "firebase-messaging.properties",
+
+    // === NHÓM KHÁC ===
+    "core-common.properties",
+    "META-INF/androidx.compose.ui_ui.version",
+    "androidannotations-api.properties",
+    "jetty-dir.css"
+)
+
+private val PACKAGE_NAME = listOf(
+    "com.viber.voip", "com.facebook.orca", "com.whatsapp", "com.zing.zalo"
+)
+
 private val EXACT_ROOT_JUNK = listOf(
     // === NHÓM GOOGLE PLAY SERVICES ===
     "play-services-ads.properties",
@@ -200,12 +233,41 @@ val apkCleanupPatch = rawResourcePatch(
         val manifestFile = get("AndroidManifest.xml")
         val apkRoot = manifestFile.parentFile ?: File(".")
 
+        // === KIỂM TRA PACKAGE BẰNG CÁCH ĐỌC XUYÊN RAW MANIFEST ===
+        var isExcludedApp = false
+        var detectedPackage = "unknown"
+        
+        try {
+            val manifestFile = get("AndroidManifest.xml")
+            if (manifestFile.isFile) {
+                val rawBytes = manifestFile.readBytes()
+                val strUtf8 = String(rawBytes, Charsets.UTF_8)
+                val strUtf16 = String(rawBytes, Charsets.UTF_16LE)
+                
+                for (pkg in PACKAGE_NAME) {
+                    if (strUtf8.contains(pkg) || strUtf16.contains(pkg)) {
+                        isExcludedApp = true
+                        detectedPackage = pkg
+                        break
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            logger.warning("APK Cleanup: Failed to verify package from raw Manifest - ${e.message}")
+        }
+
+        if (isExcludedApp) {
+            logger.info("APK Cleanup: Detected protected package ($detectedPackage). Applying EXCLUDED_ROOT_CALLS rules.")
+        }
+        // =========================================================
+
         var removedFiles = 0
         var freedBytes = 0L
 
         fun isProtected(relativePath: String) = PROTECTED_PATTERNS.any { it.matches(relativePath) }
 
         fun removeTree(path: String) {
+            if (isExcludedApp && EXCLUDED_ROOT_CALLS.contains(path)) return
             val entry = get(path)
             if (entry.isDirectory) {
                 val children = entry.list()
@@ -237,6 +299,10 @@ val apkCleanupPatch = rawResourcePatch(
                 if (isProtected(relativePath)) return@forEach
                 if (EXCLUDED_PREFIXES.any { relativePath.startsWith(it) }) return@forEach
 
+                if (isExcludedApp && EXCLUDED_ROOT_CALLS.contains(relativePath)) {
+                    return@forEach
+                }
+
                 if (JUNK_PATTERNS.any { it.matches(relativePath) }) {
                     val size = file.length()
                     
@@ -255,6 +321,10 @@ val apkCleanupPatch = rawResourcePatch(
             try {
                 val entry = get(exactName)
                 if (entry.isFile && !isProtected(exactName)) {
+                    if (isExcludedApp && EXCLUDED_ROOT_CALLS.contains(exactName)) {
+                        return@forEach
+                    }
+
                     val size = entry.length()
                     delete(exactName)
                     removedFiles++
@@ -262,7 +332,6 @@ val apkCleanupPatch = rawResourcePatch(
                     logger.info("Removed Direct Target: $exactName (${size}B)")
                 }
             } catch (_: Exception) {
-                // Bỏ qua nếu file không tồn tại trong APK này
             }
         }
 
