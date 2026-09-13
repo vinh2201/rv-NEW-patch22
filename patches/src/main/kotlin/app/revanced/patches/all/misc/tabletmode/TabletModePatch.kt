@@ -3,7 +3,7 @@ package app.revanced.patches.all.misc.tabletmode
 import app.revanced.patcher.extensions.replaceInstruction
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patcher.patch.stringOption
-import app.revanced.patcher.util.proxy.mutableTypes.MutableClass
+import app.revanced.patcher.util.proxy.mutableTypes.MutableClassDef
 import app.revanced.patcher.util.proxy.mutableTypes.MutableMethod
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
@@ -15,9 +15,9 @@ import com.android.tools.smali.dexlib2.util.MethodUtil
 import java.util.logging.Logger
 
 /**
- * Tìm kiếm [MutableMethod] chuẩn xác từ [MethodReference] trong [MutableClass].
+ * Tìm kiếm [MutableMethod] chuẩn xác từ [MethodReference] trong [MutableClassDef].
  */
-private fun MutableClass.findMutableMethodOf(method: MethodReference): MutableMethod = this.methods.first {
+private fun MutableClassDef.findMutableMethodOf(method: MethodReference): MutableMethod = this.methods.first {
     MethodUtil.methodSignaturesMatch(it, method)
 }
 
@@ -68,7 +68,7 @@ val tabletModePatch = bytecodePatch(
 
                     val register = (instruction as? OneRegisterInstruction)?.registerA ?: continue
                     
-                    // Dùng findMutableMethodOf để lấy đúng đối tượng MutableMethod đã được bind đầy đủ
+                    // Giờ đây dùng MutableClassDef khớp hoàn toàn với kiểu của ReVanced Patcher v22
                     val mutableMethod = mutableClass.findMutableMethodOf(method)
                     mutableMethod.replaceInstruction(index, "const/16 v$register, 0x${width.toString(16)}")
                     patched++
