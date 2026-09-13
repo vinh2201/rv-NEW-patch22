@@ -1,29 +1,35 @@
 package app.revanced.patches.all.misc.tabletmode
 
-import app.revanced.patcher.extensions.InstructionExtensions.replaceInstruction
+// Đã sửa lại đường dẫn import đúng cho replaceInstruction
+import app.revanced.patcher.extensions.MutableMethodExtensions.replaceInstruction
 import app.revanced.patcher.patch.bytecodePatch
-import app.revanced.patcher.patch.options.StringOption
+import app.revanced.patcher.patch.stringOption // Import delegate option của API 22
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
-
-// Chuẩn API v22: Gộp chung key và title thành "name" duy nhất!
-private val smallestWidthOption = StringOption(
-    name = "Smallest width (dp)",
-    default = "600",
-    description = "Reported smallestScreenWidthDp. 600 or higher unlocks most tablet layouts."
-)
+import java.util.logging.Logger // Import Logger chuẩn
 
 @Suppress("unused")
 val tabletModePatch = bytecodePatch(
     name = "Tablet Mode",
-    description = "Spoof a tablet smallest width so apps render their tablet UI.",
-    options = listOf(smallestWidthOption) 
+    description = "Spoof a tablet smallest width so apps render their tablet UI."
+    // Đã vứt biến 'options' ở đây đi!
 ) {
-    apply {
-        // Lấy value ra xài ngon ơ
-        val width = (smallestWidthOption.value.toIntOrNull() ?: 600).coerceIn(320, 1200)
+    // Đưa option vào trong block bằng delegation 'by' y hệt ApkJunkClean
+    val smallestWidthOption by stringOption(
+        default = "600",
+        name = "Smallest width (dp)",
+        description = "Reported smallestScreenWidthDp. 600 or higher unlocks most tablet layouts."
+    )
+
+    // Dùng 'execute' thay vì 'apply'
+    execute {
+        // Khởi tạo Logger thủ công
+        val logger = Logger.getLogger(this::class.java.name)
+        
+        // Nhờ dùng 'by stringOption', biến smallestWidthOption giờ trả về String luôn, không cần .value nữa
+        val width = (smallestWidthOption.toIntOrNull() ?: 600).coerceIn(320, 1200)
         var patched = 0
 
         classes.forEach { mutableClass ->
@@ -52,9 +58,9 @@ val tabletModePatch = bytecodePatch(
         
         // Log báo cáo ra CLI
         if (patched > 0) {
-            patchLogger.info("Spoofed smallest width to $width dp at $patched call site(s)")
+            logger.info("Spoofed smallest width to $width dp at $patched call site(s)")
         } else {
-            patchLogger.warning("No smallestScreenWidthDp reads found. No changes applied.")
+            logger.warning("No smallestScreenWidthDp reads found. No changes applied.")
         }
     }
 }
