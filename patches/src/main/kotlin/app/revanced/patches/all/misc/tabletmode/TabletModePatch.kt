@@ -1,9 +1,9 @@
 package app.revanced.patches.all.misc.tabletmode
 
-// Đã fix: Import trực tiếp top-level function của API 22, bỏ cái MutableMethodExtensions đi
 import app.revanced.patcher.extensions.replaceInstruction
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patcher.patch.stringOption
+import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod // Thêm Import này để báo cho Kotlin biết MutableMethod là gì
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
@@ -24,7 +24,6 @@ val tabletModePatch = bytecodePatch(
     execute {
         val logger = Logger.getLogger(this::class.java.name)
         
-        // Đã fix: Thêm '?.' vì stringOption trả về String?
         val width = (smallestWidthOption?.toIntOrNull() ?: 600).coerceIn(320, 1200)
         var patched = 0
 
@@ -43,8 +42,9 @@ val tabletModePatch = bytecodePatch(
                     ) {
                         val register = (instruction as? OneRegisterInstruction)?.registerA ?: continue
                         
-                        // Nhờ import đúng ở trên, lệnh replaceInstruction giờ sẽ ăn 100%
-                        mutableMethod.replaceInstruction(index, "const/16 v$register, 0x${width.toString(16)}")
+                        // FIX Ở ĐÂY: Ép kiểu sang MutableMethod của ReVanced thì mới dùng được replaceInstruction
+                        val mMethod = mutableMethod as? MutableMethod ?: continue
+                        mMethod.replaceInstruction(index, "const/16 v$register, 0x${width.toString(16)}")
                         patched++
                     }
                 }
