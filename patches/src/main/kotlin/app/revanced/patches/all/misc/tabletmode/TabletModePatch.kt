@@ -3,7 +3,6 @@ package app.revanced.patches.all.misc.tabletmode
 import app.revanced.patcher.extensions.replaceInstruction
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patcher.patch.stringOption
-import app.revanced.patcher.util.proxy.mutableTypes.MutableMethod
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
@@ -26,8 +25,8 @@ val tabletModePatch = bytecodePatch(
         val width = (smallestWidthOption?.toIntOrNull() ?: 600).coerceIn(320, 1200)
         var patched = 0
 
-        classes.forEach { mutableClass ->
-            mutableClass.methods.forEach { method ->
+        classes.forEach { clazz ->
+            clazz.methods.forEach { method ->
                 val implementation = method.implementation ?: return@forEach
                 val instructions = implementation.instructions.toList()
 
@@ -42,9 +41,7 @@ val tabletModePatch = bytecodePatch(
                     ) {
                         val register = (instruction as? OneRegisterInstruction)?.registerA ?: continue
                         
-                        // Import đúng MutableMethod và ép kiểu để khớp receiver type của hàm replaceInstruction
-                        val mutableMethod = method as? MutableMethod ?: continue
-                        mutableMethod.replaceInstruction(index, "const/16 v$register, 0x${width.toString(16)}")
+                        method.replaceInstruction(index, "const/16 v$register, 0x${width.toString(16)}")
                         patched++
                     }
                 }
