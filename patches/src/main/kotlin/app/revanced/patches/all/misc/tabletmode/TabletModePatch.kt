@@ -2,10 +2,8 @@ package app.revanced.patches.all.misc.tabletmode
 
 import app.revanced.patcher.extensions.replaceInstruction
 import app.revanced.patcher.patch.bytecodePatch
-import app.revanced.patcher.patch.stringOption
-
-import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod
-import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod.Companion.toMutable // Import chuẩn để convert method
+import app.revanced.patcher.patch.intOption // Đổi sang intOption chuẩn
+import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod.Companion.toMutable // Import chuẩn
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
@@ -17,18 +15,19 @@ val tabletModePatch = bytecodePatch(
     name = "Tablet Mode",
     description = "Spoof a tablet smallest width so apps render their tablet UI."
 ) {
-    val smallestWidthOption by stringOption(
-        default = "600",
+    // Chuẩn API 22: Chỉ dùng name, gộp chung key và title
+    val smallestWidthOption by intOption(
         name = "Smallest width (dp)",
+        default = 600,
         description = "Reported smallestScreenWidthDp. 600 or higher unlocks most tablet layouts."
     )
 
     execute {
         val logger = Logger.getLogger(this::class.java.name)
-        val width = (smallestWidthOption?.toIntOrNull() ?: 600).coerceIn(320, 1200)
+        // Vì intOption đã có default = 600 nên nó luôn trả về Int, gọi trực tiếp luôn
+        val width = smallestWidthOption.coerceIn(320, 1200)
         var patched = 0
 
-        // Duyệt qua 'classes' (ClassDef gốc) để không bị hụt call site nào như bên Morphe
         classes.forEach { classDef ->
             classDef.methods.forEach { method ->
                 val implementation = method.implementation ?: return@forEach
@@ -45,7 +44,7 @@ val tabletModePatch = bytecodePatch(
                     ) {
                         val register = (instruction as? OneRegisterInstruction)?.registerA ?: continue
                         
-                        // FIX TẠI ĐÂY: Dùng .toMutable() thay vì ép kiểu (as MutableMethod)
+                        // toMutable() của ReVanced tự động làm nhiệm vụ giống findMutableMethodOf của Morphe
                         method.toMutable().replaceInstruction(index, "const/16 v$register, 0x${width.toString(16)}")
                         patched++
                     }
