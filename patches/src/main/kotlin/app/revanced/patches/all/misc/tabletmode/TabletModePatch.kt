@@ -2,8 +2,8 @@ package app.revanced.patches.all.misc.tabletmode
 
 import app.revanced.patcher.extensions.replaceInstruction
 import app.revanced.patcher.patch.bytecodePatch
-import app.revanced.patcher.patch.intOption // Đổi sang intOption chuẩn
-import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod.Companion.toMutable // Import chuẩn
+import app.revanced.patcher.patch.intOption 
+import app.revanced.com.android.tools.smali.dexlib2.mutable.MutableMethod.Companion.toMutable 
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
@@ -15,7 +15,6 @@ val tabletModePatch = bytecodePatch(
     name = "Tablet Mode",
     description = "Spoof a tablet smallest width so apps render their tablet UI."
 ) {
-    // Chuẩn API 22: Chỉ dùng name, gộp chung key và title
     val smallestWidthOption by intOption(
         name = "Smallest width (dp)",
         default = 600,
@@ -24,8 +23,10 @@ val tabletModePatch = bytecodePatch(
 
     execute {
         val logger = Logger.getLogger(this::class.java.name)
-        // Vì intOption đã có default = 600 nên nó luôn trả về Int, gọi trực tiếp luôn
-        val width = smallestWidthOption.coerceIn(320, 1200)
+        
+        // FIX LỖI TẠI ĐÂY: Dùng Elvis operator ?: 600 để ép kiểu Int? về Int không null
+        val width = (smallestWidthOption ?: 600).coerceIn(320, 1200)
+        
         var patched = 0
 
         classes.forEach { classDef ->
@@ -44,7 +45,6 @@ val tabletModePatch = bytecodePatch(
                     ) {
                         val register = (instruction as? OneRegisterInstruction)?.registerA ?: continue
                         
-                        // toMutable() của ReVanced tự động làm nhiệm vụ giống findMutableMethodOf của Morphe
                         method.toMutable().replaceInstruction(index, "const/16 v$register, 0x${width.toString(16)}")
                         patched++
                     }
