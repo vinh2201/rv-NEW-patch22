@@ -3,6 +3,7 @@ package app.revanced.patches.all.misc.tabletmode
 import app.revanced.patcher.extensions.replaceInstruction
 import app.revanced.patcher.patch.bytecodePatch
 import app.revanced.patcher.patch.stringOption
+import app.revanced.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable // Import chuẩn để convert method
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
@@ -25,8 +26,9 @@ val tabletModePatch = bytecodePatch(
         val width = (smallestWidthOption?.toIntOrNull() ?: 600).coerceIn(320, 1200)
         var patched = 0
 
-        classes.forEach { mutableClass ->
-            mutableClass.methods.forEach { method ->
+        // Duyệt qua 'classes' (ClassDef gốc) để không bị hụt call site nào như bên Morphe
+        classes.forEach { classDef ->
+            classDef.methods.forEach { method ->
                 val implementation = method.implementation ?: return@forEach
                 val instructions = implementation.instructions.toList()
 
@@ -41,7 +43,8 @@ val tabletModePatch = bytecodePatch(
                     ) {
                         val register = (instruction as? OneRegisterInstruction)?.registerA ?: continue
                         
-                        method.replaceInstruction(index, "const/16 v$register, 0x${width.toString(16)}")
+                        // FIX TẠI ĐÂY: Dùng .toMutable() thay vì ép kiểu (as MutableMethod)
+                        method.toMutable().replaceInstruction(index, "const/16 v$register, 0x${width.toString(16)}")
                         patched++
                     }
                 }
