@@ -1,0 +1,19 @@
+package app.revanced.patches.messenger.inbox
+
+import app.revanced.patcher.extensions.replaceInstruction
+import app.revanced.patcher.patch.bytecodePatch
+
+@Suppress("unused")
+val hideInboxAdsPatch = bytecodePatch(
+    name = "Hide inbox ads",
+    description = "Hides ads in inbox.",
+) {
+    compatibleWith("com.facebook.orca")
+
+    apply {
+        runCatching {
+            loadInboxAdsMethod
+        }.getOrNull()
+            ?.replaceInstruction(0, "return-void")
+    }
+}
