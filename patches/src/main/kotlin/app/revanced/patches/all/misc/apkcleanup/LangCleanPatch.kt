@@ -6,9 +6,22 @@ import java.io.File
 import java.util.logging.Logger
 
 private val KNOWN_NON_LANGUAGE_SEGMENTS = setOf(
-    "car",      
-    "any",      
+    "car",
+    "any",
 )
+
+/** Android still names some resource folders with the old ISO codes: Indonesian is "in", Hebrew "iw", Yiddish "ji". */
+private fun canonicalLanguage(lang: String): String = when (lang) {
+    "id" -> "in"
+    "he" -> "iw"
+    "yi" -> "ji"
+    else -> lang
+}
+
+/** "rUS" -> "us", "r419" -> "419", anything else -> null. */
+private fun regionOfToken(token: String): String? =
+    token.takeIf { it.length == 3 && it[0] == 'r' && it.drop(1).all { c -> c.isUpperCase() } }?.drop(1)?.lowercase()
+        ?: token.takeIf { it.length == 4 && it[0] == 'r' && it.drop(1).all { c -> c.isDigit() } }?.drop(1)
 
 private data class LangQualifier(val lang: String, val region: String?)
 
@@ -26,7 +39,7 @@ private fun extractLanguageQualifiers(dirName: String): List<LangQualifier> {
         if (seg.startsWith("b+")) {
             val parts = seg.split("+")
             if (parts.size >= 2) {
-                val lang = parts[1].lowercase()
+                val lang = canonicalLanguage(parts[1].lowercase())
                 val region = parts.getOrNull(2)
                     ?.takeIf { it.length == 2 && it.all { c -> c.isUpperCase() } }
                     ?.lowercase()
@@ -37,12 +50,9 @@ private fun extractLanguageQualifiers(dirName: String): List<LangQualifier> {
         }
 
         if (seg.length in 2..3 && seg.all { it.isLowerCase() } && seg !in KNOWN_NON_LANGUAGE_SEGMENTS) {
-            val next = rest.getOrNull(i + 1)
-            val isRegion = next != null && next.startsWith("r") && next.length == 3 &&
-                next.drop(1).all { it.isUpperCase() }
-            val region = if (isRegion) next!!.drop(1).lowercase() else null
-            result.add(LangQualifier(seg, region))
-            i += if (isRegion) 2 else 1
+            val region = rest.getOrNull(i + 1)?.let { regionOfToken(it) }
+            result.add(LangQualifier(canonicalLanguage(seg), region))
+            i += if (region != null) 2 else 1
             continue
         }
 
@@ -50,6 +60,34 @@ private fun extractLanguageQualifiers(dirName: String): List<LangQualifier> {
     }
 
     return result
+}
+
+/** One entry of the "Keep languages" option: "ru", "en-rIN", "en-IN", "en_IN", "pt-r419" or "b+sr+Latn". */
+private fun parseKeepEntry(raw: String): Pair<String, String?>? {
+    val text = raw.trim().trim('"', '\'')
+    if (text.isEmpty()) return null
+
+    if (text.startsWith("b+")) {
+        val parts = text.split("+")
+        val lang = parts.getOrNull(1)?.lowercase()?.takeIf { it.isNotEmpty() } ?: return null
+        val region = parts.getOrNull(2)?.takeIf { it.length == 2 && it.all { c -> c.isUpperCase() } }?.lowercase()
+        return canonicalLanguage(lang) to region
+    }
+
+    val parts = text.split("-", "_")
+    val lang = parts[0].lowercase().takeIf { it.isNotEmpty() } ?: return null
+    val region = parts.getOrNull(1)?.let { part ->
+        // "rIN" -> "IN", "IN" -> "IN", "r419" -> "419"
+        val body = if (part.length > 2 && part[0] == 'r') part.drop(1) else part
+
+        when {
+            body.length == 2 && body.all { it.isLetter() } -> body.lowercase()
+            body.length == 3 && body.all { it.isDigit() } -> body
+            else -> null
+        }
+    }
+
+    return canonicalLanguage(lang) to region
 }
 
 private fun getApkRoot(startFile: File): File {
@@ -72,11 +110,12 @@ val langCleanPatch = resourcePatch(
         default = listOf("en", "vi"),
         name = "Keep languages",
         description = "Exact resource variants to preserve. \"ru\" keeps ONLY the unqualified ru dir " +
-            "(values-ru); it does NOT pull in ru-rRU or any other region. \"en-rIN\" keeps ONLY that " +
-            "region. List every variant you want kept, e.g. en, en-rIN, ru — anything not listed is removed.",
+            "(values-ru); it does NOT pull in ru-rRU or any other region. \"en-rIN\" (or en-IN) keeps ONLY that " +
+            "region. List every variant you want kept, e.g. en, en-rIN, ru — anything not listed is removed. " +
+            "\"id\", \"he\" and \"yi\" also match Android's old folder names in, iw and ji.",
     )
 
-    execute {
+    apply {
         val logger = Logger.getLogger(this::class.java.name)
         val resDirRaw = get("res", false)
         val apkRoot = getApkRoot(resDirRaw)
@@ -84,17 +123,19 @@ val langCleanPatch = resourcePatch(
 
         if (!resDir.exists() || !resDir.isDirectory) {
             logger.warning("Language cleanup: res/ directory not found")
-            return@execute
+            return@apply
         }
 
-        val keepSet: Set<Pair<String, String?>> = (keepLanguages ?: emptyList()).map { raw ->
-            val parts = raw.split("-")
-            val lang = parts[0].lowercase()
-            val region = parts.getOrNull(1)
-                ?.takeIf { it.length == 3 && it.startsWith("r", ignoreCase = true) }
-                ?.drop(1)?.lowercase()
-            lang to region
-        }.toSet()
+        val keepSet: Set<Pair<String, String?>> = (keepLanguages ?: emptyList())
+            .flatMap { it.replace("[", "").replace("]", "").split(",") }
+            .mapNotNull { parseKeepEntry(it) }
+            .toSet()
+
+        if (keepSet.isEmpty()) {
+            // Keeping nothing would remove every translation, which is never what someone wants. Do nothing instead.
+            logger.warning("Language cleanup: no language to keep was given, nothing removed")
+            return@apply
+        }
 
         var removedDirs = 0
         var keptDirs = 0
@@ -114,7 +155,7 @@ val langCleanPatch = resourcePatch(
             } else {
                 val filesToDelete = dir.walkTopDown().filter { it.isFile }.toList()
                 val size = filesToDelete.sumOf { it.length() }
-                
+
                 filesToDelete.forEach { file ->
                     val relativePath = file.relativeTo(apkRoot).path.replace("\\", "/")
                     try {
@@ -122,12 +163,12 @@ val langCleanPatch = resourcePatch(
                     } catch (_: Exception) {
                     }
                 }
-                
+
                 dir.deleteRecursively()
                 removedDirs++
-                
+
                 val label = qualifiers.joinToString { q ->
-                    if (q.region != null) "${q.lang}-r${q.region.uppercase()}" else q.lang
+                    if (q.region != null) "${q.lang}-${q.region}" else q.lang
                 }
                 logger.info("Removed ${dir.name} (${size / 1024}KB) — languages: $label")
             }

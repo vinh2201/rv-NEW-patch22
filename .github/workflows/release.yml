@@ -45,4 +45,4 @@ jobs:
           name: revanced-patches-output
           # Dùng ký tự ** để quét file .jar và .rvp ở mọi thư mục con, tránh việc sai lệch đường dẫn
           path: |
-            **/*.rvp
+            patches/build/libs/patches-*.rvp

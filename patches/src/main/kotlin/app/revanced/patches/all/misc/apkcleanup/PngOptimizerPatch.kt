@@ -96,16 +96,24 @@ private fun writeChunk(out: ByteArrayOutputStream, type: String, data: ByteArray
 
 private fun inflate(data: ByteArray): ByteArray {
     val inflater = Inflater()
-    inflater.setInput(data)
-    return ByteArrayOutputStream(data.size * 3).use { out ->
-        val buffer = ByteArray(8192)
-        while (!inflater.finished()) {
-            val count = inflater.inflate(buffer)
-            if (count == 0 && (inflater.needsInput() || inflater.needsDictionary())) break
-            out.write(buffer, 0, count)
+    try {
+        inflater.setInput(data)
+        return ByteArrayOutputStream(data.size * 3).use { out ->
+            val buffer = ByteArray(8192)
+            while (!inflater.finished()) {
+                val count = inflater.inflate(buffer)
+                if (count == 0 && (inflater.needsInput() || inflater.needsDictionary())) break
+                out.write(buffer, 0, count)
+            }
+
+            // A truncated zlib stream used to end the loop quietly, and the image was then re-compressed WITHOUT its last
+            // rows (a shorter, broken picture that is also smaller, so it would have been accepted). Refuse instead.
+            check(inflater.finished()) { "truncated zlib stream" }
+
+            out.toByteArray()
         }
+    } finally {
         inflater.end()
-        out.toByteArray()
     }
 }
 
@@ -229,4 +237,4 @@ val pngOptimizerPatch = resourcePatch(
             "corrupt=${parseFailedCount.get()}, skipped=${skippedCount.get()}, freed=${freedBytes.get() / 1024}KB"
         )
     }
-}
+}
