@@ -773,7 +773,7 @@ val injectUserscriptPatch = bytecodePatch(
         name = "Show test badge",
         description = "Shows a small green 'RV userscript on, hidden: N' label at the bottom left of every facebook.com " +
             "page in a WebView, so you can see that the userscript runs. Turn it off after testing.",
-        default = true,
+        default = false,
     )
 
     apply {
