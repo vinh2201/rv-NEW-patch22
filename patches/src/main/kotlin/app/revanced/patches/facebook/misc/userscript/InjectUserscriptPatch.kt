@@ -396,8 +396,11 @@ private const val USER_AGENT =
 /** Userscript. "__BADGE__" is replaced by true/false (patch option). Written without the dollar sign on purpose. */
 private val USERSCRIPT = """
 /* RV: hide Sponsored posts and the "Open app" bar on facebook.com pages shown inside the Android 8 Facebook app.
- * Derived from "FB - Clean my feeds" (GPL-3.0, Artificial Sweetener, zbluebugz, Quoc Viet Rtinh):
+ * Derived from "FB - Clean my feeds" 6.5.0 (GPL-3.0, Artificial Sweetener, zbluebugz, Quoc Viet Rtinh):
  *   - /ads/about/ disclosure link, svg disclosure, sponsored label in every language of the original
+ *   - its label tables (23 languages) for the suggestions it hides by default: Suggested for you, Groups you might
+ *     like, Events you may like, Follow, Join, Paid for by ______; its Paid partnership link (/business/help/), Meta AI
+ *     link (meta.ai) and survey link (/survey/?session=) rules
  *   - the filter  facebook.com##[data-ad-rendering-role="profile_name"]:upward([aria-posinset]:has(
  *       [data-ad-rendering-role="story_message"]):has([data-ad-rendering-role^="cta-"]))
  * Injected again by the app every ~1.5 s; the first line makes every later injection a no-op.
@@ -417,6 +420,12 @@ private val USERSCRIPT = """
   var FIXED = 'data-rv-fixed';
   var LABELS = ["Sponsored","\u0645\u064f\u0645\u0648\u064e\u0651\u0644","\u0421\u043f\u043e\u043d\u0441\u043e\u0440\u0438\u0440\u0430\u043d\u043e","Sponzorov\u00e1no","Gesponsert","Anzeige","\u03a7\u03bf\u03c1\u03b7\u03b3\u03bf\u03cd\u03bc\u03b5\u03bd\u03b7","Publicidad","Sponsoroitu","Sponsoris\u00e9","\u05de\u05de\u05d5\u05de\u05df","Bersponsor","Sponsorizzato","\u5e83\u544a","Apmaks\u0101ta rekl\u0101ma","Gesponsord","Sponsorowane","Patrocinado","\u0420\u0435\u043a\u043b\u0430\u043c\u0430","Sponsorlu","\u0421\u043f\u043e\u043d\u0441\u043e\u0440\u043e\u0432\u0430\u043d\u0430","\u0110\u01b0\u1ee3c t\u00e0i tr\u1ee3","\u8d5e\u52a9\u5185\u5bb9","\u8d0a\u52a9","Ad","\u0625\u0639\u0644\u0627\u0646","Reklama","Werbung","\u0394\u03b9\u03b1\u03c6\u03ae\u03bc\u03b9\u03c3\u03b7","Anuncio","Mainos","Publicit\u00e9","Pub","\u05de\u05d5\u05d3\u05e2\u05d4","Iklan","Inserzione","Pubblicit\u00e0","Rekl\u0101ma","Advertentie","An\u00fancio","Reklam","Qu\u1ea3ng c\u00e1o","\u5e7f\u544a","\u5ee3\u544a","C\u00f3 t\u00e0i tr\u1ee3"];
   var OPENAPP = ["Open app","Open the app","Open in app","Open in the app","Open Facebook app","Open Facebook","Use app","Use the app","Use Facebook app","M\u1edf \u1ee9ng d\u1ee5ng","M\u1edf app","M\u1edf trong \u1ee9ng d\u1ee5ng","M\u1edf b\u1eb1ng \u1ee9ng d\u1ee5ng","M\u1edf \u1ee9ng d\u1ee5ng Facebook","M\u1edf Facebook","M\u1edf trong app","D\u00f9ng \u1ee9ng d\u1ee5ng","S\u1eed d\u1ee5ng \u1ee9ng d\u1ee5ng","D\u00f9ng \u1ee9ng d\u1ee5ng Facebook","Abrir app","Abrir la app","Abrir aplicaci\u00f3n","Abrir la aplicaci\u00f3n","Abrir en la app","Abrir en la aplicaci\u00f3n","Usar la aplicaci\u00f3n","Abrir Facebook","Abrir o app","Abrir aplicativo","Abrir o aplicativo","Abrir no app","Abrir no aplicativo","Abrir aplica\u00e7\u00e3o","Usar o app","Ouvrir l'application","Ouvrir l'appli","Ouvrir dans l'application","Ouvrir dans l'appli","Utiliser l'application","Ouvrir Facebook","App \u00f6ffnen","\u00d6ffne die App","In der App \u00f6ffnen","App verwenden","Facebook-App \u00f6ffnen","Facebook \u00f6ffnen","In App \u00f6ffnen","Apri app","Apri l'app","Apri nell'app","Apri l'applicazione","Apri in app","Usa l'app","Apri Facebook","App openen","Open de app","Openen in app","De app gebruiken","Facebook openen","\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043f\u0440\u0438\u043b\u043e\u0436\u0435\u043d\u0438\u0435","\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u0432 \u043f\u0440\u0438\u043b\u043e\u0436\u0435\u043d\u0438\u0438","\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u0432 \u043f\u0440\u0438\u043b\u043e\u0436\u0435\u043d\u0438\u0438 Facebook","\u0418\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u044c \u043f\u0440\u0438\u043b\u043e\u0436\u0435\u043d\u0438\u0435","\u041e\u0442\u043a\u0440\u044b\u0442\u044c Facebook","\u0412\u0456\u0434\u043a\u0440\u0438\u0442\u0438 \u0434\u043e\u0434\u0430\u0442\u043e\u043a","\u0412\u0456\u0434\u043a\u0440\u0438\u0442\u0438 \u0432 \u0434\u043e\u0434\u0430\u0442\u043a\u0443","\u0412\u0456\u0434\u043a\u0440\u0438\u0442\u0438 \u0437\u0430\u0441\u0442\u043e\u0441\u0443\u043d\u043e\u043a","\u0412\u0456\u0434\u043a\u0440\u0438\u0442\u0438 \u0443 \u0437\u0430\u0441\u0442\u043e\u0441\u0443\u043d\u043a\u0443","\u0412\u0438\u043a\u043e\u0440\u0438\u0441\u0442\u043e\u0432\u0443\u0432\u0430\u0442\u0438 \u0434\u043e\u0434\u0430\u0442\u043e\u043a","Otw\u00f3rz aplikacj\u0119","Otw\u00f3rz w aplikacji","U\u017cyj aplikacji","Otw\u00f3rz Facebooka","Otev\u0159\u00edt aplikaci","Otev\u0159\u00edt v aplikaci","Pou\u017e\u00edt aplikaci","Otvori\u0165 aplik\u00e1ciu","Otvori\u0165 v aplik\u00e1cii","Deschide aplica\u021bia","Deschide \u00een aplica\u021bie","Folose\u0219te aplica\u021bia","Alkalmaz\u00e1s megnyit\u00e1sa","Megnyit\u00e1s az alkalmaz\u00e1sban","Az alkalmaz\u00e1s haszn\u00e1lata","\u0386\u03bd\u03bf\u03b9\u03b3\u03bc\u03b1 \u03b5\u03c6\u03b1\u03c1\u03bc\u03bf\u03b3\u03ae\u03c2","\u0386\u03bd\u03bf\u03b9\u03b3\u03bc\u03b1 \u03c3\u03c4\u03b7\u03bd \u03b5\u03c6\u03b1\u03c1\u03bc\u03bf\u03b3\u03ae","\u0386\u03bd\u03bf\u03b9\u03b3\u03bc\u03b1 \u03c4\u03b7\u03c2 \u03b5\u03c6\u03b1\u03c1\u03bc\u03bf\u03b3\u03ae\u03c2","\u03a7\u03c1\u03ae\u03c3\u03b7 \u03c4\u03b7\u03c2 \u03b5\u03c6\u03b1\u03c1\u03bc\u03bf\u03b3\u03ae\u03c2","\u041e\u0442\u0432\u043e\u0440\u0438 \u043f\u0440\u0438\u043b\u043e\u0436\u0435\u043d\u0438\u0435\u0442\u043e","\u041e\u0442\u0432\u0430\u0440\u044f\u043d\u0435 \u0432 \u043f\u0440\u0438\u043b\u043e\u0436\u0435\u043d\u0438\u0435\u0442\u043e","Otvori aplikaciju","Otvori u aplikaciji","Koristi aplikaciju","Odpri aplikacijo","Odpri v aplikaciji","Uygulamay\u0131 a\u00e7","Uygulamada a\u00e7","Uygulamay\u0131 kullan","\u0641\u062a\u062d \u0627\u0644\u062a\u0637\u0628\u064a\u0642","\u0627\u0641\u062a\u062d \u0627\u0644\u062a\u0637\u0628\u064a\u0642","\u0641\u062a\u062d \u0641\u064a \u0627\u0644\u062a\u0637\u0628\u064a\u0642","\u0627\u0633\u062a\u062e\u062f\u0627\u0645 \u0627\u0644\u062a\u0637\u0628\u064a\u0642","\u0627\u0633\u062a\u062e\u062f\u0645 \u0627\u0644\u062a\u0637\u0628\u064a\u0642","\u05e4\u05ea\u05d7 \u05d1\u05d0\u05e4\u05dc\u05d9\u05e7\u05e6\u05d9\u05d4","\u05e4\u05ea\u05d9\u05d7\u05d4 \u05d1\u05d0\u05e4\u05dc\u05d9\u05e7\u05e6\u05d9\u05d4","\u05e4\u05ea\u05d7 \u05d0\u05ea \u05d4\u05d0\u05e4\u05dc\u05d9\u05e7\u05e6\u05d9\u05d4","\u05e4\u05ea\u05d7 \u05d0\u05e4\u05dc\u05d9\u05e7\u05e6\u05d9\u05d4","\u05d4\u05e9\u05ea\u05de\u05e9 \u05d1\u05d0\u05e4\u05dc\u05d9\u05e7\u05e6\u05d9\u05d4","\u0628\u0627\u0632 \u06a9\u0631\u062f\u0646 \u0628\u0631\u0646\u0627\u0645\u0647","\u0628\u0627\u0632\u06a9\u0631\u062f\u0646 \u062f\u0631 \u0628\u0631\u0646\u0627\u0645\u0647","\u0627\u0633\u062a\u0641\u0627\u062f\u0647 \u0627\u0632 \u0628\u0631\u0646\u0627\u0645\u0647","\u0910\u092a \u0916\u094b\u0932\u0947\u0902","\u0910\u092a \u092e\u0947\u0902 \u0916\u094b\u0932\u0947\u0902","\u0910\u092a \u0915\u093e \u0909\u092a\u092f\u094b\u0917 \u0915\u0930\u0947\u0902","\u0985\u09cd\u09af\u09be\u09aa \u0996\u09c1\u09b2\u09c1\u09a8","\u0985\u09cd\u09af\u09be\u09aa\u09c7 \u0996\u09c1\u09b2\u09c1\u09a8","\u0e40\u0e1b\u0e34\u0e14\u0e41\u0e2d\u0e1b","\u0e40\u0e1b\u0e34\u0e14\u0e43\u0e19\u0e41\u0e2d\u0e1b","\u0e40\u0e1b\u0e34\u0e14\u0e41\u0e2d\u0e1b\u0e1e\u0e25\u0e34\u0e40\u0e04\u0e0a\u0e31\u0e19","\u0e43\u0e0a\u0e49\u0e41\u0e2d\u0e1b","Buka aplikasi","Buka di aplikasi","Buka app","Gunakan aplikasi","Buka Facebook","Buka apl","Buka dalam apl","Guna apl","Buksan ang app","Buksan sa app","Gamitin ang app","\u6253\u5f00\u5e94\u7528","\u6253\u5f00\u5e94\u7528\u7a0b\u5e8f","\u5728\u5e94\u7528\u4e2d\u6253\u5f00","\u6253\u5f00App","\u6253\u5f00 App","\u4f7f\u7528\u5e94\u7528","\u5728App\u4e2d\u6253\u5f00","\u5728 App \u4e2d\u6253\u5f00","\u6253\u5f00Facebook\u5e94\u7528","\u958b\u555f\u61c9\u7528\u7a0b\u5f0f","\u958b\u555fApp","\u958b\u555f App","\u5728\u61c9\u7528\u7a0b\u5f0f\u4e2d\u958b\u555f","\u5728 App \u4e2d\u958b\u555f","\u4f7f\u7528\u61c9\u7528\u7a0b\u5f0f","\u6253\u958b\u61c9\u7528\u7a0b\u5f0f","\u6253\u958bApp","\u5728App\u4e2d\u6253\u958b","\u30a2\u30d7\u30ea\u3092\u958b\u304f","\u30a2\u30d7\u30ea\u3067\u958b\u304f","\u30a2\u30d7\u30ea\u3092\u4f7f\u3046","Facebook\u30a2\u30d7\u30ea\u3092\u958b\u304f","\uc571 \uc5f4\uae30","\uc571\uc5d0\uc11c \uc5f4\uae30","\uc571 \uc0ac\uc6a9\ud558\uae30","\uc571\uc73c\ub85c \uc5f4\uae30","\uc571\uc5d0\uc11c \ubcf4\uae30","\u00d6ppna appen","\u00d6ppna i appen","Anv\u00e4nd appen","\u00c5pne appen","\u00c5pne i appen","Bruk appen","\u00c5bn appen","\u00c5bn i appen","Brug appen","Avaa sovellus","Avaa sovelluksessa","K\u00e4yt\u00e4 sovellusta","Ava rakendus","Atv\u0113rt lietotni","Atidaryti program\u0117l\u0119","Obre l'aplicaci\u00f3","Obrir l'app","Maak app oop","Fungua programu","\u0627\u06cc\u067e \u06a9\u06be\u0648\u0644\u06cc\u06ba","\u0b9a\u0bc6\u0baf\u0bb2\u0bbf\u0baf\u0bc8\u0ba4\u0bcd \u0ba4\u0bbf\u0bb1","\u1794\u17be\u1780\u1780\u1798\u17d2\u1798\u179c\u17b7\u1792\u17b8"];
+  var NEWS = {"follow":["Follow","متابعة","تابع","Следване","Следвай","Sledovat","Folgen","Ακολούθηση","Ακολούθησε","Seguir","Seuraa","Suivre","S’abonner","S'abonner","עקוב","מעקב","Ikuti","Segui","フォロー","フォローする","Sekot","Volgen","Obserwuj","Подписаться","Takip Et","Стежити","Підписатися","Theo dõi","关注","追蹤"],"join":["Join","Join group","انضمام","انضمام إلى المجموعة","Присъединяване","Присъединяване към групата","Přidat se","Přidat se ke skupině","Beitreten","Gruppe beitreten","Συμμετοχή","Γίνετε μέλος","Unirte","Unirse","Unirte al grupo","Liity","Liity ryhmään","Rejoindre","Rejoindre le groupe","הצטרף","הצטרפות לקבוצה","Gabung","Gabung grup","Iscriviti","Iscriviti al gruppo","参加","グループに参加","Pievienoties","Pievienoties grupai","Lid worden","Lid worden van groep","Dołącz","Dołącz do grupy","Participar","Aderir","Entrar no grupo","Вступить","Вступить в группу","Katıl","Gruba Katıl","Приєднатися","Приєднатися до групи","Tham gia","Tham gia nhóm","加入","加入小组","加入社團"],"suggested":["Suggested for you","Recommended for you","Suggested Pages","Pages you may like","مقترح لك","مقترحات لك","صفحات قد تعجبك","Предложения за вас","Страници, които може да харесате","Navrhované pro vás","Stránky, které by se vám mohly líbit","Vorschläge für dich","Für dich empfohlen","Seiten, die dir gefallen könnten","Προτεινόμενα για εσάς","Σελίδες που μπορεί να σας αρέσουν","Sugerencias para ti","Sugerido para ti","Páginas que te pueden gustar","Ehdotuksia sinulle","Sivut, joista saatat pitää","Suggestion pour vous","Suggestions pour vous","Pages qui pourraient vous plaire","הצעות עבורך","דפים שאולי תאהב","Disarankan untuk Anda","Halaman yang mungkin Anda sukai","Contenuti suggeriti per te","Suggerimenti per te","Pagine che potrebbero piacerti","おすすめ","おすすめのページ","Ieteikumi jums","Lapas, kas tev varētu patikt","Voorgesteld voor jou","Pagina’s die je misschien leuk vindt","Pagina's die je misschien leuk vindt","Proponowane dla Ciebie","Strony, które możesz polubić","Sugestões para ti","Sugestões para você","Páginas de que poderás gostar","Páginas que você pode curtir","Рекомендуем вам","Предлагаемое для вас","Страницы, которые могут вам понравиться","Senin için önerilenler","Beğenebileceğin Sayfalar","Рекомендовано для вас","Сторінки, які можуть вам сподобатися","Gợi ý cho bạn","Đề xuất cho bạn","Trang bạn có thể thích","为你推荐","推荐给你","你可能喜欢的公共主页","為你推薦","推薦給你","你可能會喜歡的粉絲專頁"],"groups":["Groups you might like","Suggested groups","مجموعات قد تعجبك","مجموعات مقترحة","Групи, които може да харесате","Предложени групи","Skupiny, které by se vám mohly líbit","Navrhované skupiny","Gruppen, die dir gefallen könnten","Vorgeschlagene Gruppen","Ομάδες που μπορεί να σας αρέσουν","Προτεινόμενες ομάδες","Grupos que te pueden gustar","Grupos sugeridos","Ryhmät, joista saatat pitää","Ehdotetut ryhmät","Groupes qui pourraient vous plaire","Groupes suggérés","קבוצות שאולי תאהב","קבוצות מוצעות","Grup yang mungkin Anda sukai","Grup yang disarankan","Gruppi che potrebbero piacerti","Gruppi suggeriti","おすすめのグループ","Grupas, kas tev varētu patikt","Ieteiktās grupas","Groepen die je misschien leuk vindt","Voorgestelde groepen","Grupy, które mogą Ci się spodobać","Proponowane grupy","Grupos de que poderás gostar","Grupos que você pode gostar","Группы, которые могут вам понравиться","Рекомендуемые группы","Beğenebileceğin Gruplar","Önerilen Gruplar","Групи, які можуть вам сподобатися","Рекомендовані групи","Nhóm bạn có thể thích","Nhóm được gợi ý","你可能喜欢的小组","推荐小组","你可能會喜歡的社團","推薦社團"],"events":["Events you may like","أحداث قد تعجبك","Събития, които може да ви харесат","Události, které se vám mohou líbit","Veranstaltungen, die dir gefallen könnten","Veranstaltungen, die Ihnen gefallen könnten","Εκδηλώσεις που μπορεί να σας αρέσουν","Eventos que te pueden gustar","Tapahtumat, joista saatat pitää","Évènements qui pourraient vous intéresser","אירועים שאולי תאהבו","Acara yang mungkin Anda sukai","Eventi che potrebbero piacerti","おすすめのイベント","Notikumi, kas jums varētu patikt","Evenementen die je misschien leuk vindt","Wydarzenia, które mogą Ci się spodobać","Eventos que você pode gostar","Мероприятия, которые вам могут понравиться","İlgini çekebilecek etkinlikler","Події, які можуть вам сподобатися","Sự kiện bạn có thể thích","您可能喜欢的活动","你可能感興趣的活動"],"paidBy":["Paid for by ______","مدفوعة بواسطة ______","Платено от ______","Platí za to ______","Finanziert von ______","Πληρωμένο από ______","Pagado por ______","Maksaja ______","Financé par ______","שולם על ידי ______","Dibayar oleh ______","Finanziato da ______","______ による支払い","______による支払い","Apmaksā ______","Betaald door ______","Opłacona przez ______","Financiado por ______","Оплачено ______","______ tarafından ödendi","Tài trợ bởi ______","由 ______ 付费","由______付费","出資者：______"]};   /* {follow, join, suggested, groups, people, events, reels, paidBy} from the original script */
+  /* What is hidden: the defaults of the original script (people / reels are off there too). Sponsored is hidden on every
+   * page; the rest only on the News Feed route, where the original applies it, so a Follow button at the top of a page
+   * or profile is never mistaken for a post. */
+  var ON = { follow: 1, join: 1, suggested: 1, groups: 1, events: 1, paidBy: 1, paidPartnership: 1, metaAi: 1, survey: 1,
+             people: 0, reels: 0 };
   var state = window.__rvFbSponsorBlock;
 
   /* ---------------------------------------------------------------------------------------------------------------
@@ -438,6 +447,50 @@ private val USERSCRIPT = """
   for (i = 0; i < OPENAPP.length; i++) OA[core(OPENAPP[i])] = 1;
   function isLabel(s) { return SET[core(s)] === 1; }
   function isOpenApp(s) { return OA[core(s)] === 1; }
+
+  /* normalized label text -> kind, for the kinds of the original's news label table; "Paid for by ______" templates */
+  var KIND = Object.create(null), PAIDBY = [], kk, kl;
+  for (kk in NEWS) {
+    if (kk === 'paidBy') {
+      for (kl = 0; kl < NEWS.paidBy.length; kl++) {
+        var parts = norm(NEWS.paidBy[kl]).split('______');
+        if ((parts[0] || parts[1])) PAIDBY.push([parts[0] || '', parts[1] || '']);
+      }
+    } else {
+      for (kl = 0; kl < NEWS[kk].length; kl++) { var key = core(NEWS[kk][kl]); if (key && !KIND[key]) KIND[key] = kk; }
+    }
+  }
+  function paidByText(c) {
+    if (c.length < 6 || c.length > 90) return false;
+    for (var i = 0; i < PAIDBY.length; i++) {
+      var pre = PAIDBY[i][0], suf = PAIDBY[i][1];
+      if (c.indexOf(pre) !== 0) continue;
+      if (suf && c.slice(c.length - suf.length) !== suf) continue;
+      if (c.slice(pre.length, c.length - suf.length).replace(/\s+/g, '') !== '') return true;
+    }
+    return false;
+  }
+  /* what a piece of text says it is: 'sponsored', one of the news kinds, 'paidBy', or '' */
+  var memo = Object.create(null), memoN = 0;
+  function kindOf(s) {
+    if (s.length > 100) return '';
+    var r = memo[s];
+    if (r !== undefined) return r;
+    var c = core(s), k = '';
+    if (c) {
+      if (SET[c] === 1) k = 'sponsored';
+      else if (KIND[c]) k = ON[KIND[c]] ? KIND[c] : '';
+      else if (ON.paidBy && paidByText(c)) k = 'paidBy';
+    }
+    if (memoN++ > 6000) { memo = Object.create(null); memoN = 0; }
+    memo[s] = k;
+    return k;
+  }
+  function feedRoute() {
+    var p = String(location.pathname || '/');
+    return p === '/' || p.indexOf('/home.php') === 0 || p === '/index.php';
+  }
+  function allowedKind(k) { return k === 'sponsored' || feedRoute(); }
 
   var BODY = '[data-ad-rendering-role="story_message"],[data-ad-preview="message"],[data-ad-comet-preview="message"],blockquote,p';
 
@@ -553,8 +606,8 @@ private val USERSCRIPT = """
    * ------------------------------------------------------------------------------------------------------------- */
   function big(r, minH, minW) { return r.height >= minH && r.width >= minW; }
 
-  function geoCard(el) {
-    var W = vw(), H = vh(), MIN = H * 0.25, MAX = H * 1.7, a, d, r, par, kids, k, cnt;
+  function geoCard(el, frac) {
+    var W = vw(), H = vh(), MIN = H * (frac || 0.25), MAX = H * 1.7, a, d, r, par, kids, k, cnt;
     for (a = el, d = 0; a && a !== document.body && a !== document.documentElement && d < 30; a = a.parentElement, d++) {
       r = a.getBoundingClientRect();
       if (r.height > MAX) return null;
@@ -573,7 +626,7 @@ private val USERSCRIPT = """
 
   /* older idea, kept as a second chance: a story carries data-tracking-duration-id; from the label upwards take the
    * outermost one that holds no OTHER such element and is not taller than 1.7 screens. */
-  function trackCard(el) {
+  function trackCard(el, frac) {
     var best = null, H = vh(), SEL = '[data-tracking-duration-id]';
     for (var a = el.closest(SEL); a; a = a.parentElement ? a.parentElement.closest(SEL) : null) {
       var inner = a.querySelectorAll(SEL), foreign = false, i;
@@ -582,7 +635,7 @@ private val USERSCRIPT = """
       }
       if (foreign) break;
       var r = a.getBoundingClientRect();
-      if (r.height >= H * 0.25 && r.height <= H * 1.7) best = a;
+      if (r.height >= H * (frac || 0.25) && r.height <= H * 1.7) best = a;
     }
     return best;
   }
@@ -593,48 +646,95 @@ private val USERSCRIPT = """
     return off >= -4 && off <= Math.max(160, b.height * 0.35);
   }
 
-  /* all elements that show a sponsored label inside root: text nodes (the label is often a bare text node next to a
-   * " · " and an icon), and elements whose visible letters add up to a label (decoy letters). */
+  /* what a link points at: 'paidPartnership' (/business/help/), 'metaAi' (meta.ai, also through l.facebook.com/l.php),
+   * 'survey' (/survey/?session=), or '' */
+  function linkKind(a) {
+    var h = a.getAttribute('href');
+    if (!h || h.length > 600) return '';
+    try {
+      var u = new URL(h, location.href);
+      if (/(^|\.)facebook\.com${'$'}/.test(u.hostname)) {
+        if (u.hostname === 'l.facebook.com' && u.pathname === '/l.php') {
+          var d = u.searchParams.get('u');
+          if (!d) return '';
+          u = new URL(d);
+        } else {
+          if (ON.paidPartnership && u.pathname.indexOf('/business/help/') === 0) return 'paidPartnership';
+          if (ON.survey && u.pathname === '/survey/' && /(^|&)session=/.test(String(u.search).slice(1))) return 'survey';
+          return '';
+        }
+      }
+      if (ON.metaAi && (u.protocol === 'https:' || u.protocol === 'http:') && (u.hostname === 'meta.ai' || /\.meta\.ai${'$'}/.test(u.hostname))) return 'metaAi';
+    } catch (e) {}
+    return '';
+  }
+
+  /* all elements that show a label inside root: text nodes (the label is often a bare text node next to a " · " and an
+   * icon), controls named by aria-label, links that mean a kind, and elements whose visible letters add up to a sponsored
+   * label (decoy letters). Each element is tagged with its kind in __rvKind. */
   function labelEls(root) {
     var out = [];
     if (!root || root.nodeType !== 1) return out;
-    var tw = document.createTreeWalker(root, 4, null, false), t, n = 0, pe, tag;
+    var tw = document.createTreeWalker(root, 4, null, false), t, n = 0, pe, tag, k;
     while ((t = tw.nextNode()) && n++ < 8000) {
       var v = t.nodeValue;
-      if (!v || v.length > 40 || !/\S/.test(v)) continue;
-      if (!isLabel(v)) continue;
+      if (!v || v.length < 2 || v.length > 100 || !/\S/.test(v)) continue;
+      k = kindOf(v);
+      if (!k) continue;
       pe = t.parentElement;
       if (!pe) continue;
       tag = String(pe.tagName).toUpperCase();
       if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'TEXTAREA' || tag === 'TITLE' || tag === 'NOSCRIPT') continue;
+      pe.__rvKind = k;
       out.push(pe);
     }
-    var cand = root.querySelectorAll('span,div,a,h3,h4,h5,strong,b'), k, e, c = 0, tl;
-    for (k = 0; k < cand.length && c < 2500; k++) {
-      e = cand[k];
+    var ctl = root.querySelectorAll('button[aria-label],[role="button"][aria-label],a[aria-label]'), j;
+    for (j = 0; j < ctl.length && j < 600; j++) {
+      k = kindOf(ctl[j].getAttribute('aria-label') || '');
+      if (k) { ctl[j].__rvKind = k; out.push(ctl[j]); }
+    }
+    var as = root.querySelectorAll('a[href]');
+    for (j = 0; j < as.length && j < 800; j++) {
+      k = linkKind(as[j]);
+      if (k) { as[j].__rvKind = k; out.push(as[j]); }
+    }
+    if (root.matches && root.matches('a[href]')) { k = linkKind(root); if (k) { root.__rvKind = k; out.push(root); } }
+    var cand = root.querySelectorAll('span,div,a,h3,h4,h5,strong,b'), e, c = 0, tl;
+    for (j = 0; j < cand.length && c < 2500; j++) {
+      e = cand[j];
       if (e.childElementCount < 2 || e.childElementCount > 40) continue;
       c++;
       tl = (e.textContent || '').length;
       if (tl < 5 || tl > 80) continue;
-      if (isLabel(visibleText(e))) out.push(e);
+      if (isLabel(visibleText(e))) { e.__rvKind = 'sponsored'; out.push(e); }
     }
     return out;
   }
+
+  /* things that are a card of their own: the label does not have to be in the header part of the card */
+  var ANYWHERE = { survey: 1 };
+  var CLICKABLE = 'button,[role="button"],a[href],[tabindex]';
 
   /* true = finished (hidden or rejected), false = the page has not been laid out yet, try again later */
   function handleLabel(el) {
     if (el.__rvDone) return true;
     if (!el.isConnected) return true;
     if (el.closest('[' + HIDE + ']')) { el.__rvDone = true; return true; }
+    var kind = el.__rvKind || 'sponsored';
+    if (!allowedKind(kind)) return true;      /* not on this page (yet): the next scan looks again */
     if (inBody(el)) { el.__rvDone = true; return true; }
-    var card = postOf(el), rule = 'label-text';
-    if (!card) { card = geoCard(el); rule = 'label-shape'; }
-    if (!card) { card = trackCard(el); rule = 'label-track'; }
+    /* "Follow" / "Join" count only on a button, never as a word in a text */
+    if ((kind === 'follow' || kind === 'join') && !el.closest(CLICKABLE)) { el.__rvDone = true; return true; }
+    var card = postOf(el), rule = 'text';
+    if (!card) { card = geoCard(el); rule = 'shape'; }
+    if (!card) { card = trackCard(el); rule = 'track'; }
+    /* a short text-only suggested post is lower than a quarter of the screen */
+    if (!card && kind !== 'sponsored') { card = geoCard(el, 0.12); rule = 'shape-small'; }
     if (!card) return false;
     if (!card.getBoundingClientRect().height) return false;
     el.__rvDone = true;
-    if (!inHeader(el, card)) return true;
-    hide(card, rule);
+    if (!ANYWHERE[kind] && !inHeader(el, card)) return true;
+    hide(card, kind + ':' + rule);
     return true;
   }
 
@@ -857,7 +957,7 @@ private val USERSCRIPT = """
         path.push(t);
       }
       var g = geoCard(e), tk = trackCard(e);
-      out.push('SHOWN label#' + n + ': ' + path.join(' < '));
+      out.push('SHOWN ' + (e.__rvKind || '?') + ' #' + n + ': ' + path.join(' < '));
       out.push('  shape=' + (g ? g.tagName.toLowerCase() : 'none') + ' track=' + (tk ? tk.tagName.toLowerCase() : 'none'));
     }
     return out.join('\n');
