@@ -7,32 +7,31 @@ import app.revanced.patcher.patch.BytecodePatchContext
 import app.revanced.patcher.patch.PatchException
 import app.revanced.patcher.patch.booleanOption
 import app.revanced.patcher.patch.bytecodePatch
-import app.revanced.patcher.patch.resourcePatch
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.dexbacked.DexBackedDexFile
 import com.android.tools.smali.dexlib2.iface.ClassDef
-import org.w3c.dom.Element
 import java.util.Base64
 import java.util.logging.Logger
 
 /*
  * Inject userscript to block sponsored posts on android 8 apk app
  *
- * ONE self-contained file, no option to fill in. It adds and removes NO file of the apk. What changes:
- *   1. the existing classes.dex gets two small classes: "Injector" (the logic) and "HostActivity" (a bare window),
- *   2. the userscript is a string inside Injector,
- *   3. one call at the top of the Application.onCreate() that already exists,
- *   4. the existing AndroidManifest.xml is edited (not replaced, nothing added to the zip): one <activity> element for
- *      HostActivity, and the launcher <activity-alias> entries (the app icon) point to it instead of FbMainTabActivity.
+ * ONE self-contained file. It adds NO file to the apk and touches NO resource: no asset, no res/, no new dex, no
+ * library, and not even the manifest. This is on purpose: a patch that edits the manifest (or any resource) makes
+ * the patcher decode ALL resources and rebuild them with aapt2, which breaks the recompile of this apk. Everything is
+ *   1. one small class, "Injector", added to the dex the app already has (classes.dex),
+ *   2. the userscript, the start url and the user agent, stored as strings inside that class,
+ *   3. one call at the top of the Application.onCreate() that already exists.
+ * It has no resource patch and no dependency, so the patcher does not decode resources for it.
  *
  * What it does at run time (inside the app process):
  *   a. START PAGE (idea taken from the "Cobalt-Start-URL aendern" patch of the YouTube TV bundle, which repoints the
- *      app at another url): the icon of the app opens HostActivity, a window that holds one WebView with
- *      https://m.facebook.com/ and a phone user agent. The native Facebook screens are never started: no second login
- *      on top of the native one, no native video playing behind the page, no double loading. Back goes back inside the
- *      page first; the WebView is paused when the app leaves the screen. Links that are not http(s) (fb://, intent://)
- *      are ignored. Should the native main screen be reached some other way (a notification, say) the same page is
- *      laid over it.
+ *      app at another url): when the main screen of the app (FbMainTabActivity, the target of the launcher alias in
+ *      the manifest) or one of its login / sign-up screens (class names under com.facebook. that contain "Login" or
+ *      "Registration") is resumed, a WebView with https://m.facebook.com/ and a phone user agent (Chrome on Android)
+ *      is laid over it. Covering the login screens too means the log in is done ONCE, on the page, and the native
+ *      screens behind it never get a session (no feed, no video, no sound of their own). Back goes back inside the
+ *      page first. Links that are not http(s) (fb://, intent://) are ignored.
  *   b. USERSCRIPT: while an activity is resumed, every 1.5 s the view tree is walked, and every android.webkit.WebView
  *      found (the start page, the in-app browser) runs the userscript with evaluateJavascript(); the page-finished
  *      callback of the start page runs it too. The first line of the userscript makes every repeat a no-op and the
@@ -44,25 +43,22 @@ import java.util.logging.Logger
  *   490 / 521 : FacebookApplication has no onCreate, the first one is in its (obfuscated) base class
  *   585       : FacebookApplication.onCreate itself
  *
- * LIMITS: the native News Feed of the app is not a web page, so the userscript cannot touch it; that is why (a)
- * exists. Because the native screens are not started, what only the native screens do (native notifications' deep
- * links, Messenger-style native chat, camera / file upload from the page) is not available; the web site's own
- * versions are.
+ * LIMIT: the native News Feed of the app is not a web page, so the userscript cannot touch it. That is why (a)
+ * exists: the feed the user reads is then the web feed, which the userscript can filter. An account that is already
+ * logged in natively keeps its native session behind the page (log out / clear the app data once to avoid that).
  *
- * ---- Injector.smali and HostActivity.smali (assembled with smali; the Base64 further down contains them) ------------
+ * ---- Injector.smali (assembled with smali; the Base64 further down contains it) ---------------------------------------
  * # ===== Injector.smali =====
  * .class public final Lapp/revanced/extension/facebook/userscript/Injector;
  * .super Landroid/webkit/WebViewClient;
  * .source "Injector.java"
  *
- * # 1. HostActivity (the launcher entry, see the manifest edit of the patch) shows m.facebook.com with a phone user agent
- * #    in a WebView. Where the native main screen is reached some other way (a notification, say) the same page is laid over it.
+ * # 1. Opens the start page (default m.facebook.com, phone user agent) in a WebView laid over the app's main screen.
  * # 2. Runs the userscript in every WebView the app shows (that one, and the in-app browser).
  * .implements Landroid/app/Application$ActivityLifecycleCallbacks;
  * .implements Landroid/view/View$OnKeyListener;
  * .implements Ljava/lang/Runnable;
  *
- * .field private static instance:Lapp/revanced/extension/facebook/userscript/Injector;
  * .field private static lastUrl:Ljava/lang/String;
  *
  * .field private final handler:Landroid/os/Handler;
@@ -85,7 +81,6 @@ import java.util.logging.Logger
  *     :try_start_0
  *     new-instance v0, Lapp/revanced/extension/facebook/userscript/Injector;
  *     invoke-direct {v0}, Lapp/revanced/extension/facebook/userscript/Injector;-><init>()V
- *     sput-object v0, Lapp/revanced/extension/facebook/userscript/Injector;->instance:Lapp/revanced/extension/facebook/userscript/Injector;
  *     invoke-virtual {p0, v0}, Landroid/app/Application;->registerActivityLifecycleCallbacks(Landroid/app/Application$ActivityLifecycleCallbacks;)V
  *     :try_end_0
  *     .catchall {:try_start_0 .. :try_end_0} :catch_0
@@ -96,7 +91,7 @@ import java.util.logging.Logger
  *     goto :goto_0
  * .end method
  *
- * # script() gets its text from the patch. The start page and the phone user agent are fixed.
+ * # The three methods below get their text from the patch (userscript, start url, user agent).
  * .method public static script()Ljava/lang/String;
  *     .locals 1
  *     const-string v0, "__RV_SCRIPT__"
@@ -105,13 +100,13 @@ import java.util.logging.Logger
  *
  * .method public static startUrl()Ljava/lang/String;
  *     .locals 1
- *     const-string v0, "https://m.facebook.com/"
+ *     const-string v0, "__RV_START_URL__"
  *     return-object v0
  * .end method
  *
  * .method public static userAgent()Ljava/lang/String;
  *     .locals 1
- *     const-string v0, "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
+ *     const-string v0, "__RV_USER_AGENT__"
  *     return-object v0
  * .end method
  *
@@ -190,105 +185,6 @@ import java.util.logging.Logger
  *     invoke-virtual {v1, v2, v3}, Landroid/view/ViewGroup;->addView(Landroid/view/View;Landroid/view/ViewGroup$LayoutParams;)V
  *     invoke-virtual {v2, v0}, Landroid/webkit/WebView;->loadUrl(Ljava/lang/String;)V
  *     invoke-virtual {v2}, Landroid/view/View;->requestFocus()Z
- *     :try_end_0
- *     .catchall {:try_start_0 .. :try_end_0} :catch_0
- *     :done
- *     return-void
- *     :catch_0
- *     move-exception v0
- *     goto :done
- * .end method
- *
- * # ---- called by HostActivity ---------------------------------------------------------------------------------------------
- *
- * # onCreate: put the start page in the window right away (no waiting for the 1.5 s poll).
- * .method public static open(Landroid/app/Activity;)V
- *     .locals 1
- *     :try_start_0
- *     sget-object v0, Lapp/revanced/extension/facebook/userscript/Injector;->instance:Lapp/revanced/extension/facebook/userscript/Injector;
- *     if-eqz v0, :done
- *     invoke-direct {v0, p0}, Lapp/revanced/extension/facebook/userscript/Injector;->attach(Landroid/app/Activity;)V
- *     :try_end_0
- *     .catchall {:try_start_0 .. :try_end_0} :catch_0
- *     :done
- *     return-void
- *     :catch_0
- *     move-exception v0
- *     goto :done
- * .end method
- *
- * # The WebView this class put in the activity, or null.
- * .method private static webViewOf(Landroid/app/Activity;)Landroid/webkit/WebView;
- *     .locals 3
- *     const/4 v2, 0x0
- *     const v0, 0x1020002
- *     invoke-virtual {p0, v0}, Landroid/app/Activity;->findViewById(I)Landroid/view/View;
- *     move-result-object v0
- *     if-eqz v0, :none
- *     const-string v1, "rv-web"
- *     invoke-virtual {v0, v1}, Landroid/view/View;->findViewWithTag(Ljava/lang/Object;)Landroid/view/View;
- *     move-result-object v0
- *     instance-of v1, v0, Landroid/webkit/WebView;
- *     if-eqz v1, :none
- *     check-cast v0, Landroid/webkit/WebView;
- *     return-object v0
- *     :none
- *     return-object v2
- * .end method
- *
- * # onBackPressed: true when the page went back by itself.
- * .method public static back(Landroid/app/Activity;)Z
- *     .locals 2
- *     const/4 v1, 0x0
- *     :try_start_0
- *     invoke-static {p0}, Lapp/revanced/extension/facebook/userscript/Injector;->webViewOf(Landroid/app/Activity;)Landroid/webkit/WebView;
- *     move-result-object v0
- *     if-eqz v0, :done
- *     invoke-virtual {v0}, Landroid/webkit/WebView;->canGoBack()Z
- *     move-result v1
- *     if-eqz v1, :done
- *     invoke-virtual {v0}, Landroid/webkit/WebView;->goBack()V
- *     const/4 v1, 0x1
- *     :try_end_0
- *     .catchall {:try_start_0 .. :try_end_0} :catch_0
- *     :done
- *     return v1
- *     :catch_0
- *     move-exception v0
- *     const/4 v1, 0x0
- *     goto :done
- * .end method
- *
- * # onPause (0) / onResume (1) / onDestroy (2): a page that is not on screen must not keep playing its video and sound;
- * # on pause the cookies (the login) are written to disk as well.
- * .method public static life(Landroid/app/Activity;I)V
- *     .locals 2
- *     :try_start_0
- *     invoke-static {p0}, Lapp/revanced/extension/facebook/userscript/Injector;->webViewOf(Landroid/app/Activity;)Landroid/webkit/WebView;
- *     move-result-object v0
- *     if-eqz v0, :done
- *     if-nez p1, :cond_not_pause
- *     invoke-virtual {v0}, Landroid/webkit/WebView;->onPause()V
- *     invoke-static {}, Landroid/webkit/CookieManager;->getInstance()Landroid/webkit/CookieManager;
- *     move-result-object v1
- *     invoke-virtual {v1}, Landroid/webkit/CookieManager;->flush()V
- *     goto :done
- *     :cond_not_pause
- *     const/4 v1, 0x1
- *     if-ne p1, v1, :cond_destroy
- *     invoke-virtual {v0}, Landroid/webkit/WebView;->onResume()V
- *     goto :done
- *     :cond_destroy
- *     invoke-virtual {v0}, Landroid/webkit/WebView;->getParent()Landroid/view/ViewParent;
- *     move-result-object v1
- *     instance-of v1, v1, Landroid/view/ViewGroup;
- *     if-eqz v1, :no_parent
- *     invoke-virtual {v0}, Landroid/webkit/WebView;->getParent()Landroid/view/ViewParent;
- *     move-result-object v1
- *     check-cast v1, Landroid/view/ViewGroup;
- *     invoke-virtual {v1, v0}, Landroid/view/ViewGroup;->removeView(Landroid/view/View;)V
- *     :no_parent
- *     invoke-virtual {v0}, Landroid/webkit/WebView;->destroy()V
  *     :try_end_0
  *     .catchall {:try_start_0 .. :try_end_0} :catch_0
  *     :done
@@ -405,6 +301,34 @@ import java.util.logging.Logger
  *     return v0
  * .end method
  *
+ * # The screens the page is laid over: the main screen, and the login / sign-up screens (so that the log in is done once, on the
+ * # page, and the native screens behind it never get a session). Class names of the app, matched by a word they contain.
+ * .method private static isHost(Ljava/lang/String;)Z
+ *     .locals 2
+ *     const-string v0, "com.facebook."
+ *     invoke-virtual {p0, v0}, Ljava/lang/String;->startsWith(Ljava/lang/String;)Z
+ *     move-result v1
+ *     if-eqz v1, :no
+ *     const-string v0, "FbMainTabActivity"
+ *     invoke-virtual {p0, v0}, Ljava/lang/String;->contains(Ljava/lang/CharSequence;)Z
+ *     move-result v1
+ *     if-nez v1, :yes
+ *     const-string v0, "Login"
+ *     invoke-virtual {p0, v0}, Ljava/lang/String;->contains(Ljava/lang/CharSequence;)Z
+ *     move-result v1
+ *     if-nez v1, :yes
+ *     const-string v0, "Registration"
+ *     invoke-virtual {p0, v0}, Ljava/lang/String;->contains(Ljava/lang/CharSequence;)Z
+ *     move-result v1
+ *     if-nez v1, :yes
+ *     :no
+ *     const/4 v0, 0x0
+ *     return v0
+ *     :yes
+ *     const/4 v0, 0x1
+ *     return v0
+ * .end method
+ *
  * # ---- Application.ActivityLifecycleCallbacks -----------------------------------------------------------------------------
  *
  * .method public onActivityResumed(Landroid/app/Activity;)V
@@ -414,15 +338,9 @@ import java.util.logging.Logger
  *     move-result-object v0
  *     invoke-virtual {v0}, Ljava/lang/Class;->getName()Ljava/lang/String;
  *     move-result-object v0
- *     const-string v1, "app.revanced.extension.facebook.userscript.HostActivity"
- *     invoke-virtual {v1, v0}, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
- *     move-result v2
- *     if-nez v2, :cond_is_main
- *     const-string v1, "com.facebook.katana.activity.FbMainTabActivity"
- *     invoke-virtual {v1, v0}, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
- *     move-result v2
- *     if-eqz v2, :cond_not_main
- *     :cond_is_main
+ *     invoke-static {v0}, Lapp/revanced/extension/facebook/userscript/Injector;->isHost(Ljava/lang/String;)Z
+ *     move-result v0
+ *     if-eqz v0, :cond_not_main
  *     invoke-direct {p0, p1}, Lapp/revanced/extension/facebook/userscript/Injector;->attach(Landroid/app/Activity;)V
  *     :cond_not_main
  *     iget-object v0, p0, Lapp/revanced/extension/facebook/userscript/Injector;->handler:Landroid/os/Handler;
@@ -465,70 +383,15 @@ import java.util.logging.Logger
  *     .locals 0
  *     return-void
  * .end method
- *
- * # ===== HostActivity.smali =====
- * .class public Lapp/revanced/extension/facebook/userscript/HostActivity;
- * .super Landroid/app/Activity;
- * .source "HostActivity.java"
- *
- * # The launcher entry of the app (the manifest alias that used to open FbMainTabActivity points here): a bare window that
- * # shows m.facebook.com in a WebView. The native Facebook screens are never started, so there is no second login, nothing
- * # plays behind the page and the app does not load its feed twice. All the work is in Injector.
- *
- * .method public constructor <init>()V
- *     .locals 0
- *     invoke-direct {p0}, Landroid/app/Activity;-><init>()V
- *     return-void
- * .end method
- *
- * .method protected onCreate(Landroid/os/Bundle;)V
- *     .locals 0
- *     invoke-super {p0, p1}, Landroid/app/Activity;->onCreate(Landroid/os/Bundle;)V
- *     invoke-static {p0}, Lapp/revanced/extension/facebook/userscript/Injector;->open(Landroid/app/Activity;)V
- *     return-void
- * .end method
- *
- * .method protected onPause()V
- *     .locals 1
- *     invoke-super {p0}, Landroid/app/Activity;->onPause()V
- *     const/4 v0, 0x0
- *     invoke-static {p0, v0}, Lapp/revanced/extension/facebook/userscript/Injector;->life(Landroid/app/Activity;I)V
- *     return-void
- * .end method
- *
- * .method protected onResume()V
- *     .locals 1
- *     invoke-super {p0}, Landroid/app/Activity;->onResume()V
- *     const/4 v0, 0x1
- *     invoke-static {p0, v0}, Lapp/revanced/extension/facebook/userscript/Injector;->life(Landroid/app/Activity;I)V
- *     return-void
- * .end method
- *
- * .method protected onDestroy()V
- *     .locals 1
- *     const/4 v0, 0x2
- *     invoke-static {p0, v0}, Lapp/revanced/extension/facebook/userscript/Injector;->life(Landroid/app/Activity;I)V
- *     invoke-super {p0}, Landroid/app/Activity;->onDestroy()V
- *     return-void
- * .end method
- *
- * .method public onBackPressed()V
- *     .locals 1
- *     invoke-static {p0}, Lapp/revanced/extension/facebook/userscript/Injector;->back(Landroid/app/Activity;)Z
- *     move-result v0
- *     if-nez v0, :done
- *     invoke-super {p0}, Landroid/app/Activity;->onBackPressed()V
- *     :done
- *     return-void
- * .end method
  * ------------------------------------------------------------------------------------------------------------------
  */
 
 private const val INJECTOR = "Lapp/revanced/extension/facebook/userscript/Injector;"
-private const val HOST_ACTIVITY_TYPE = "Lapp/revanced/extension/facebook/userscript/HostActivity;"
-private const val HOST_ACTIVITY = "app.revanced.extension.facebook.userscript.HostActivity"
 private const val APP_CLASS = "Lcom/facebook/katana/app/FacebookApplication;"
 private const val ANDROID_APPLICATION = "Landroid/app/Application;"
+private const val START_URL = "https://m.facebook.com/"
+private const val USER_AGENT =
+    "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
 
 /** Userscript. "__BADGE__" is replaced by true/false (patch option). Written without the dollar sign on purpose. */
 private val USERSCRIPT = """
@@ -1059,91 +922,75 @@ private val USERSCRIPT = """
 
 """.trimIndent()
 
-/** Assembled Injector + HostActivity classes (one dex file with two classes), Base64. */
-private val EMBEDDED_DEX = listOf(
-    "ZGV4CjAzOAD7BS5CWIRbHU8mQI+PkrjtsWppOuqsc7gsGAAAcAAAAHhWNBIAAAAAAAAAAIwXAAB8AAAAcAAAAB4AAABgAgAAKgAA",
-    "ANgCAAAEAAAA0AQAAFAAAADwBAAAAgAAAHAHAAB8EAAAsAcAALAHAAC4BwAAywcAAM4HAADdBwAA4AcAAOMHAADnBwAA6wcAAPAH",
-    "AAAICAAAPggAAFkIAAB0CAAAiQgAAJ8IAAC0CAAAzQgAAPAIAAAFCQAALAkAAEYJAABhCQAAeAkAAJgJAAC4CQAA1gkAAPAJAAAQ",
-    "CgAAOwoAAHYKAACtCgAAwAoAANQKAADqCgAA/goAAG8LAAByCwAAdwsAAHsLAACACwAAhQsAAIoLAACOCwAAkQsAAJULAACbCwAA",
-    "oAsAAKULAAC0CwAAvQsAAPYLAAD+CwAABAwAAA8MAAA/DAAASAwAAFEMAABZDAAAbQwAAHsMAACMDAAAkwwAAJ4MAACqDAAAuQwA",
-    "AMMMAADRDAAA3gwAAO0MAAD2DAAAAQ0AAA4NAAAdDQAAKA0AADANAAA5DQAAPw0AAFgNAABgDQAAaQ0AAHMNAAB8DQAAhA0AAIoN",
-    "AACTDQAAnw0AALINAADHDQAA2Q0AAOwNAAAJDgAAHA4AAC8OAAA+DgAASA4AAFMOAABaDgAAbw4AAH8OAACIDgAAkg4AAJgOAACl",
-    "DgAAyQ4AANoOAADmDgAA9A4AAPkOAAABDwAABw8AAA8PAAArDwAAQQ8AAFoPAABwDwAAgg8AAIoPAACeDwAAsA8AAMoPAADUDwAA",
-    "4A8AAOsPAAACAAAABAAAAAkAAAAKAAAACwAAAAwAAAANAAAADgAAAA8AAAAQAAAAEQAAABIAAAATAAAAFAAAABUAAAAWAAAAFwAA",
-    "ABgAAAAZAAAAGgAAABsAAAAcAAAAHQAAAB4AAAAfAAAAIAAAACEAAAAiAAAAJAAAACsAAAACAAAAAAAAAAAAAAAFAAAACAAAAAAA",
-    "AAAFAAAACwAAAAAAAAAGAAAACwAAAIQQAAAHAAAACwAAAAAQAAAFAAAADgAAAAAAAAAFAAAADwAAAAAAAAAFAAAAEAAAAAAAAAAF",
-    "AAAAEgAAAAAAAAAHAAAAEwAAAGwQAAAIAAAAEwAAAKQQAAAFAAAAGAAAAAAAAAAFAAAAGwAAAAAAAAAkAAAAHAAAAAAAAAAlAAAA",
-    "HAAAAHwQAAAmAAAAHAAAAGwQAAAnAAAAHAAAAGQQAAAoAAAAHAAAAKwQAAAmAAAAHAAAAJQQAAAmAAAAHAAAACAQAAAmAAAAHAAA",
-    "AJwQAAAmAAAAHAAAAAgQAAAmAAAAHAAAAFQQAAAmAAAAHAAAAEwQAAAmAAAAHAAAABAQAAAoAAAAHAAAAEQQAAAmAAAAHAAAAMAQ",
-    "AAAoAAAAHAAAABgQAAApAAAAHAAAACgQAAAmAAAAHAAAAPgPAAAmAAAAHAAAAAAQAAAmAAAAHAAAAHQQAAAmAAAAHAAAADwQAAAo",
-    "AAAAHAAAAIwQAAAqAAAAHAAAAMgQAAArAAAAHQAAAAAAAAAsAAAAHQAAAGwQAAAtAAAAHQAAALQQAAAvAAAAHQAAABgQAAAsAAAA",
-    "HQAAAAAQAAAuAAAAHQAAAFwQAAAsAAAAHQAAADwQAAAXAAIANwAAABcABwBLAAAAFwAXAFAAAAAXABsAUQAAAAIADQAAAAAAAgAD",
-    "ADsAAAACAAYASQAAAAIADQBdAAAAAgAVAF4AAAACAA0AXwAAAAIADQBjAAAAAgANAGQAAAAEABIAZwAAAAcAFgAAAAAABwAoAGYA",
-    "AAAHAB8AaAAAAAgAAQBEAAAACQAAAD4AAAALAAQAPAAAAAsAAABIAAAACwAjAGoAAAANABkAMQAAAA0AAwA/AAAADQAAAEAAAAAN",
-    "ABgAaQAAAA8AAgBCAAAAEAANAD0AAAAQAAcAQwAAABAAHABvAAAAEgAiAHAAAAASACIAcgAAABIAIAB1AAAAEwAUAAAAAAATACMA",
-    "NQAAABMADQA4AAAAEwAhADoAAAATAAUARgAAABMACABHAAAAEwANAEoAAAATACAAVAAAABMADQBjAAAAEwANAGQAAAATACIAcQAA",
-    "ABMAFwBzAAAAEwAeAHQAAAATAB0AdgAAABQADQAAAAAAFQAOAAAAAAAWAA0AAAAAABYADQBdAAAAFgAVAF4AAAAWAA0AXwAAABYA",
-    "DQBjAAAAFgANAGQAAAAXAA0AAAAAABcADwAzAAAAFwAkADQAAAAXABoATgAAABcAEwBPAAAAFwAQAFMAAAAXAAoAVQAAABcAEQBW",
-    "AAAAFwAPAFcAAAAXAA8AWAAAABcADwBZAAAAFwARAFoAAAAXAA8AWwAAABcADwBcAAAAFwAlAGAAAAAXABsAYQAAABcAGwBiAAAA",
-    "FwAPAGUAAAAXAA0AawAAABcAGABtAAAAFwAMAG4AAAAXACYAdwAAABcADAB4AAAAFwAMAHoAAAAXAAkAewAAABgADABFAAAAGQAL",
-    "AEEAAAAbACcAOQAAABsAAABSAAAAGwApAHkAAAAWAAAAAQAAAAIAAAAAAAAAAQAAAAAAAAD6FgAAAAAAABcAAAARAAAAFAAAADAQ",
-    "AAADAAAAAAAAABgXAAAAAAAABjxpbml0PgARSG9zdEFjdGl2aXR5LmphdmEAAUkADUluamVjdG9yLmphdmEAAUoAAUwAAkxJAAJM",
-    "TAADTExMABZMYW5kcm9pZC9hcHAvQWN0aXZpdHk7ADRMYW5kcm9pZC9hcHAvQXBwbGljYXRpb24kQWN0aXZpdHlMaWZlY3ljbGVD",
-    "YWxsYmFja3M7ABlMYW5kcm9pZC9hcHAvQXBwbGljYXRpb247ABlMYW5kcm9pZC9jb250ZW50L0NvbnRleHQ7ABNMYW5kcm9pZC9v",
-    "cy9CdW5kbGU7ABRMYW5kcm9pZC9vcy9IYW5kbGVyOwATTGFuZHJvaWQvb3MvTG9vcGVyOwAXTGFuZHJvaWQvdmlldy9LZXlFdmVu",
-    "dDsAIUxhbmRyb2lkL3ZpZXcvVmlldyRPbktleUxpc3RlbmVyOwATTGFuZHJvaWQvdmlldy9WaWV3OwAlTGFuZHJvaWQvdmlldy9W",
-    "aWV3R3JvdXAkTGF5b3V0UGFyYW1zOwAYTGFuZHJvaWQvdmlldy9WaWV3R3JvdXA7ABlMYW5kcm9pZC92aWV3L1ZpZXdQYXJlbnQ7",
-    "ABVMYW5kcm9pZC92aWV3L1dpbmRvdzsAHkxhbmRyb2lkL3dlYmtpdC9Db29raWVNYW5hZ2VyOwAeTGFuZHJvaWQvd2Via2l0L1Zh",
-    "bHVlQ2FsbGJhY2s7ABxMYW5kcm9pZC93ZWJraXQvV2ViU2V0dGluZ3M7ABhMYW5kcm9pZC93ZWJraXQvV2ViVmlldzsAHkxhbmRy",
-    "b2lkL3dlYmtpdC9XZWJWaWV3Q2xpZW50OwApTGFuZHJvaWQvd2lkZ2V0L0ZyYW1lTGF5b3V0JExheW91dFBhcmFtczsAOUxhcHAv",
-    "cmV2YW5jZWQvZXh0ZW5zaW9uL2ZhY2Vib29rL3VzZXJzY3JpcHQvSG9zdEFjdGl2aXR5OwA1TGFwcC9yZXZhbmNlZC9leHRlbnNp",
-    "b24vZmFjZWJvb2svdXNlcnNjcmlwdC9JbmplY3RvcjsAEUxqYXZhL2xhbmcvQ2xhc3M7ABJMamF2YS9sYW5nL09iamVjdDsAFExq",
-    "YXZhL2xhbmcvUnVubmFibGU7ABJMamF2YS9sYW5nL1N0cmluZzsAb01vemlsbGEvNS4wIChMaW51eDsgQW5kcm9pZCAxMDsgSykg",
-    "QXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEyNC4wLjAuMCBNb2JpbGUgU2FmYXJpLzUzNy4z",
-    "NgABVgADVklJAAJWTAADVkxJAANWTEwAA1ZMWgACVloAAVoAAlpMAARaTElMAANaTEoAA1pMTAANX19SVl9TQ1JJUFRfXwAHYWRk",
-    "VmlldwA3YXBwLnJldmFuY2VkLmV4dGVuc2lvbi5mYWNlYm9vay51c2Vyc2NyaXB0Lkhvc3RBY3Rpdml0eQAGYXR0YWNoAARiYWNr",
-    "AAljYW5Hb0JhY2sALmNvbS5mYWNlYm9vay5rYXRhbmEuYWN0aXZpdHkuRmJNYWluVGFiQWN0aXZpdHkAB2N1cnJlbnQAB2Rlc3Ry",
-    "b3kABmVxdWFscwASZXZhbHVhdGVKYXZhc2NyaXB0AAxmaW5kVmlld0J5SWQAD2ZpbmRWaWV3V2l0aFRhZwAFZmx1c2gACWdldEFj",
-    "dGlvbgAKZ2V0Q2hpbGRBdAANZ2V0Q2hpbGRDb3VudAAIZ2V0Q2xhc3MADGdldERlY29yVmlldwALZ2V0SW5zdGFuY2UADWdldE1h",
-    "aW5Mb29wZXIAB2dldE5hbWUACWdldFBhcmVudAALZ2V0U2V0dGluZ3MADWdldFZpc2liaWxpdHkACWdldFdpbmRvdwAGZ29CYWNr",
-    "AAdoYW5kbGVyAARodHRwABdodHRwczovL20uZmFjZWJvb2suY29tLwAGaW5qZWN0AAdpbnN0YWxsAAhpbnN0YW5jZQAHbGFzdFVy",
-    "bAAGbGVuZ3RoAARsaWZlAAdsb2FkVXJsAApuZXdXZWJWaWV3ABFvbkFjdGl2aXR5Q3JlYXRlZAATb25BY3Rpdml0eURlc3Ryb3ll",
-    "ZAAQb25BY3Rpdml0eVBhdXNlZAARb25BY3Rpdml0eVJlc3VtZWQAG29uQWN0aXZpdHlTYXZlSW5zdGFuY2VTdGF0ZQARb25BY3Rp",
-    "dml0eVN0YXJ0ZWQAEW9uQWN0aXZpdHlTdG9wcGVkAA1vbkJhY2tQcmVzc2VkAAhvbkNyZWF0ZQAJb25EZXN0cm95AAVvbktleQAT",
-    "b25QYWdlQ29tbWl0VmlzaWJsZQAOb25QYWdlRmluaXNoZWQAB29uUGF1c2UACG9uUmVzdW1lAARvcGVuAAtwb3N0RGVsYXllZAAi",
-    "cmVnaXN0ZXJBY3Rpdml0eUxpZmVjeWNsZUNhbGxiYWNrcwAPcmVtb3ZlQ2FsbGJhY2tzAApyZW1vdmVWaWV3AAxyZXF1ZXN0Rm9j",
+/** Assembled Injector class (a one-class dex file), Base64. */
+private val INJECTOR_DEX = listOf(
+    "ZGV4CjAzOAD1RFJJJ+iB239F4WgTAXGOVJKz0ZhZM3+UEwAAcAAAAHhWNBIAAAAAAAAAAPQSAABuAAAAcAAAAB0AAAAoAgAAJQAA",
+    "AJwCAAADAAAAWAQAADsAAABwBAAAAQAAAEgGAAAsDQAAaAYAAGgGAABwBgAAgwYAAIYGAACVBgAAmAYAAJsGAACfBgAAowYAAKgG",
+    "AADABgAA9gYAABEHAAAsBwAAQQcAAFcHAABsBwAAhQcAAKgHAAC9BwAA5AcAAP4HAAAVCAAANQgAAFUIAABzCAAAjQgAAK0IAADY",
+    "CAAADwkAACkJAAA8CQAAUAkAAGYJAAB6CQAAgQkAAI8JAACSCQAAlwkAAJsJAACgCQAApQkAAKkJAACsCQAAsAkAALYJAAC7CQAA",
+    "wAkAAM8JAADhCQAA9AkAAP0JAAAFCgAAEAoAAB8KAAApCgAAMgoAAEYKAABUCgAAZQoAAHAKAAB8CgAAiwoAAJUKAACjCgAAsAoA",
+    "AL8KAADICgAA1QoAAOQKAADvCgAA9woAAAALAAAGCwAADgsAABcLAAAfCwAAKAsAADALAAA5CwAARQsAAFgLAABtCwAAfwsAAJIL",
+    "AACvCwAAwgsAANULAADcCwAA8QsAAAEMAAAODAAAMgwAAEMMAABRDAAAVgwAAF4MAABkDAAAbAwAAIgMAACeDAAAtwwAAM0MAADf",
+    "DAAA5wwAAPsMAAANDQAAJw0AADENAAA9DQAAAgAAAAQAAAAJAAAACgAAAAsAAAAMAAAADQAAAA4AAAAPAAAAEAAAABEAAAASAAAA",
+    "EwAAABQAAAAVAAAAFgAAABcAAAAYAAAAGQAAABoAAAAbAAAAHAAAAB0AAAAeAAAAHwAAACAAAAAhAAAAJAAAACoAAAACAAAAAAAA",
+    "AAAAAAAFAAAACAAAAAAAAAAFAAAACwAAAAAAAAAGAAAACwAAAMQNAAAHAAAACwAAAFANAAAFAAAADgAAAAAAAAAFAAAADwAAAAAA",
+    "AAAFAAAAEQAAAAAAAAAIAAAAEgAAAOQNAAAFAAAAFwAAAAAAAAAFAAAAGgAAAAAAAAAkAAAAGwAAAAAAAAAlAAAAGwAAALwNAAAm",
+    "AAAAGwAAAKwNAAAnAAAAGwAAAOwNAAAmAAAAGwAAANQNAAAmAAAAGwAAAGgNAAAmAAAAGwAAANwNAAAmAAAAGwAAAJwNAAAmAAAA",
+    "GwAAAJQNAAAmAAAAGwAAAFgNAAAnAAAAGwAAAIwNAAAmAAAAGwAAAAAOAAAnAAAAGwAAAGANAAAoAAAAGwAAAHANAAAmAAAAGwAA",
+    "AEgNAAAmAAAAGwAAAFANAAAmAAAAGwAAALQNAAAmAAAAGwAAAIQNAAAnAAAAGwAAAMwNAAApAAAAGwAAAAgOAAAqAAAAHAAAAAAA",
+    "AAAsAAAAHAAAAPQNAAAuAAAAHAAAAGANAAArAAAAHAAAABAOAAAtAAAAHAAAAKQNAAArAAAAHAAAAIQNAAAVAAIANwAAABUABwBH",
+    "AAAAFQAaAEwAAAACAAMAOQAAAAIABQBFAAAABAAPAFsAAAAHABIAAAAAAAcAIwBaAAAABwAbAFwAAAAIAAEAQQAAAAkAAAA7AAAA",
+    "CwAEADoAAAALAAAARAAAAAsAHwBdAAAADQAVADIAAAANAAMAPAAAAA0AAAA9AAAADgACAD8AAAAPAAYAQAAAAA8AGABiAAAAEQAe",
+    "AGMAAAARAB4AZQAAABEAHABoAAAAEgARAAAAAAASAB8ANAAAABIAHQA4AAAAEgAHAEMAAAASAAsARgAAABIAHABOAAAAEgAeAGQA",
+    "AAASABMAZgAAABIAGgBnAAAAEgAZAGkAAAATAAsAAAAAABQADAAAAAAAFQALAAAAAAAVAA0AMwAAABUAFgBJAAAAFQAQAEoAAAAV",
+    "ACQASwAAABUACABPAAAAFQAOAFAAAAAVAA0AUQAAABUADQBSAAAAFQANAFMAAAAVAA4AVAAAABUADQBVAAAAFQANAFYAAAAVACAA",
+    "VwAAABUAFwBYAAAAFQAXAFkAAAAVAAsAXgAAABUAFABgAAAAFQAKAGEAAAAVACEAagAAABUACgBrAAAAFQAKAG0AAAAXAAoAQgAA",
+    "ABgACQA+AAAAGgAiADYAAAAaAAAATQAAABoAJABsAAAAFQAAABEAAAATAAAAeA0AAAMAAAAAAAAAjhIAAAAAAAAGPGluaXQ+ABFG",
+    "Yk1haW5UYWJBY3Rpdml0eQABSQANSW5qZWN0b3IuamF2YQABSgABTAACTEkAAkxMAANMTEwAFkxhbmRyb2lkL2FwcC9BY3Rpdml0",
+    "eTsANExhbmRyb2lkL2FwcC9BcHBsaWNhdGlvbiRBY3Rpdml0eUxpZmVjeWNsZUNhbGxiYWNrczsAGUxhbmRyb2lkL2FwcC9BcHBs",
+    "aWNhdGlvbjsAGUxhbmRyb2lkL2NvbnRlbnQvQ29udGV4dDsAE0xhbmRyb2lkL29zL0J1bmRsZTsAFExhbmRyb2lkL29zL0hhbmRs",
+    "ZXI7ABNMYW5kcm9pZC9vcy9Mb29wZXI7ABdMYW5kcm9pZC92aWV3L0tleUV2ZW50OwAhTGFuZHJvaWQvdmlldy9WaWV3JE9uS2V5",
+    "TGlzdGVuZXI7ABNMYW5kcm9pZC92aWV3L1ZpZXc7ACVMYW5kcm9pZC92aWV3L1ZpZXdHcm91cCRMYXlvdXRQYXJhbXM7ABhMYW5k",
+    "cm9pZC92aWV3L1ZpZXdHcm91cDsAFUxhbmRyb2lkL3ZpZXcvV2luZG93OwAeTGFuZHJvaWQvd2Via2l0L0Nvb2tpZU1hbmFnZXI7",
+    "AB5MYW5kcm9pZC93ZWJraXQvVmFsdWVDYWxsYmFjazsAHExhbmRyb2lkL3dlYmtpdC9XZWJTZXR0aW5nczsAGExhbmRyb2lkL3dl",
+    "YmtpdC9XZWJWaWV3OwAeTGFuZHJvaWQvd2Via2l0L1dlYlZpZXdDbGllbnQ7AClMYW5kcm9pZC93aWRnZXQvRnJhbWVMYXlvdXQk",
+    "TGF5b3V0UGFyYW1zOwA1TGFwcC9yZXZhbmNlZC9leHRlbnNpb24vZmFjZWJvb2svdXNlcnNjcmlwdC9JbmplY3RvcjsAGExqYXZh",
+    "L2xhbmcvQ2hhclNlcXVlbmNlOwARTGphdmEvbGFuZy9DbGFzczsAEkxqYXZhL2xhbmcvT2JqZWN0OwAUTGphdmEvbGFuZy9SdW5u",
+    "YWJsZTsAEkxqYXZhL2xhbmcvU3RyaW5nOwAFTG9naW4ADFJlZ2lzdHJhdGlvbgABVgADVklJAAJWTAADVkxMAANWTFoAAlZaAAFa",
+    "AAJaTAAEWkxJTAADWkxKAANaTEwADV9fUlZfU0NSSVBUX18AEF9fUlZfU1RBUlRfVVJMX18AEV9fUlZfVVNFUl9BR0VOVF9fAAdh",
+    "ZGRWaWV3AAZhdHRhY2gACWNhbkdvQmFjawANY29tLmZhY2Vib29rLgAIY29udGFpbnMAB2N1cnJlbnQAEmV2YWx1YXRlSmF2YXNj",
+    "cmlwdAAMZmluZFZpZXdCeUlkAA9maW5kVmlld1dpdGhUYWcACWdldEFjdGlvbgAKZ2V0Q2hpbGRBdAANZ2V0Q2hpbGRDb3VudAAI",
+    "Z2V0Q2xhc3MADGdldERlY29yVmlldwALZ2V0SW5zdGFuY2UADWdldE1haW5Mb29wZXIAB2dldE5hbWUAC2dldFNldHRpbmdzAA1n",
+    "ZXRWaXNpYmlsaXR5AAlnZXRXaW5kb3cABmdvQmFjawAHaGFuZGxlcgAEaHR0cAAGaW5qZWN0AAdpbnN0YWxsAAZpc0hvc3QAB2xh",
+    "c3RVcmwABmxlbmd0aAAHbG9hZFVybAAKbmV3V2ViVmlldwARb25BY3Rpdml0eUNyZWF0ZWQAE29uQWN0aXZpdHlEZXN0cm95ZWQA",
+    "EG9uQWN0aXZpdHlQYXVzZWQAEW9uQWN0aXZpdHlSZXN1bWVkABtvbkFjdGl2aXR5U2F2ZUluc3RhbmNlU3RhdGUAEW9uQWN0aXZp",
+    "dHlTdGFydGVkABFvbkFjdGl2aXR5U3RvcHBlZAAFb25LZXkAE29uUGFnZUNvbW1pdFZpc2libGUADm9uUGFnZUZpbmlzaGVkAAtw",
+    "b3N0RGVsYXllZAAicmVnaXN0ZXJBY3Rpdml0eUxpZmVjeWNsZUNhbGxiYWNrcwAPcmVtb3ZlQ2FsbGJhY2tzAAxyZXF1ZXN0Rm9j",
     "dXMAA3J1bgAGcnYtd2ViAARzY2FuAAZzY3JpcHQAGnNldEFjY2VwdFRoaXJkUGFydHlDb29raWVzABRzZXREb21TdG9yYWdlRW5h",
     "YmxlZAAXc2V0Rm9jdXNhYmxlSW5Ub3VjaE1vZGUAFHNldEphdmFTY3JpcHRFbmFibGVkABBzZXRPbktleUxpc3RlbmVyAAZzZXRU",
     "YWcAEnNldFVzZXJBZ2VudFN0cmluZwAQc2V0V2ViVmlld0NsaWVudAAYc2hvdWxkT3ZlcnJpZGVVcmxMb2FkaW5nAAhzdGFydFVy",
-    "bAAKc3RhcnRzV2l0aAAJdXNlckFnZW50AAl3ZWJWaWV3T2YAAAABAAAAFAAAAAEAAAAZAAAAAQAAAAYAAAABAAAACwAAAAIAAAAT",
-    "ABsAAQAAAAQAAAACAAAAEwAdAAMAAAADAAoAGgAAAAEAAAAbAAAAAgAAAAsADAABAAAACgAAAAEAAAAIAAAAAgAAABoAAQACAAAA",
-    "AgAAAAEAAAACAAAAAQAAABoAAAACAAAAAAAAAAEAAAAAAAAAAgAAABsAEQABAAAAAwAAAAEAAAAFAAAAAgAAAAIAFwACAAAAAgAG",
-    "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",
+    "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",
 ).joinToString("")
 
 private fun smaliString(s: String): String {
@@ -1194,86 +1041,15 @@ private fun BytecodePatchContext.findHookClass(): ClassDef? {
     return null
 }
 
-/** True when one of the <intent-filter>s of [this] has action MAIN and category LAUNCHER. */
-private fun Element.isLauncher(): Boolean {
-    fun Element.has(tag: String, name: String): Boolean {
-        val nodes = getElementsByTagName(tag)
-        for (i in 0 until nodes.length) {
-            if ((nodes.item(i) as? Element)?.getAttribute("android:name") == name) return true
-        }
-        return false
-    }
-    val filters = getElementsByTagName("intent-filter")
-    for (i in 0 until filters.length) {
-        val filter = filters.item(i) as? Element ?: continue
-        if (filter.has("action", "android.intent.action.MAIN") && filter.has("category", "android.intent.category.LAUNCHER")) {
-            return true
-        }
-    }
-    return false
-}
-
-/*
- * Edit of the EXISTING manifest (no file is added to or removed from the apk): the launcher aliases open HostActivity.
- * Without a name, so it is not a patch of its own: it only runs because the patch below depends on it.
- */
-private val launcherOpensHostActivityPatch = resourcePatch {
-    apply {
-        val log = Logger.getLogger("InjectUserscript")
-        document("AndroidManifest.xml").use { manifest ->
-            val application = manifest.getElementsByTagName("application").item(0) as? Element
-                ?: throw PatchException("Inject userscript: AndroidManifest.xml has no <application> element")
-
-            var repointed = 0
-            val aliases = manifest.getElementsByTagName("activity-alias")
-            for (i in 0 until aliases.length) {
-                val alias = aliases.item(i) as? Element ?: continue
-                if (!alias.isLauncher()) continue
-                alias.setAttribute("android:targetActivity", HOST_ACTIVITY)
-                repointed++
-            }
-            if (repointed == 0) {
-                log.warning(
-                    "Inject userscript: no launcher <activity-alias> in the manifest, so the app icon still opens the " +
-                        "native screen. The page is only laid over the native main screen (second login, native " +
-                        "video behind the page).",
-                )
-                return@use
-            }
-
-            val activities = manifest.getElementsByTagName("activity")
-            var declared = false
-            for (i in 0 until activities.length) {
-                if ((activities.item(i) as? Element)?.getAttribute("android:name") == HOST_ACTIVITY) declared = true
-            }
-            if (!declared) {
-                val activity = manifest.createElement("activity")
-                activity.setAttribute("android:name", HOST_ACTIVITY)
-                activity.setAttribute("android:exported", "true")
-                activity.setAttribute("android:launchMode", "singleTop")
-                activity.setAttribute(
-                    "android:configChanges",
-                    "keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode|density|fontScale|navigation",
-                )
-                activity.setAttribute("android:windowSoftInputMode", "stateHidden|adjustResize")
-                activity.setAttribute("android:theme", "@android:style/Theme.DeviceDefault.Light.NoActionBar")
-                application.appendChild(activity)
-            }
-            log.info("Inject userscript: $repointed launcher alias(es) now open HostActivity")
-        }
-    }
-}
-
 @Suppress("unused")
 val injectUserscriptPatch = bytecodePatch(
     name = "Inject userscript to block sponsored posts on android 8 app",
-    description = "The app opens m.facebook.com (phone user agent) in a WebView instead of the native screens, and " +
-        "runs a userscript in it that hides Sponsored / suggested posts and the Open app bar. Adds and removes no " +
-        "file of the apk.",
+    description = "Opens m.facebook.com (phone user agent) in a WebView over the app's main and login screens and " +
+        "runs a userscript in it (and in the in-app browser) that hides Sponsored / suggested posts and the Open app " +
+        "bar. Adds no file to the apk and touches no resource.",
     use = false,
 ) {
     compatibleWith("com.facebook.katana")
-    dependsOn(launcherOpensHostActivityPatch)
 
     val showBadge by booleanOption(
         name = "Show test badge",
@@ -1297,29 +1073,29 @@ val injectUserscriptPatch = bytecodePatch(
                     "$ANDROID_APPLICATION). Send the smali of the app's Application class.",
             )
 
-        // ---- 2. Add the two classes into the existing dex ---------------------------------------------------------
-        val embedded = try {
-            DexBackedDexFile(null, Base64.getDecoder().decode(EMBEDDED_DEX), 0).classes.toList()
+        // ---- 2. Add the Injector class into the existing dex -------------------------------------------------------
+        val injector = try {
+            DexBackedDexFile(null, Base64.getDecoder().decode(INJECTOR_DEX), 0).classes.single()
         } catch (e: Exception) {
-            throw PatchException("Inject userscript: cannot read the embedded classes: $e")
-        }
-        val injector = embedded.firstOrNull { it.type == INJECTOR }
-        if (injector == null || embedded.none { it.type == HOST_ACTIVITY_TYPE }) {
-            throw PatchException("Inject userscript: the embedded dex does not hold Injector and HostActivity")
+            throw PatchException("Inject userscript: cannot read the embedded Injector class: $e")
         }
         @Suppress("UNCHECKED_CAST")
         val mutableClassDefs = classDefs as MutableSet<ClassDef>
-        embedded.forEach {
-            if (!mutableClassDefs.add(it)) throw PatchException("Inject userscript: could not add ${it.type} to the dex")
+        if (!mutableClassDefs.add(injector)) {
+            throw PatchException("Inject userscript: could not add the Injector class to the dex")
         }
 
-        // ---- 3. Put the userscript into the Injector --------------------------------------------------------------
+        // ---- 3. Put the userscript, the start url and the user agent into the Injector ----------------------------
         val script = USERSCRIPT.replace("__BADGE__", if (showBadge == true) "true" else "false")
+
         val mutableInjector = classDefs.getOrReplaceMutable(injector)
-        val scriptMethod = mutableInjector.methods.firstOrNull {
-            it.name == "script" && it.parameterTypes.isEmpty() && it.returnType == "Ljava/lang/String;"
-        } ?: throw PatchException("Inject userscript: Injector.script() not found")
-        scriptMethod.replaceInstruction(0, "const-string v0, \"${smaliString(script)}\"")
+        fun MutableMethod.setText(text: String) = replaceInstruction(0, "const-string v0, \"${smaliString(text)}\"")
+        for ((method, text) in listOf("script" to script, "startUrl" to START_URL, "userAgent" to USER_AGENT)) {
+            val target = mutableInjector.methods.firstOrNull {
+                it.name == method && it.parameterTypes.isEmpty() && it.returnType == "Ljava/lang/String;"
+            } ?: throw PatchException("Inject userscript: Injector.$method() not found")
+            target.setText(text)
+        }
 
         // ---- 4. One call at the very top of the existing Application.onCreate() ----------------------------------
         val onCreate = classDefs.getOrReplaceMutable(hookClass).methods.first {
@@ -1333,7 +1109,7 @@ val injectUserscriptPatch = bytecodePatch(
 
         log.info(
             "Inject userscript: hooked ${hookClass.type}->onCreate(), userscript ${script.length} chars, " +
-                "test badge ${if (showBadge == true) "on" else "off"}",
+                "start page $START_URL, test badge ${if (showBadge == true) "on" else "off"}",
         )
     }
 }
