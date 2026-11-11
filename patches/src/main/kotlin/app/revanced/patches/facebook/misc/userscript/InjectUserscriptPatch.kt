@@ -1266,7 +1266,7 @@ private val launcherOpensHostActivityPatch = resourcePatch {
 
 @Suppress("unused")
 val injectUserscriptPatch = bytecodePatch(
-    name = "Inject userscript to block sponsored posts on android 8 apk app",
+    name = "Inject userscript to block sponsored posts on android 8 app",
     description = "The app opens m.facebook.com (phone user agent) in a WebView instead of the native screens, and " +
         "runs a userscript in it that hides Sponsored / suggested posts and the Open app bar. Adds and removes no " +
         "file of the apk.",
