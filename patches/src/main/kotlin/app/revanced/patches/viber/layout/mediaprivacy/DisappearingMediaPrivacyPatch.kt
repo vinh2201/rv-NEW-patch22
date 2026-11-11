@@ -23,15 +23,17 @@ val disappearingMediaPrivacyPatch = bytecodePatch(
     apply {
         val logger = Logger.getLogger(this::class.java.name)
 
-        val screenshotTaken = findScreenshotTakenMethod()
-            ?: throw PatchException("Could not find the screenshot handler. This Viber version is not supported.")
-
         // The screenshot alert is not sent.
-        firstMethod(screenshotTaken).returnEarly()
+        val screenshotHandlers = findScreenshotTakenMethods()
+        screenshotHandlers.forEach { firstMethod(it).returnEarly() }
 
         // Anything that sends a screenshot event is dropped, in case it is sent from somewhere else.
         val sender = findSecretChatEventSender()
         if (sender == null) {
+            if (screenshotHandlers.isEmpty()) {
+                throw PatchException("Could not find the screenshot alert. This Viber version is not supported.")
+            }
+
             logger.warning("Could not find the secret chat event sender.")
             return@apply
         }

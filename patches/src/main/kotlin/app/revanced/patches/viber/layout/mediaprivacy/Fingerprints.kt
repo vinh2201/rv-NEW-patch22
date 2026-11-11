@@ -6,31 +6,31 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
-import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 
 private const val SECRET_CHAT_EVENT_MESSAGE = "Lcom/viber/jni/im2/CSecretChatSendEventMsg;"
 
 /**
- * `void onConversationScreenShotTaken(Event)`: sends the screenshot alert of the conversation.
- * Present in Viber 23.x, 26.x and 29.x.
+ * `void onConversationScreenShotTaken(Event)`: the event bus subscriber that sends the screenshot alert
+ * of the conversation. The name can't be obfuscated because of the event bus.
+ * Some builds (for example the 4pda ones) already stub the body with `return-void`, so the body is not checked.
  */
-internal fun BytecodePatchContext.findScreenshotTakenMethod(): Method? {
+internal fun BytecodePatchContext.findScreenshotTakenMethods(): List<Method> {
+    val handlers = mutableListOf<Method>()
+
     for (classDef in classDefs) {
         for (method in classDef.methods) {
-            if (method.name != "onConversationScreenShotTaken" || method.returnType != "V") continue
-
-            val sendsSequence = method.implementation?.instructions?.any { instruction ->
-                val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
-                reference?.definingClass == "Lcom/viber/jni/controller/PhoneController;" &&
-                    reference.name == "generateSequence"
-            } == true
-
-            if (sendsSequence) return method
+            if (method.name == "onConversationScreenShotTaken" &&
+                method.returnType == "V" &&
+                method.parameterTypes.size == 1 &&
+                method.implementation != null
+            ) {
+                handlers += method
+            }
         }
     }
 
-    return null
+    return handlers
 }
 
 internal class SecretChatEventSender(val method: Method, val eventTypeRegister: Int)
