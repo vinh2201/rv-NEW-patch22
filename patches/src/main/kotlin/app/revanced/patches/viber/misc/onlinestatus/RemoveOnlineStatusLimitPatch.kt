@@ -2,24 +2,22 @@ package app.revanced.patches.viber.misc.onlinestatus
 
 import app.revanced.patcher.extensions.addInstructions
 import app.revanced.patcher.firstMethod
+import app.revanced.patcher.patch.PatchException
 import app.revanced.patcher.patch.bytecodePatch
-import java.util.logging.Logger
 
 @Suppress("unused")
 val removeOnlineStatusLimitPatch = bytecodePatch(
     name = "Remove online status limit",
     description = "(PORTED) Removes the 24-hour wait between online status changes. " +
-        "Only available in Viber 29.x and newer, older versions don't have this limit.",
+        "Works with Viber 23.x to 29.x.",
 ) {
-    compatibleWith("com.viber.voip"("29.3.1.0"))
+    compatibleWith("com.viber.voip")
 
     apply {
         val limits = findOnlineStatusLimits()
 
         if (limits.isEmpty()) {
-            Logger.getLogger(this::class.java.name)
-                .info("The online status limit does not exist in this Viber version. Nothing to patch.")
-            return@apply
+            throw PatchException("Could not find the online status limit. This Viber version is not supported.")
         }
 
         limits.forEach { limit ->
