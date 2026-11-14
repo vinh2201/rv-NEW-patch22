@@ -343,7 +343,7 @@ val hideNativeFeedAdsPatch = bytecodePatch(
         name = "Show counter badge",
         description = "Shows a small dark 'RV hider: N ad(s) hidden' button at the bottom left of the screen; a tap copies the " +
             "log to the clipboard. Turn it off after testing (then the log cannot be copied).",
-        default = true,
+        default = false,
     )
 
     apply {
