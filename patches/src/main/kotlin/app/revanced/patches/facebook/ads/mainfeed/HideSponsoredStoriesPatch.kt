@@ -31,21 +31,20 @@ import java.util.logging.Logger
  *
  *   Layer 1 (preferred): the feed's single funnel. Every news-feed edge goes through
  *            FeedUnitCollectionManager.addNewEdgeToCollection(ImmutableList$Builder, GraphQLFeedUnitEdge, Object)Z
- *            (Redex keeps its name; present on 490, 521 and, per Hushfacebook/Morphe, up to 585). A guard at its start asks
+ *            (Redex keeps its name; present on 490, 521 and, up to 585). A guard at its start asks
  *            a small static helper added to GraphQLFeedUnitEdge whether the edge's story category (the enum
  *            GraphQLFeedStoryCategory) is SPONSORED or PROMOTION and, if so, returns false = "edge not added", an outcome
  *            the app already handles. Nothing downstream sees the ad: no gap, no impression.
  *            From 583 on, the funnel only wraps a method of its own class (static on 583, private instance on 585) that
- *            the feed's batch add also calls, so the guard then goes on that method. (Logic ported from Hushfacebook/
- *            Morphe, GPL-3.0, itself forked from Andrew Liang's morphe-patches.)
+ *            the feed's batch add also calls, so the guard then goes on that method.
  *
  *   Layer 2 (fallback, only when layer 1 applied nothing): the earlier approach. The static method that returns the
  *            visibility String of a story (found by the string "This should not be called for base class object" and a
  *            3x instance-of/if-nez shape) is made to return "GONE" when GraphQLStory has non-null sponsored data. The
  *            sponsored-data accessor is read from the SponsoredImpression method (it holds the same marker string).
  *
- * Verified on the decompiled smali of 490.0.0.63.82 and 521.0.0.42.97 (Android 11 builds); 585 comes from Morphe's own
- * code. On the Android 8 builds the classes live in Facebook's Dextricks stores, which the patcher cannot see.
+ * Verified on the decompiled smali of 490.0.0.63.82 and 521.0.0.42.97 (Android 11 builds).
+ * On the Android 8 builds the classes live in Facebook's Dextricks stores, which the patcher cannot see.
  */
 
 private const val EDGE = "Lcom/facebook/graphql/model/GraphQLFeedUnitEdge;"

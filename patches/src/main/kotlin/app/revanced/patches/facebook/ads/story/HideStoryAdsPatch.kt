@@ -22,7 +22,7 @@ import java.util.logging.Logger
  *            Redex leaves in the static field `__redex_internal_original_name`
  *            ("AdBucketDataSourceUtil$attemptFetchMoreAds$1" / "...$attemptAdsInsertion$1"). Their run() returns at once.
  *
- *   Layer 2  (ported from Hushfacebook/Morphe "Hide sponsored stories", which targets 585): the story bucket data sources.
+ *   Layer 2  The story bucket data sources.
  *            Each takes the organic bucket list and returns it with ad buckets spliced in; here each simply returns the
  *            list it was given (what Facebook itself does when a source has nothing to add). The sources are found by a
  *            string literal that is unique to each one, so no obfuscated name is used:
