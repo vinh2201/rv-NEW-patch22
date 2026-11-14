@@ -18,11 +18,16 @@ val hidePromotionsPatch = bytecodePatch(
         val logger = Logger.getLogger(this::class.java.name)
         var patched = 0
 
-        // Channel and bot suggestions of the chat list: p1 is the visibility.
-        findChatSuggestionsVisibilityMethod()?.let { method ->
-            firstMethod(method).addInstructions(0, "const/4 p1, 0x0")
+        // "Popular channels & bots" suggestions of the chat list: the visibility parameter is always false.
+        val suggestions = findChatSuggestionsVisibilityMethods()
+        if (suggestions.isEmpty()) {
+            logger.warning("Could not find the chat suggestions.")
+        } else {
+            suggestions.forEach { override ->
+                firstMethod(override.method).addInstructions(0, "const/4 ${override.register}, 0x0")
+            }
             patched++
-        } ?: logger.warning("Could not find the chat suggestions.")
+        }
 
         // Viber Out section of the Calls tab. It is in the same method as the banners, and after them,
         // so it is patched first to keep the indexes of the banners valid.

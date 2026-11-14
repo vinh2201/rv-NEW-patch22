@@ -43,28 +43,52 @@ private fun Instruction.isSetBoolean(): Boolean {
     return reference.returnType == "V" && reference.parameterTypes.size == 1 && reference.parameterTypes[0] == "Z"
 }
 
-/**
- * The method that sets the visibility of the channel and bot suggestions of the chat list.
- * Viber 29.x: `void a(boolean visible, boolean something)`.
- * Viber 23.x - 26.x: `void a(boolean visible)`, that calls `setVisible(boolean)` of two adapters.
- * The visibility is the first boolean parameter (`p1`).
- */
-internal fun BytecodePatchContext.findChatSuggestionsVisibilityMethod(): Method? {
-    val anchor = chatSuggestionsAnchor ?: return null
-    val chatListClass = classDefs.firstOrNull { it.type == anchor.definingClass } ?: return null
+/** A method that gets a boolean parameter set to false, [register] is the parameter register. */
+internal class ParameterOverride(val method: Method, val register: String)
 
-    return chatListClass.methods.singleOrNull { method ->
-        if (method.returnType != "V" || AccessFlags.STATIC.isSet(method.accessFlags)) return@singleOrNull false
-
-        val parameters = method.parameterTypes.map { it.toString() }
-        if (parameters == listOf("Z", "Z")) return@singleOrNull true
-
-        // Older versions: a short method that only forwards the boolean to two other objects.
-        val instructions = method.implementation?.instructions?.toList() ?: return@singleOrNull false
-        parameters == listOf("Z") &&
-            instructions.size <= 8 &&
-            instructions.count { it.opcode == Opcode.INVOKE_VIRTUAL && it.isSetBoolean() } == 2
+private fun Method.sinkCalls(): Set<String> = implementation?.instructions
+    ?.filter { it.opcode == Opcode.INVOKE_VIRTUAL && it.isSetBoolean() }
+    ?.map { instruction ->
+        val reference = (instruction as ReferenceInstruction).reference as MethodReference
+        "${reference.definingClass}->${reference.name}"
     }
+    ?.toSet()
+    ?: emptySet()
+
+/**
+ * The methods that set the visibility of the "Popular channels & bots" suggestions of the chat list.
+ * - Viber 26.7 and newer: one method, `void show(boolean visible, boolean other)`.
+ * - Viber 23.x - 26.1: two methods of the same class, that set the visibility of the header adapter and of the
+ *   suggestions adapter: `void setVisible(boolean)` and `void setSuggestions(List, boolean show)`.
+ *   The second one decides the visibility again every time the suggestions are loaded, so both have to be patched.
+ */
+internal fun BytecodePatchContext.findChatSuggestionsVisibilityMethods(): List<ParameterOverride> {
+    val anchor = chatSuggestionsAnchor ?: return emptyList()
+    val chatListClass = classDefs.firstOrNull { it.type == anchor.definingClass } ?: return emptyList()
+
+    val methods = chatListClass.methods.filter { it.returnType == "V" && !AccessFlags.STATIC.isSet(it.accessFlags) }
+    fun Method.parameters() = parameterTypes.map { it.toString() }
+
+    methods.singleOrNull { it.parameters() == listOf("Z", "Z") }?.let {
+        return listOf(ParameterOverride(it, "p1"))
+    }
+
+    // Older versions: a short method that forwards the boolean to the header and suggestions adapters.
+    val setVisible = methods.singleOrNull { method ->
+        method.parameters() == listOf("Z") &&
+            (method.implementation?.instructions?.count() ?: Int.MAX_VALUE) <= 8 &&
+            method.implementation?.instructions?.count { it.opcode == Opcode.INVOKE_VIRTUAL && it.isSetBoolean() } == 2
+    } ?: return emptyList()
+
+    val result = mutableListOf(ParameterOverride(setVisible, "p1"))
+
+    // ... and the method that loads the suggestions and decides if they are visible, using the same adapters.
+    val adapters = setVisible.sinkCalls()
+    methods.singleOrNull { method ->
+        method.parameters() == listOf("Ljava/util/List;", "Z") && method.sinkCalls().containsAll(adapters)
+    }?.let { result += ParameterOverride(it, "p2") }
+
+    return result
 }
 
 /**
