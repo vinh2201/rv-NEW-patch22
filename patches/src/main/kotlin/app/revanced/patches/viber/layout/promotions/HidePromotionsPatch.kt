@@ -1,6 +1,7 @@
 package app.revanced.patches.viber.layout.promotions
 
 import app.revanced.patcher.extensions.addInstructions
+import app.revanced.patcher.extensions.removeInstruction
 import app.revanced.patcher.firstMethod
 import app.revanced.patcher.patch.PatchException
 import app.revanced.patcher.patch.bytecodePatch
@@ -9,8 +10,9 @@ import java.util.logging.Logger
 @Suppress("unused")
 val hidePromotionsPatch = bytecodePatch(
     name = "Hide Viber Out and channel promotions",
-    description = "(PORTED) Hides the Viber Out banners and intro on the Calls tab and the channel and bot " +
-        "suggestions in the chat list. Works with Viber 23.x, 26.x and 29.x.",
+    description = "(PORTED) Hides the Viber Out banners and intro of the Calls tab, the Viber Out entry of the " +
+        "More screen, and the \"Popular channels & bots\" suggestions of the chat list. " +
+        "Works with Viber 23.x to 29.x.",
 ) {
     compatibleWith("com.viber.voip")
 
@@ -53,6 +55,12 @@ val hidePromotionsPatch = bytecodePatch(
             firstMethod(intro.method).addInstructions(intro.index + 1, "const/16 v${intro.register}, 0x0")
             patched++
         } ?: logger.warning("Could not find the Calls tab introduction.")
+
+        // Viber Out entry of the More screen.
+        findViberOutMoreScreenItem()?.let { item ->
+            firstMethod(item.method).removeInstruction(item.addIndex)
+            patched++
+        } ?: logger.warning("Could not find the Viber Out entry of the More screen.")
 
         if (patched == 0) {
             throw PatchException("Could not find any promotion. This Viber version is not supported.")

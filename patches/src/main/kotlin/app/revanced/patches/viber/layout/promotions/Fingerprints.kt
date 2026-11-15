@@ -5,11 +5,13 @@ import app.revanced.patcher.patch.BytecodePatchContext
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
+import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 
 /** The tag is read at most this many instructions after the `move-result` of the flag. */
 private const val CALLS_INTRO_TAG_DISTANCE = 9
@@ -27,6 +29,8 @@ internal val BytecodePatchContext.callsContactsBindingAnchor by gettingFirstImmu
 
 /** A boolean that is set to false: the register is written right after [index]. */
 internal class BooleanValue(val method: Method, val index: Int, val register: Int)
+
+private fun Instruction.methodReference() = (this as? ReferenceInstruction)?.reference as? MethodReference
 
 private fun Instruction.isViewVisibilityCall(opcode: Opcode): Boolean {
     if (this.opcode != opcode) return false
@@ -176,6 +180,59 @@ internal fun BytecodePatchContext.findCallsIntroFlag(): BooleanValue? {
 
                 return BooleanValue(method, index + 1, (moveResult as OneRegisterInstruction).registerA)
             }
+        }
+    }
+
+    return null
+}
+
+private const val VIBER_OUT_ITEM_CREATOR = "Lcom/viber/voip/user/more/listitems/creators/ViberOutItemCreator;"
+
+/** The `list.add(creator)` call of an item of the More screen. */
+internal class MoreScreenItem(val method: Method, val addIndex: Int)
+
+/**
+ * The More screen builds its entries from a list of item creators, one class for each entry:
+ * ```
+ * MoreFragment.getItemCreators(Context): List {
+ *     ...
+ *     v6 = new ViberOutItemCreator(context, viberOutInfoProvider);
+ *     list.add(v6);
+ *     ...
+ * }
+ * ```
+ * The class and method names are not obfuscated, and it is the same in Viber 23.x to 29.x.
+ * Returns the `add` of the Viber Out creator ("Viber Out - No credit" of the More screen).
+ */
+internal fun BytecodePatchContext.findViberOutMoreScreenItem(): MoreScreenItem? {
+    for (classDef in classDefs) {
+        for (method in classDef.methods) {
+            if (method.name != "getItemCreators" || method.returnType != "Ljava/util/List;") continue
+
+            val instructions = method.implementation?.instructions?.toList() ?: continue
+
+            val created = instructions.indexOfFirst {
+                it.opcode == Opcode.NEW_INSTANCE &&
+                    ((it as ReferenceInstruction).reference as? TypeReference)?.type == VIBER_OUT_ITEM_CREATOR
+            }
+            if (created < 0) continue
+
+            val creatorRegister = (instructions[created] as OneRegisterInstruction).registerA
+
+            val add = (created + 1 until instructions.size).firstOrNull { index ->
+                val instruction = instructions[index]
+                val reference = instruction.methodReference()
+
+                instruction.opcode == Opcode.INVOKE_VIRTUAL &&
+                    reference?.definingClass == "Ljava/util/ArrayList;" &&
+                    reference.name == "add" &&
+                    (instruction as FiveRegisterInstruction).registerD == creatorRegister
+            } ?: continue
+
+            // The result of `add` must not be used, because the call is removed.
+            if (instructions.getOrNull(add + 1)?.opcode == Opcode.MOVE_RESULT) continue
+
+            return MoreScreenItem(method, add)
         }
     }
 
