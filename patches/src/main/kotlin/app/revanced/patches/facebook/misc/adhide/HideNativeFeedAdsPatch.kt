@@ -447,7 +447,7 @@ val hideNativeFeedAdsPatch = bytecodePatch(
     compatibleWith("com.facebook.katana")
 
     val hideSuggested by booleanOption(
-        name = "Hide suggested and partnership posts",
+        name = "Hide suggested and partnership",
         description = "Also hides posts whose header says \"Suggested for you\" (\"Gợi ý cho bạn\", \"Đề xuất cho bạn\" and the " +
             "translations) and posts with a \"Paid partnership\" / \"Mối quan hệ tài trợ\" line under the page name. " +
             "Turn off to hide only \"Sponsored\" posts.",
