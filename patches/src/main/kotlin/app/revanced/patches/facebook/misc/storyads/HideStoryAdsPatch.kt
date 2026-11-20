@@ -78,7 +78,7 @@ private const val APP_CLASS = "Lcom/facebook/katana/app/FacebookApplication;"
 private const val ANDROID_APPLICATION = "Landroid/app/Application;"
 
 /** "Sponsored" in every language, lower case, Unicode composed, joined by a vertical bar. Compared with the WHOLE drawn string. */
-private const val LABELS_SPONSORED = "sponsored|مُموَّل|спонсорирано|sponzorováno|gesponsert|anzeige|χορηγούμενη|publicidad|sponsoroitu|sponsorisé|ממומן|bersponsor|sponsorizzato|広告|apmaksāta reklāma|gesponsord|sponsorowane|patrocinado|реклама|sponsorlu|спонсорована|được tài trợ|赞助内容|贊助|إعلان|reklama|werbung|διαφήμιση|anuncio|mainos|publicité|מודעה|iklan|inserzione|pubblicità|reklāma|advertentie|anúncio|reklam|quảng cáo|广告|廣告"
+private const val LABELS_SPONSORED = "sponsored|مُموَّل|спонсорирано|sponzorováno|gesponsert|anzeige|χορηγούμενη|publicidad|sponsoroitu|sponsorisé|ממומן|bersponsor|sponsorizzato|広告|apmaksāta reklāma|gesponsord|sponsorowane|patrocinado|реклама|sponsorlu|спонсорована|được tài trợ|赞助内容|贊助|إعلان|reklama|werbung|διαφήμιση|anuncio|mainos|publicité|מודעה|iklan|inserzione|pubblicità|reklāma|advertentie|anúncio|reklam|quảng cáo|广告|廣告|스폰서|광고|ได้รับการสนับสนุน|โฆษณา|प्रायोजित|विज्ञापन|szponzorált|hirdetés|sponsorizat|reclamă|sponsrad|annons|sponsoreret|annonce|sponset|annonse|sponzorované|sponzorirano|sponzorisano|oglas|স্পনসর্ড|স্পনসরড|বিজ্ঞাপন|ditaja|patrocinat|sponsitud|remiama|حمایتشده|حمایت شده|اسپانسرڈ|imedhaminiwa|geborg|スポンサー|спонзорисано|χορηγούμενο|gesponsorde inhoud|sponsored content|sponsrat innehåll|sponsoroitu sisältö|contenu sponsorisé|contenido patrocinado|conteúdo patrocinado|gesponserter beitrag|contenuto sponsorizzato"
 
 /** Assembled Entry, Core and Rec classes (one dex file), Base64. */
 private val STORYADS_DEX = listOf(
