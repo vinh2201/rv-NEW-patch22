@@ -274,7 +274,7 @@ val hideStoryAdsPatch = bytecodePatch(
         name = "Show toast skipped",
         description = "Shows a short \"RV: story ad skipped (N)\" message each time an ad story is skipped, so you can see that " +
             "it works. Turn it off when you have tested it.",
-        default = false,
+        default = true,
     )
 
     apply {
